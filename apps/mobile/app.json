@@ -15,7 +15,9 @@
       "supportsTablet": false,
       "bundleIdentifier": "com.berberapp",
       "entitlements": {
-        "com.apple.security.application-groups": ["group.com.berberapp"]
+        "com.apple.security.application-groups": [
+          "group.com.berberapp"
+        ]
       }
     },
     "android": {
@@ -32,6 +34,15 @@
     ],
     "experiments": {
       "typedRoutes": true
-    }
+    },
+    "extra": {
+      "router": {
+        "origin": false
+      },
+      "eas": {
+        "projectId": "25ac450c-8b07-4703-805f-3d4fea1b8db7"
+      }
+    },
+    "owner": "yekedun"
   }
 }
