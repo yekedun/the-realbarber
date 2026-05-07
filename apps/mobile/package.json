@@ -10,18 +10,19 @@
     "type-check": "tsc --noEmit"
   },
   "dependencies": {
-    "@berber/shared": "workspace:*",
     "@berber/db": "workspace:*",
+    "@berber/shared": "workspace:*",
+    "@react-native-async-storage/async-storage": "1.23.1",
     "@supabase/supabase-js": "^2.43.0",
     "expo": "~51.0.0",
+    "expo-constants": "~16.0.0",
+    "expo-dev-client": "^55.0.32",
+    "expo-linking": "~6.3.0",
     "expo-router": "~3.5.0",
     "expo-secure-store": "~13.0.0",
-    "expo-constants": "~16.0.0",
-    "expo-linking": "~6.3.0",
     "expo-status-bar": "~1.12.0",
     "react": "18.2.0",
-    "react-native": "0.74.1",
-    "@react-native-async-storage/async-storage": "1.23.1"
+    "react-native": "0.74.1"
   },
   "devDependencies": {
     "@types/react": "~18.2.0",
