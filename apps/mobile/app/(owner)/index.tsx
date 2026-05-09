@@ -29,13 +29,18 @@ interface AppointmentRow {
   id: string;
   staff_id: string;
   status: string;
+  starts_at: string;
+  services: { price_cents: number | null } | null;
 }
 
 interface DayStats {
   total: number;
   completed: number;
   cancelled: number;
+  revenue: number;
   staffStats: { id: string; name: string; count: number }[];
+  topStaff: string | null;
+  busiestDay: { date: string; count: number } | null;
 }
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
@@ -61,26 +66,58 @@ function initials(s: string): string {
 function computeStats(
   appts: AppointmentRow[],
   staff: StaffItem[],
-  selectedId: string | null
+  selectedId: string | null,
+  todayStr: string
 ): DayStats {
   const filtered =
     selectedId ? appts.filter((a) => a.staff_id === selectedId) : appts;
 
+  const validAppts = filtered.filter((a) => a.status !== "cancelled");
+  
+  // Sadece bugünün randevularını baz alan temel metrikler
+  const todayAppts = filtered.filter((a) => a.starts_at.startsWith(todayStr));
+  const validToday = todayAppts.filter((a) => a.status !== "cancelled");
+
+  const revenue = validToday.reduce((sum, a) => {
+    return sum + (a.services?.price_cents ?? 0);
+  }, 0) / 100;
+
   const staffStats = staff.map((b) => ({
     id: b.id,
     name: b.name,
-    count: filtered.filter(
-      (a) => a.staff_id === b.id && a.status !== "cancelled"
-    ).length,
+    count: validAppts.filter((a) => a.staff_id === b.id).length,
   }));
 
+  // Top Staff
+  const sortedStaff = [...staffStats].sort((a, b) => b.count - a.count);
+  const topStaff = sortedStaff.length > 0 && sortedStaff[0]!.count > 0 ? sortedStaff[0]!.name : null;
+
+  // Busiest Day
+  const dayCounts = validAppts.reduce((acc, a) => {
+    const day = a.starts_at.split("T")[0]!;
+    acc[day] = (acc[day] || 0) + 1;
+    return acc;
+  }, {} as Record<string, number>);
+
+  let busiestDay = null;
+  let maxCount = 0;
+  for (const [date, count] of Object.entries(dayCounts)) {
+    if (count > maxCount) {
+      maxCount = count;
+      busiestDay = { date, count };
+    }
+  }
+
   return {
-    total: filtered.filter((a) => a.status !== "cancelled").length,
-    completed: filtered.filter((a) => a.status === "completed").length,
-    cancelled: filtered.filter((a) => a.status === "cancelled").length,
+    total: validToday.length,
+    completed: todayAppts.filter((a) => a.status === "completed").length,
+    cancelled: todayAppts.filter((a) => a.status === "cancelled").length,
+    revenue,
     staffStats: selectedId
       ? staffStats.filter((s) => s.id === selectedId)
       : staffStats,
+    topStaff,
+    busiestDay
   };
 }
 
@@ -197,8 +234,8 @@ export default function OwnerDashboard() {
   // ── Fetch all data for the shop ──────────────────────────────────────────
   const load = useCallback(async () => {
     if (!shopId) return;
-    const dayStart = today.toISOString();
-    const dayEnd = addDays(today, 1).toISOString();
+    const rangeStart = addDays(today, -30).toISOString();
+    const rangeEnd = addDays(today, 30).toISOString();
 
     // Dükkanın tüm aktif personeli
     const { data: staffData } = await supabase
@@ -210,19 +247,20 @@ export default function OwnerDashboard() {
 
     if (!staffData) { setLoading(false); setRefreshing(false); return; }
 
-    // Tüm aktif personelin bugünkü randevuları — shop_id bazlı (tek sorgu)
+    // Tüm aktif personelin randevuları
     const { data: apptData } = await supabase
       .from("appointments")
-      .select("id, staff_id, status")
+      .select("id, staff_id, status, starts_at, services(price_cents)")
       .in("staff_id", staffData.map((s) => s.id))
-      .gte("starts_at", dayStart)
-      .lt("starts_at", dayEnd);
+      .gte("starts_at", rangeStart)
+      .lt("starts_at", rangeEnd);
 
     allStaff.current = staffData;
     allAppts.current = apptData ?? [];
 
+    const todayStr = today.toISOString().split("T")[0]!;
     setStaff(staffData);
-    setStats(computeStats(allAppts.current, allStaff.current, selectedStaffId));
+    setStats(computeStats(allAppts.current, allStaff.current, selectedStaffId, todayStr));
     setLoading(false);
     setRefreshing(false);
   }, [shopId]); // selectedStaffId intentionally NOT a dep — filter is client-side
@@ -232,7 +270,8 @@ export default function OwnerDashboard() {
   // ── Client-side filter when picker changes ───────────────────────────────
   const handleSelectStaff = useCallback((id: string | null) => {
     setSelectedStaffId(id);
-    setStats(computeStats(allAppts.current, allStaff.current, id));
+    const todayStr = startOfDay(new Date()).toISOString().split("T")[0]!;
+    setStats(computeStats(allAppts.current, allStaff.current, id, todayStr));
   }, []);
 
   function onRefresh() { setRefreshing(true); load(); }
@@ -271,9 +310,31 @@ export default function OwnerDashboard() {
           <>
             {/* ── KPI Cards ── */}
             <View style={styles.kpiRow}>
-              <KpiCard icon="calendar" label="Toplam Randevu" value={stats.total} color={T.navy} />
+              <KpiCard icon="calendar" label="Bugün Toplam" value={stats.total} color={T.navy} />
               <KpiCard icon="check-circle" label="Tamamlanan" value={stats.completed} color="#16a34a" />
-              <KpiCard icon="x-circle" label="İptal" value={stats.cancelled} color={T.red} />
+              <KpiCard icon="dollar-sign" label="Tahmini (₺)" value={stats.revenue} color="#059669" />
+            </View>
+
+            {/* ── Insights ── */}
+            <Text style={styles.sectionLabel}>ÖNGÖRÜLER (30 GÜN)</Text>
+            <View style={styles.insightsBox}>
+              <View style={styles.insightItem}>
+                <Feather name="star" size={16} color={T.navy} />
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.insightLabel}>En Çok Tercih Edilen</Text>
+                  <Text style={styles.insightValue}>{stats.topStaff || "Veri Yok"}</Text>
+                </View>
+              </View>
+              <View style={styles.insightDivider} />
+              <View style={styles.insightItem}>
+                <Feather name="trending-up" size={16} color={T.navy} />
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.insightLabel}>En Yoğun Gün</Text>
+                  <Text style={styles.insightValue}>
+                    {stats.busiestDay ? `${stats.busiestDay.date} (${stats.busiestDay.count} rdv)` : "Veri Yok"}
+                  </Text>
+                </View>
+              </View>
             </View>
 
             {/* ── Usta breakdown ── */}
@@ -417,4 +478,36 @@ const styles = StyleSheet.create({
   barberCount: { fontSize: 13, color: T.muted, fontWeight: "500" },
 
   emptyTxt: { fontSize: 13, color: T.mutedAlt, textAlign: "center", paddingVertical: 20 },
+
+  insightsBox: {
+    backgroundColor: T.surface,
+    borderWidth: 1,
+    borderColor: T.line,
+    borderRadius: R.card,
+    padding: 16,
+    marginBottom: 24,
+    ...Shadow.card,
+  },
+  insightItem: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+  },
+  insightDivider: {
+    height: 1,
+    backgroundColor: T.hair,
+    marginVertical: 12,
+  },
+  insightLabel: {
+    fontSize: 11,
+    color: T.muted,
+    textTransform: "uppercase",
+    letterSpacing: 0.5,
+    marginBottom: 2,
+  },
+  insightValue: {
+    fontSize: 14,
+    fontWeight: "700",
+    color: T.ink,
+  },
 });
