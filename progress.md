@@ -2,10 +2,10 @@
 
 ## 1. Current Status
 - Tüm kod yazıldı, kritik 3 mimari hata düzeltildi (edge fn import path, anon Realtime, widget bridge signature)
-- OPTIMIZATIONS.md denetiminden çıkan 12 bulgu uygulandı (F-01..F-12); D-01 (F-02 + F-03 kalıcı çözümü) tamamlandı: `supabase/functions/import_map.json` ile `@berber/shared/*` tek kaynak haline getirildi, duplicate `_shared/slot-utils.ts` ve `_shared/types.ts` silindi
-- Supabase projesi henüz oluşturulmadı; deploy yapılmadı
-- iOS WidgetKit target ekleme adımı `expo prebuild` sonrası manuel
-- `pnpm install` + `.env.local` + Supabase deploy → çalıştırılabilir durumda
+- **Multi-seat & Personel Çalışma Saatleri (v1.2)** başarıyla uygulandı: `staff_schedules` altyapısı, mola desteği ve dükkan sahibi yönetim arayüzü tamam.
+- OPTIMIZATIONS.md denetiminden çıkan 12 bulgu uygulandı (F-01..F-12); D-01 (F-02 + F-03 kalıcı çözümü) tamamlandı
+- Supabase projesi oluşturuldu; migration'lar uygulandı (`supabase db push` ✓)
+- `pnpm turbo type-check` %100 başarılı; cast'ler (`as any`) temizlendi.
 
 ---
 
@@ -24,7 +24,9 @@
 - `migrations/002_rls_policies.sql` — RLS; `appointment_slots` public read, write yok
 - `migrations/003_functions.sql` — `get_occupied_ranges()`, `handle_updated_at`, `sync_appointment_slots` trigger
 - `migrations/004_optimizations.sql` — D-02 `get_occupied_ranges` index-friendly range filter + D-04 `pg_cron` ile `widget_tokens` günlük temizlik
-- `src/database.types.ts` — hand-written tipler
+- `migrations/20260508_multi_seat_and_admin.sql` — Çoklu personel desteği + admin rolleri
+- `migrations/20260509_staff_schedules.sql` — Personel bazlı çalışma ve mola saatleri
+- `src/database.types.ts` — CLI ile üretilmiş tam güvenli tipler (as any temizlendi)
 
 ### supabase/functions
 - `_shared/cors.ts`, `_shared/supabase-admin.ts`, `_shared/database.types.ts`
@@ -47,8 +49,10 @@
 - `package.json`, `app.json` (with widget plugin), `tsconfig.json`, `eas.json`
 - `lib/supabase.ts`, `lib/widget-bridge.ts`
 - `app/_layout.tsx`, `(auth)/login.tsx`, `(app)/_layout.tsx`
-- `(app)/index.tsx` — F-04 limit/horizon + F-05 INSERT/UPDATE/DELETE handler
-- `(app)/block.tsx`, `settings.tsx`
+- `(app)/index.tsx` — F-04 limit/horizon + F-05 INSERT/UPDATE/DELETE handler + **Staff Picker**
+- `(app)/block.tsx`, `settings.tsx`, `team.tsx`
+- `components/StaffScheduleModal.tsx` — Personel saat yönetimi
+- `components/AppointmentDetailSheet.tsx` — Detay ve aksiyonlar
 
 ### Widget
 - iOS: `BarberWidget.swift`, `NativeWidgetModule.swift` + `.m` bridging

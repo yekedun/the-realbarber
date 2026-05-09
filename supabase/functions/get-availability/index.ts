@@ -96,6 +96,7 @@ serve(async (req) => {
       .select("id")
       .eq("id", staffIdParam)
       .eq("shop_id", shop.id)
+      .eq("is_active", true)
       .single();
 
     if (!staffMember) return error("Personel bulunamadı", 404);

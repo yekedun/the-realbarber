@@ -44,10 +44,12 @@ cd apps/mobile && expo start                                    # Mobil derleme
 | `supabase/functions/block-walkin/index.ts` | Widget auth + block INSERT (core differentiator) |
 | `packages/db/migrations/001_initial.sql` | Tablolar + `appointment_slots` mirror + Realtime publication |
 | `packages/db/migrations/003_functions.sql` | `sync_appointment_slots` trigger |
+| `packages/db/migrations/20260509_staff_schedules.sql` | Personel çalışma saatleri + mola altyapısı |
 | `apps/mobile/modules/widget/ios/BarberWidget.swift` | iOS WidgetKit — AppIntent + iOS 16 deeplink fallback |
 | `apps/mobile/modules/widget/android/BlockActionReceiver.kt` | Android widget → edge fn çağrısı |
 | `apps/mobile/modules/widget/plugin/index.js` | `expo prebuild` sırasında native dosyaları yerleştiren plugin |
 | `apps/mobile/lib/widget-bridge.ts` | Token üretme + native modüle köprü |
+| `apps/mobile/components/StaffScheduleModal.tsx` | Personel çalışma saatleri yönetim arayüzü |
 
 ## Change safety rules
 
@@ -55,7 +57,8 @@ cd apps/mobile && expo start                                    # Mobil derleme
 - iOS 16 deeplink fallback (`berberapp://block?duration=...`) ve iOS 17+ AppIntent her ikisi de korunmalı.
 - `appointment_slots` tablo yapısı (kolonlar) değişirse: hem trigger fonksiyonunu hem `BookingFlow.tsx` realtime handler'ını hem `database.types.ts` (iki kopya) hem de `_shared/database.types.ts`'i güncelle.
 - `blocks` tablosuna DELETE policy eklenirse `BookingFlow.tsx`'teki `event: '*'` subscription'ını test et — handler tüm event tiplerini bekliyor.
-- `barbers.working_hours` JSONB şemasını değiştirirsen `WorkingHours` tipini `packages/shared/src/types.ts`'de güncelle (tek kaynak — edge fonksiyonları aynı dosyayı import_map ile alır).
+- `barbers.working_hours` JSONB şemasını değiştirirsen `WorkingHours` tipini `packages/shared/src/types.ts`'de güncelle. Not: `staff_schedules` tablosu bu saati ezer (override).
+- `staff_schedules` değişikliği → `get-availability` edge function ve `get_occupied_ranges` RPC bu tablodan beslenir.
 - `iOS NativeWidgetModule.swift` imzasını değiştirirsen `.m` bridging dosyasını da, ayrıca Android Kotlin tarafını da hizala.
 
 ## Known gotchas

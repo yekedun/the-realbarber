@@ -12,10 +12,10 @@ apps/mobile      Expo SDK 51 · expo-router · 4 ekran + Android widget (Kotlin)
 packages/db      Supabase tip tanımları (CLI'den üretiliyor)
 packages/shared  slot-utils (computeAvailableSlots), types, constants
 supabase/        4 edge function + migrations + seed
-                   - book-appointment (GIST 409 anti-double-book)
-                   - block-walkin     (anlık slot bloklama)
+                   - book-appointment (GIST 409 anti-double-book + staff-specific logic)
+                   - block-walkin     (staff-based validation)
                    - create-widget-token
-                   - get-availability
+                   - get-availability (staff schedules + shop hours fallback)
 ```
 
 Monorepo: pnpm workspaces, hoisted node-linker (`.npmrc`).
@@ -70,6 +70,16 @@ navy #1E3A8A  (PRIMARY CTA / FAB)
    - `app/not-found.tsx` — animated barber pole stripe + 404 hero.
 5. **Native widget XML'inde kalan rust `#EA580C` → navy `#1E3A8A`** yapıldı (`modules/widget/android/res/layout/barber_widget.xml`).
 6. **Bug fix: `BarberPole` segment height bug** — sadece track yüksekliğinin yarısı doluyordu, `POLE_STRIPE_H = 6` ile düzeltildi.
+
+---
+
+**Sprint 2: Multi-Seat & Granular Availability (2026-05-08)**
+
+1. **Multi-Seat Altyapısı:** `staff` tablosuna `is_active` ve dükkan sahibi rolleri eklendi.
+2. **Staff Schedules:** Her personel için 7 gün bazında `is_working`, `work_start/end` ve mola (`break_start/end`) desteği.
+3. **Availability Engine:** `get-availability` artık personelin mola saatlerini ve izinli günlerini `get_occupied_ranges` üzerinden otomatik "dolu" sayıyor.
+4. **Owner Dashboard:** Mobil uygulamaya Personel Seçici (Staff Picker) ve Team Management ekranı eklendi.
+5. **Type Safety:** `database.types.ts` CLI ile senkronize edildi, tüm projedeki `as any` cast'leri temizlendi.
 
 **Web tarafı ✓ test edildi**, kullanıcı yeni paleti web'de görüyor.
 **Mobil tarafı ✗ henüz görünmüyor** — sebep aşağıda.

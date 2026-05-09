@@ -51,7 +51,11 @@ FOR ALL USING (
 
 -- Anon/müşteri: sadece okuyabilir (müsaitlik hesaplaması için)
 CREATE POLICY "anon_read_schedules" ON public.staff_schedules
-FOR SELECT USING (true);
+FOR SELECT USING (
+  staff_id IN (
+    SELECT id FROM public.staff WHERE is_active = true
+  )
+);
 
 -- ── get_occupied_ranges güncelleme ───────────────────────────────────────────
 -- Mola saatlerini de "dolu" aralık olarak ekler; böylece
@@ -98,8 +102,8 @@ LANGUAGE sql STABLE SECURITY DEFINER AS $$
 
   -- 4. Mola saatleri → break_start/break_end aralığını dolu say
   SELECT
-    (p_date::text || ' ' || break_start::text)::timestamptz   AS starts_at,
-    (p_date::text || ' ' || break_end::text)::timestamptz     AS ends_at
+    (p_date + break_start)::timestamptz   AS starts_at,
+    (p_date + break_end)::timestamptz     AS ends_at
   FROM public.staff_schedules
   WHERE staff_id    = p_staff_id
     AND day_of_week = EXTRACT(DOW FROM p_date)::int

@@ -186,10 +186,10 @@ export default function OwnerDashboard() {
   const allStaff = useRef<StaffItem[]>([]);
   const allAppts = useRef<AppointmentRow[]>([]);
 
-  const [staff, setStaff]           = useState<StaffItem[]>([]);
-  const [stats, setStats]           = useState<DayStats | null>(null);
+  const [staff, setStaff] = useState<StaffItem[]>([]);
+  const [stats, setStats] = useState<DayStats | null>(null);
   const [selectedStaffId, setSelectedStaffId] = useState<string | null>(null);
-  const [loading, setLoading]       = useState(true);
+  const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
 
   const today = startOfDay(new Date());
@@ -198,7 +198,7 @@ export default function OwnerDashboard() {
   const load = useCallback(async () => {
     if (!shopId) return;
     const dayStart = today.toISOString();
-    const dayEnd   = addDays(today, 1).toISOString();
+    const dayEnd = addDays(today, 1).toISOString();
 
     // Dükkanın tüm aktif personeli
     const { data: staffData } = await supabase
@@ -271,9 +271,9 @@ export default function OwnerDashboard() {
           <>
             {/* ── KPI Cards ── */}
             <View style={styles.kpiRow}>
-              <KpiCard icon="calendar"     label="Toplam Randevu"  value={stats.total}     color={T.navy} />
-              <KpiCard icon="check-circle" label="Tamamlanan"       value={stats.completed} color="#16a34a" />
-              <KpiCard icon="x-circle"     label="İptal"            value={stats.cancelled} color={T.red} />
+              <KpiCard icon="calendar" label="Toplam Randevu" value={stats.total} color={T.navy} />
+              <KpiCard icon="check-circle" label="Tamamlanan" value={stats.completed} color="#16a34a" />
+              <KpiCard icon="x-circle" label="İptal" value={stats.cancelled} color={T.red} />
             </View>
 
             {/* ── Usta breakdown ── */}
