@@ -183,13 +183,13 @@ export function BookingFlow({ shop, staff, services }: BookingFlowProps) {
               onSelect={() => setSelectedStaff("any")}
               isAny
             />
-            {staff.map((b) => (
+            {staff.map((s) => (
               <StaffCard
-                key={b.id}
-                name={b.name}
+                key={s.id}
+                name={s.name}
                 avatarUrl={null}
-                selected={selectedStaff !== "any" && selectedStaff?.id === b.id}
-                onSelect={() => setSelectedStaff(b)}
+                selected={selectedStaff !== "any" && selectedStaff?.id === s.id}
+                onSelect={() => setSelectedStaff(s)}
               />
             ))}
           </div>

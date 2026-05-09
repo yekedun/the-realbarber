@@ -351,20 +351,20 @@ export default function OwnerDashboard() {
                     handleSelectStaff(selectedStaffId === b.id ? null : b.id)
                   }
                   style={({ pressed }) => [
-                    styles.barberRow,
-                    selectedStaffId === b.id && styles.barberRowActive,
+                    styles.staffRow,
+                    selectedStaffId === b.id && styles.staffRowActive,
                     pressed && { opacity: 0.8 },
                   ]}
                 >
                   <View
                     style={[
-                      styles.barberDot,
+                      styles.staffDot,
                       selectedStaffId === b.id && { backgroundColor: "#fff" },
                     ]}
                   />
                   <Text
                     style={[
-                      styles.barberName,
+                      styles.staffName,
                       selectedStaffId === b.id && { color: "#fff" },
                     ]}
                   >
@@ -372,7 +372,7 @@ export default function OwnerDashboard() {
                   </Text>
                   <Text
                     style={[
-                      styles.barberCount,
+                      styles.staffCount,
                       selectedStaffId === b.id && { color: "rgba(255,255,255,0.8)" },
                     ]}
                   >
@@ -456,7 +456,7 @@ const styles = StyleSheet.create({
     textTransform: "uppercase",
     marginBottom: 10,
   },
-  barberRow: {
+  staffRow: {
     flexDirection: "row",
     alignItems: "center",
     gap: 10,
@@ -469,13 +469,13 @@ const styles = StyleSheet.create({
     marginBottom: 8,
     ...Shadow.card,
   },
-  barberRowActive: {
+  staffRowActive: {
     backgroundColor: T.navy,
     borderColor: T.navy,
   },
-  barberDot: { width: 8, height: 8, borderRadius: 4, backgroundColor: T.navy },
-  barberName: { flex: 1, fontSize: 14, fontWeight: "600", color: T.ink },
-  barberCount: { fontSize: 13, color: T.muted, fontWeight: "500" },
+  staffDot: { width: 8, height: 8, borderRadius: 4, backgroundColor: T.navy },
+  staffName: { flex: 1, fontSize: 14, fontWeight: "600", color: T.ink },
+  staffCount: { fontSize: 13, color: T.muted, fontWeight: "500" },
 
   emptyTxt: { fontSize: 13, color: T.mutedAlt, textAlign: "center", paddingVertical: 20 },
 
@@ -495,7 +495,7 @@ const styles = StyleSheet.create({
   },
   insightDivider: {
     height: 1,
-    backgroundColor: T.hair,
+    backgroundColor: T.line,
     marginVertical: 12,
   },
   insightLabel: {
