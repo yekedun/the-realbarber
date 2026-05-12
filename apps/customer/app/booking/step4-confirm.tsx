@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import {
   View,
   Text,
@@ -19,6 +19,10 @@ import { T, R, Shadow } from "../../lib/theme";
 
 const TZ = "Europe/Istanbul";
 
+function paramValue(value: string | string[] | undefined): string {
+  return Array.isArray(value) ? value[0] ?? "" : value ?? "";
+}
+
 function fTime(iso: string) {
   return new Intl.DateTimeFormat("tr-TR", {
     hour: "2-digit",
@@ -34,6 +38,51 @@ function fDate(iso: string) {
 
 function formatPrice(cents: number): string {
   return cents === 0 ? "Fiyat sor" : `₺${Math.round(cents / 100)}`;
+}
+
+async function readFunctionError(error: unknown) {
+  const err = error as {
+    context?:
+      | Response
+      | {
+          message?: string;
+          error?: string;
+          code?: string;
+          should_refetch_availability?: boolean;
+          status?: number;
+        };
+    message?: string;
+  };
+  const context = err.context;
+  let parsed:
+    | {
+        message?: string;
+        error?: string;
+        code?: string;
+        should_refetch_availability?: boolean;
+      }
+    | null = null;
+  let status: number | undefined;
+
+  if (context instanceof Response) {
+    status = context.status;
+    try {
+      parsed = await context.clone().json();
+    } catch {
+      parsed = null;
+    }
+  } else if (context) {
+    status = context.status;
+    parsed = context;
+  }
+
+  return {
+    message: parsed?.error ?? parsed?.message ?? err.message ?? "Bilinmeyen hata",
+    shouldRefetch:
+      status === 409 ||
+      parsed?.code === "BOOKING_CONFLICT" ||
+      parsed?.should_refetch_availability === true,
+  };
 }
 
 function SummaryRow({
@@ -54,7 +103,7 @@ function SummaryRow({
 }
 
 export default function Step4Confirm() {
-  const params = useLocalSearchParams<{
+  const rawParams = useLocalSearchParams<{
     sid: string;
     sname: string;
     sdur: string;
@@ -63,7 +112,17 @@ export default function Step4Confirm() {
     bname: string;
     slot: string;
   }>();
+  const params = {
+    sid: paramValue(rawParams.sid),
+    sname: paramValue(rawParams.sname),
+    sdur: paramValue(rawParams.sdur),
+    sprice: paramValue(rawParams.sprice),
+    bid: paramValue(rawParams.bid),
+    bname: paramValue(rawParams.bname),
+    slot: paramValue(rawParams.slot),
+  };
   const [loading, setLoading] = useState(false);
+  const submittingRef = useRef(false);
   const [customerName, setCustomerName] = useState("");
   const [customerPhone, setCustomerPhone] = useState<string | null>(null);
   const router = useRouter();
@@ -84,11 +143,19 @@ export default function Step4Confirm() {
   }, []);
 
   async function handleConfirm() {
+    if (submittingRef.current) return;
+
+    if (!SHOP_SLUG || !params.sid || !params.slot) {
+      Alert.alert("Randevu alinamadi", "Dukkan, hizmet veya saat bilgisi eksik. Lutfen hizmet seciminden tekrar deneyin.");
+      return;
+    }
+
     if (!customerName) {
       Alert.alert("Hata", "Profil bilgileri yüklenemedi. Lütfen tekrar deneyin.");
       return;
     }
 
+    submittingRef.current = true;
     setLoading(true);
     const { data, error } = await supabase.functions.invoke("customer-book-appointment", {
       body: {
@@ -100,28 +167,14 @@ export default function Step4Confirm() {
         customer_phone: customerPhone,
       },
     });
+    submittingRef.current = false;
     setLoading(false);
 
     if (error) {
-      const err = error as {
-        context?: {
-          message?: string;
-          error?: string;
-          code?: string;
-          should_refetch_availability?: boolean;
-        };
-        message?: string;
-      };
-      const msg =
-        err.context?.error ??
-        err.context?.message ??
-        err.message ??
-        "Bilinmeyen hata";
-      const shouldRefetch =
-        err.context?.code === "BOOKING_CONFLICT" || err.context?.should_refetch_availability;
+      const { message, shouldRefetch } = await readFunctionError(error);
 
       if (shouldRefetch) {
-        Alert.alert("Saat doldu", msg, [
+        Alert.alert("Saat doldu", message, [
           {
             text: "Yeni saat seç",
             onPress: () =>
@@ -141,7 +194,7 @@ export default function Step4Confirm() {
         return;
       }
 
-      Alert.alert("Randevu alınamadı", msg);
+      Alert.alert("Randevu alınamadı", message);
       return;
     }
 

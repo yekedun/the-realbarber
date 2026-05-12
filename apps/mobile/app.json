@@ -17,8 +17,13 @@
       "entitlements": {
         "com.apple.security.application-groups": [
           "group.com.berberapp",
+          "group.com.berberapp",
+          "group.com.berberapp",
           "group.com.berberapp"
         ]
+      },
+      "infoPlist": {
+        "ITSAppUsesNonExemptEncryption": false
       }
     },
     "android": {

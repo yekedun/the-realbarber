@@ -86,14 +86,20 @@ export default function VitrinScreen() {
   const insets = useSafeAreaInsets();
 
   const load = useCallback(async () => {
-    const [shopRes, svcRes] = await Promise.all([
-      supabase.from("shops").select("id, display_name, bio, working_hours").eq("slug", SHOP_SLUG).single(),
-      supabase.from("services")
-        .select("id, name, duration_min, price_cents")
-        .eq("is_active", true)
-        .order("display_order"),
-    ]);
+    const shopRes = await supabase
+      .from("shops")
+      .select("id, display_name, bio, working_hours")
+      .eq("slug", SHOP_SLUG)
+      .single();
+
     if (shopRes.data) setShop(shopRes.data as unknown as Shop);
+
+    const svcQuery = supabase
+      .from("services")
+      .select("id, name, duration_min, price_cents")
+      .eq("is_active", true)
+      .order("display_order");
+    const svcRes = shopRes.data ? await svcQuery.eq("shop_id", shopRes.data.id) : await svcQuery;
     if (svcRes.data) setServices(svcRes.data);
   }, []);
 

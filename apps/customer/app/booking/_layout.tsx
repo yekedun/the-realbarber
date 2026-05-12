@@ -8,6 +8,7 @@ export default function BookingLayout() {
         headerShown: false,
         contentStyle: { backgroundColor: T.bg },
         animation: "slide_from_right",
+        freezeOnBlur: false,
       }}
     />
   );

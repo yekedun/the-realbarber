@@ -66,6 +66,7 @@ export function BookingFlow({ shop, staff, services }: BookingFlowProps) {
     setIsLoadingSlots(true);
     const params = new URLSearchParams({
       shop_slug:  shop.slug,
+      slug:       shop.slug,
       date:       selectedDate,
       service_id: selectedService.id,
       staff_id:   selectedStaffId ?? "",

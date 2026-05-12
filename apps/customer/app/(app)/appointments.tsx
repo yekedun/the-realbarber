@@ -44,7 +44,15 @@ function initials(name: string) {
   return name.split(/\s+/).filter(Boolean).slice(0, 2).map((w) => w[0]!.toUpperCase()).join("");
 }
 
-function UpcomingCard({ appt, onCancel }: { appt: Appointment; onCancel: () => void }) {
+function UpcomingCard({
+  appt,
+  onCancel,
+  disabled,
+}: {
+  appt: Appointment;
+  onCancel: () => void;
+  disabled: boolean;
+}) {
   const barber = appt.staff?.name ?? "Usta";
   return (
     <View style={styles.upcomingCard}>
@@ -65,7 +73,12 @@ function UpcomingCard({ appt, onCancel }: { appt: Appointment; onCancel: () => v
           </Text>
         </View>
       </View>
-      <TouchableOpacity style={styles.cancelBtn} onPress={onCancel} activeOpacity={0.8}>
+      <TouchableOpacity
+        style={[styles.cancelBtn, disabled && styles.cancelBtnDisabled]}
+        onPress={onCancel}
+        disabled={disabled}
+        activeOpacity={0.8}
+      >
         <Text style={styles.cancelText}>İptal</Text>
       </TouchableOpacity>
     </View>
@@ -105,6 +118,7 @@ export default function AppointmentsScreen() {
   const [appointments, setAppointments] = useState<Appointment[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [cancellingIds, setCancellingIds] = useState<Set<string>>(() => new Set());
 
   const load = useCallback(async () => {
     // RLS policy "appointments_customer_select" otomatik filtreler — ek eq gerekmiyor
@@ -125,7 +139,35 @@ export default function AppointmentsScreen() {
     setRefreshing(false);
   }
 
+  function setCancelling(apptId: string, cancelling: boolean) {
+    setCancellingIds((prev) => {
+      const next = new Set(prev);
+      if (cancelling) next.add(apptId);
+      else next.delete(apptId);
+      return next;
+    });
+  }
+
+  async function readCancelError(error: unknown) {
+    const err = error as {
+      context?: Response | { error?: string; message?: string; status?: number };
+      message?: string;
+    };
+    const context = err.context;
+    if (context instanceof Response) {
+      try {
+        const body = (await context.clone().json()) as { error?: string; message?: string };
+        return body.error ?? body.message ?? err.message ?? "Randevu iptal edilemedi.";
+      } catch {
+        return err.message ?? "Randevu iptal edilemedi.";
+      }
+    }
+    return context?.error ?? context?.message ?? err.message ?? "Randevu iptal edilemedi.";
+  }
+
   async function handleCancel(apptId: string) {
+    if (cancellingIds.has(apptId)) return;
+
     Alert.alert(
       "Randevuyu İptal Et",
       "Bu randevuyu iptal etmek istediğinizden emin misiniz?",
@@ -135,22 +177,26 @@ export default function AppointmentsScreen() {
           text: "İptal Et",
           style: "destructive",
           onPress: async () => {
-            const { error } = await supabase.functions.invoke("customer-cancel-appointment", {
-              body: { appointment_id: apptId },
-            });
-            if (error) {
-              Alert.alert("Hata", "Randevu iptal edilemedi. Lütfen tekrar deneyin.");
-            } else {
-              setAppointments((prev) =>
-                prev.map((a) => (a.id === apptId ? { ...a, status: "cancelled" } : a))
-              );
+            setCancelling(apptId, true);
+            try {
+              const { error } = await supabase.functions.invoke("customer-cancel-appointment", {
+                body: { appointment_id: apptId },
+              });
+              if (error) {
+                const message = await readCancelError(error);
+                await load();
+                Alert.alert("Randevu güncellendi", message);
+              } else {
+                await load();
+              }
+            } finally {
+              setCancelling(apptId, false);
             }
           },
         },
       ]
     );
   }
-
   const now = new Date();
   const upcoming = appointments.filter(
     (a) => new Date(a.starts_at) > now && a.status === "confirmed"
@@ -177,7 +223,12 @@ export default function AppointmentsScreen() {
             {upcoming.length === 0
               ? <EmptyState icon="calendar-outline" text="Yaklaşan randevunuz yok" />
               : upcoming.map((a) => (
-                  <UpcomingCard key={a.id} appt={a} onCancel={() => handleCancel(a.id)} />
+                  <UpcomingCard
+                    key={a.id}
+                    appt={a}
+                    onCancel={() => handleCancel(a.id)}
+                    disabled={cancellingIds.has(a.id)}
+                  />
                 ))
             }
 
@@ -246,6 +297,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 10,
     paddingVertical: 7,
   },
+  cancelBtnDisabled: { opacity: 0.5 },
   cancelText: { fontSize: 12, fontWeight: "600", color: T.red },
 
   pastRow: {

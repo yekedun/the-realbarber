@@ -1,42 +1,62 @@
 import "react-native-gesture-handler";
-import { useEffect, useState } from "react";
+import "react-native-reanimated";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { ActivityIndicator, View } from "react-native";
 import { Stack, useRouter, useSegments } from "expo-router";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
+import { enableFreeze } from "react-native-screens";
 import type { Session } from "@supabase/supabase-js";
 import { supabase } from "../lib/supabase";
 import { getProfile } from "../lib/customer-profiles";
 import { T } from "../lib/theme";
 
+enableFreeze(false);
+
 type AuthState = "loading" | "unauthenticated" | "needsSetup" | "ready";
 
 export default function RootLayout() {
   const [authState, setAuthState] = useState<AuthState>("loading");
+  const authRequestRef = useRef(0);
   const router = useRouter();
   const segments = useSegments();
 
-  async function resolveState(session: Session | null) {
+  const resolveState = useCallback(async (session: Session | null) => {
+    const requestId = ++authRequestRef.current;
+
     if (!session) {
-      setAuthState("unauthenticated");
+      if (requestId === authRequestRef.current) {
+        setAuthState("unauthenticated");
+      }
       return;
     }
+
     const profile = await getProfile(session.user.id);
-    setAuthState(profile ? "ready" : "needsSetup");
-  }
+    if (requestId === authRequestRef.current) {
+      setAuthState(profile ? "ready" : "needsSetup");
+    }
+  }, []);
 
   useEffect(() => {
+    let mounted = true;
+
     supabase.auth.getSession().then(({ data: { session } }) => {
-      resolveState(session);
+      if (mounted) {
+        resolveState(session);
+      }
     });
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      resolveState(session);
+      if (mounted) {
+        resolveState(session);
+      }
     });
 
-    return () => subscription.unsubscribe();
-  // resolveState değişmez, effect bir kez kurulur
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+    return () => {
+      mounted = false;
+      authRequestRef.current += 1;
+      subscription.unsubscribe();
+    };
+  }, [resolveState]);
 
   useEffect(() => {
     if (authState === "loading") return;
@@ -57,24 +77,27 @@ export default function RootLayout() {
     void inBooking;
   }, [authState, segments, router]);
 
-  if (authState === "loading") {
-    return (
-      <View style={{ flex: 1, backgroundColor: T.bg, alignItems: "center", justifyContent: "center" }}>
-        <ActivityIndicator color={T.navy} />
-      </View>
-    );
-  }
-
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
-      <Stack screenOptions={{ headerShown: false }}>
-        <Stack.Screen name="(auth)" />
-        <Stack.Screen name="(app)" />
-        <Stack.Screen
-          name="booking"
-          options={{ presentation: "modal", headerShown: false, animation: "slide_from_bottom" }}
-        />
-      </Stack>
+      {authState === "loading" ? (
+        <View style={{ flex: 1, backgroundColor: T.bg, alignItems: "center", justifyContent: "center" }}>
+          <ActivityIndicator color={T.navy} />
+        </View>
+      ) : (
+        <Stack
+          screenOptions={{
+            headerShown: false,
+            freezeOnBlur: false,
+          }}
+        >
+          <Stack.Screen name="(auth)" />
+          <Stack.Screen name="(app)" />
+          <Stack.Screen
+            name="booking"
+            options={{ presentation: "modal", headerShown: false, animation: "slide_from_bottom" }}
+          />
+        </Stack>
+      )}
     </GestureHandlerRootView>
   );
 }

@@ -11,8 +11,10 @@ function tabIcon(focused: boolean, name: IoniconName, outlineName: IoniconName) 
 export default function AppLayout() {
   return (
     <Tabs
+      detachInactiveScreens={false}
       screenOptions={{
         headerShown: false,
+        freezeOnBlur: false,
         tabBarStyle: {
           backgroundColor: T.bg,
           borderTopColor: T.line,

@@ -58,7 +58,7 @@ serve(async (req) => {
   if (req.method === "OPTIONS") return corsOptions();
 
   const url          = new URL(req.url);
-  const shopSlug     = url.searchParams.get("shop_slug");
+  const shopSlug     = url.searchParams.get("shop_slug") ?? url.searchParams.get("slug");
   const date         = url.searchParams.get("date");
   const serviceId    = url.searchParams.get("service_id");
   // staff_id = UUID → belirli personel | "any" veya yoksa → en az 1 personel müsait slot

@@ -1,5 +1,6 @@
 import { useEffect, useState, useRef, useCallback } from "react";
 import {
+  AppState,
   View,
   Text,
   ScrollView,
@@ -10,11 +11,11 @@ import {
   Alert,
 } from "react-native";
 import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
-import { useRouter, useLocalSearchParams } from "expo-router";
+import { useFocusEffect, useRouter, useLocalSearchParams } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { addDays, startOfDay, format } from "date-fns";
 import { tr } from "date-fns/locale";
-import { SHOP_SLUG, SUPABASE_URL, SUPABASE_ANON_KEY } from "../../lib/supabase";
+import { supabase, SHOP_SLUG, SUPABASE_URL, SUPABASE_ANON_KEY } from "../../lib/supabase";
 import { T, R } from "../../lib/theme";
 
 interface SlotItem {
@@ -26,6 +27,10 @@ interface SlotItem {
 interface DayItem {
   date: Date;
   iso: string;
+}
+
+function paramValue(value: string | string[] | undefined): string {
+  return Array.isArray(value) ? value[0] ?? "" : value ?? "";
 }
 
 const TZ = "Europe/Istanbul";
@@ -46,6 +51,17 @@ function fTime(iso: string) {
     hour12: false,
     timeZone: TZ,
   }).format(new Date(iso));
+}
+
+function slotChangeTouchesVisibleStaff(
+  payload: { new: Record<string, unknown>; old: Record<string, unknown> },
+  staffId: string
+) {
+  const rows = [payload.new, payload.old];
+  return rows.some((row) => {
+    const changedStaffId = typeof row.staff_id === "string" ? row.staff_id : "";
+    return !staffId || staffId === "any" || changedStaffId === staffId;
+  });
 }
 
 function DayPill({
@@ -105,7 +121,7 @@ function SlotChip({
 }
 
 export default function Step3Slot() {
-  const params = useLocalSearchParams<{
+  const rawParams = useLocalSearchParams<{
     sid: string;
     sname: string;
     sdur: string;
@@ -113,18 +129,44 @@ export default function Step3Slot() {
     bid: string;
     bname: string;
   }>();
+  const params = {
+    sid: paramValue(rawParams.sid),
+    sname: paramValue(rawParams.sname),
+    sdur: paramValue(rawParams.sdur),
+    sprice: paramValue(rawParams.sprice),
+    bid: paramValue(rawParams.bid),
+    bname: paramValue(rawParams.bname),
+  };
   const [days] = useState<DayItem[]>(buildDays);
   const [selectedDay, setSelectedDay] = useState<DayItem>(days[0]!);
   const [slots, setSlots] = useState<SlotItem[]>([]);
   const [slotsLoading, setSlotsLoading] = useState(false);
   const [selectedSlot, setSelectedSlot] = useState<SlotItem | null>(null);
   const reqRef = useRef(0);
+  const mountedRef = useRef(true);
+  const refetchTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const dayListRef = useRef<FlatList<DayItem>>(null);
 
+  useEffect(() => {
+    return () => {
+      mountedRef.current = false;
+      reqRef.current += 1;
+    };
+  }, []);
+
   const fetchSlots = useCallback(
     async (day: DayItem) => {
+      if (!SHOP_SLUG || !params.sid || !day.iso) {
+        if (!mountedRef.current) return;
+        setSlots([]);
+        setSelectedSlot(null);
+        Alert.alert("Musaitlik Alinamadi", "Dukkan veya hizmet bilgisi eksik. Lutfen hizmet seciminden tekrar deneyin.");
+        return;
+      }
+
+      if (!mountedRef.current) return;
       setSlotsLoading(true);
       setSlots([]);
       setSelectedSlot(null);
@@ -132,9 +174,10 @@ export default function Step3Slot() {
 
       const url = new URL(`${SUPABASE_URL}/functions/v1/get-availability`);
       url.searchParams.set("shop_slug", SHOP_SLUG);
+      url.searchParams.set("slug", SHOP_SLUG);
       url.searchParams.set("date", day.iso);
       url.searchParams.set("service_id", params.sid);
-      if (params.bid !== "any") url.searchParams.set("staff_id", params.bid);
+      if (params.bid && params.bid !== "any") url.searchParams.set("staff_id", params.bid);
 
       try {
         const res = await fetch(url.toString(), {
@@ -143,9 +186,10 @@ export default function Step3Slot() {
             "Content-Type": "application/json",
           },
         });
-        if (id !== reqRef.current) return;
+        if (!mountedRef.current || id !== reqRef.current) return;
 
         const data = (await res.json()) as { error?: string; slots?: SlotItem[] };
+        if (!mountedRef.current || id !== reqRef.current) return;
         if (!res.ok) {
           Alert.alert("Musaitlik Alinamadi", data.error ?? "Lutfen tekrar deneyin.");
           setSlots([]);
@@ -154,17 +198,53 @@ export default function Step3Slot() {
 
         setSlots((data.slots ?? []).filter((s) => s.available));
       } catch {
+        if (!mountedRef.current || id !== reqRef.current) return;
         Alert.alert("Baglanti Hatasi", "Musaitlik bilgisi alinamadi.");
       } finally {
-        if (id === reqRef.current) setSlotsLoading(false);
+        if (mountedRef.current && id === reqRef.current) setSlotsLoading(false);
       }
     },
     [params.sid, params.bid]
   );
 
+  useFocusEffect(
+    useCallback(() => {
+      fetchSlots(selectedDay);
+    }, [fetchSlots, selectedDay])
+  );
+
   useEffect(() => {
-    fetchSlots(selectedDay);
-  }, [selectedDay, fetchSlots]);
+    const subscription = AppState.addEventListener("change", (state) => {
+      if (state === "active") fetchSlots(selectedDay);
+    });
+    return () => subscription.remove();
+  }, [fetchSlots, selectedDay]);
+
+  useEffect(() => {
+    const scheduleRefetch = () => {
+      if (refetchTimerRef.current) clearTimeout(refetchTimerRef.current);
+      refetchTimerRef.current = setTimeout(() => fetchSlots(selectedDay), 350);
+    };
+
+    const channel = supabase
+      .channel(`customer-slots-${selectedDay.iso}-${params.bid || "any"}`)
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "appointment_slots" },
+        (payload) => {
+          if (slotChangeTouchesVisibleStaff(payload, params.bid)) scheduleRefetch();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      if (refetchTimerRef.current) {
+        clearTimeout(refetchTimerRef.current);
+        refetchTimerRef.current = null;
+      }
+      supabase.removeChannel(channel);
+    };
+  }, [fetchSlots, params.bid, selectedDay]);
 
   function selectDay(day: DayItem, index: number) {
     setSelectedDay(day);

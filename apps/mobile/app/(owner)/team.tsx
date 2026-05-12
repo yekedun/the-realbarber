@@ -28,6 +28,12 @@ interface Staff {
   commission_rate_bps: number | null;
 }
 
+interface StaffCommissionConfig {
+  staff_id: string;
+  commission_type: "none" | "percentage";
+  commission_rate_bps: number | null;
+}
+
 function initials(s: string): string {
   return s.split(/\s+/).filter(Boolean).slice(0, 2).map((x) => x[0]!.toUpperCase()).join("");
 }
@@ -56,10 +62,29 @@ export default function TeamScreen() {
 
     const { data } = await supabase
       .from("staff")
-      .select("id, name, is_active, user_id, commission_type, commission_rate_bps")
+      .select("id, name, is_active, user_id")
       .eq("shop_id", shopId)
       .order("created_at");
-    setStaffList((data as Staff[]) ?? []);
+    let commissionByStaff = new Map<string, StaffCommissionConfig>();
+    if (Boolean(shop?.commission_enabled)) {
+      const { data: commissionRows, error: commissionError } = await supabase.rpc("get_staff_commission_configs", {
+        p_shop_id: shopId,
+      });
+      if (commissionError) Alert.alert("Hata", commissionError.message);
+      commissionByStaff = new Map(
+        ((commissionRows as StaffCommissionConfig[] | null) ?? []).map((row) => [row.staff_id, row])
+      );
+    }
+    setStaffList(
+      ((data as Omit<Staff, "commission_type" | "commission_rate_bps">[] | null) ?? []).map((staff) => {
+        const commission = commissionByStaff.get(staff.id);
+        return {
+          ...staff,
+          commission_type: commission?.commission_type ?? "none",
+          commission_rate_bps: commission?.commission_rate_bps ?? null,
+        };
+      })
+    );
     setLoading(false);
   }, [shopId]);
 
@@ -138,13 +163,11 @@ export default function TeamScreen() {
     commissionRateBps: number | null
   ) {
     setSavingCommission(true);
-    const { error } = await supabase
-      .from("staff")
-      .update({
-        commission_type: commissionType,
-        commission_rate_bps: commissionType === "percentage" ? commissionRateBps : null,
-      })
-      .eq("id", staffId);
+    const { error } = await supabase.rpc("update_staff_commission_config", {
+      p_staff_id: staffId,
+      p_commission_type: commissionType,
+      p_commission_rate_bps: commissionType === "percentage" ? (commissionRateBps ?? undefined) : undefined,
+    });
     if (error) {
       Alert.alert("Hata", error.message);
       setSavingCommission(false);

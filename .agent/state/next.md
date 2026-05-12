@@ -7,6 +7,12 @@
 
 # Completed Recently
 
+- customer availability failure fixed and deployed: remote `get-availability` now accepts both `shop_slug` and `slug`
+- customer Android app reinstalled/launched and booking step 3 rendered slots for `test-berber` (`12 Mayis 2026`, `18:30`)
+- customer booking step params normalized so Expo Router array params do not leak into query construction
+- customer home service query scoped services by current shop `shop_id`
+- `pnpm --filter @berber/customer type-check` and `pnpm --filter @berber/web type-check` passed
+- remote smoke for `get-availability` returned 200 and 3 slots with `shop_slug`, `slug`, and both together
 - owner/staff booking visibility fixed locally: customer app uses `staff`; owner staff invariant migration added and local proof passes
 - customer local/dev login helper reviewed: gated by `__DEV__` plus explicit dev credentials, no production UI exposure found
 - remote backend smoke for `20260516090000_fix_schedule_conflict_ignore.sql` and commission migration passed on staging

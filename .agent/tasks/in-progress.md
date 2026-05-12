@@ -1,6 +1,6 @@
 ---
 board: in-progress
-updated: 2026-05-11
+updated: 2026-05-12
 priority: critical
 allowed_statuses:
   - planned
@@ -14,37 +14,6 @@ allowed_statuses:
 
 # In Progress
 
-## TASK-017
-
-```md
-id: TASK-017
-depends_on: []
-priority: critical
-status: completed
-```
-
-- [x] verify customer app emulator + Metro state
-- [x] complete customer login to booking flow
-- [x] select an available slot and confirm appointment
-- [x] verify created appointment in app/backend
-- [x] run customer type-check
-
-## TASK-018
-
-```md
-id: TASK-018
-depends_on:
-  - TASK-017
-priority: critical
-status: completed
-```
-
-- [x] add deterministic scheduling SQL proof harness
-- [x] add local `pnpm backend:proof` runner with reset + race proof
-- [x] verify staff schedule, break, closed day, cancelled rebook, any-staff, mirror sync, RLS/RPC exposure
-- [x] fix `schedule_has_conflict` false conflict when update ignores its own appointment
-- [x] run local backend proof gate
-
 ## TASK-016
 
 ```md
@@ -57,45 +26,6 @@ status: blocked
 ```
 
 - [ ] drag/drop optimization
-
-## TASK-019
-
-```md
-id: TASK-019
-depends_on: []
-priority: medium
-status: completed
-```
-
-- [x] add optional shop-level commission feature flag
-- [x] add per-staff `none | percentage` commission config
-- [x] snapshot completed appointment revenue and commission values
-- [x] add authenticated completion/report RPCs isolated from scheduling
-- [x] gate owner UI for settings, staff commission config, and earnings report
-- [x] replace Android-unsafe commission prompt with a modal
-- [x] run `pnpm turbo type-check`, `supabase db reset`, and `pnpm backend:proof`
-- [x] apply migration to staging
-- [x] run staging SQL smoke for scheduling self-ignore, real conflict, cancelled rebook, mirror sync, and commission snapshots
-- [x] run web booking smoke through public `book-appointment` edge path and clean test appointment
-- [x] run Android owner smoke for settings toggle, team commission gate, and commission modal
-
-## TASK-020
-
-```md
-id: TASK-020
-depends_on:
-  - TASK-019
-priority: critical
-status: completed
-```
-
-- [x] keep commission rules per staff member, with shop toggle only as module gate
-- [x] switch customer booking picker from legacy `barbers` to active `staff`
-- [x] ensure owner lookup handles both `owner_user_id` and `owner_id`
-- [x] add owner-staff invariant migration for new/existing shops
-- [x] fix local Supabase config duplicate function table
-- [x] update backend proof fixture for owner staff in any-staff pool
-- [x] run `pnpm turbo type-check`, `supabase db reset`, and `pnpm backend:proof`
 
 # Rotation Rule
 

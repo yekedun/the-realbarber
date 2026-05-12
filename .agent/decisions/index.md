@@ -6,6 +6,7 @@
 - `002-realtime-strategy`
 - `005-atomic-scheduling-engine`
 - `004-caching-and-performance`
+- `006-availability-param-compatibility`
 
 ## Platform
 

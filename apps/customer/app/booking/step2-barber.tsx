@@ -19,6 +19,10 @@ interface Barber {
   role: "admin" | "staff";
 }
 
+function paramValue(value: string | string[] | undefined): string {
+  return Array.isArray(value) ? value[0] ?? "" : value ?? "";
+}
+
 function initials(name: string) {
   return name.split(/\s+/).filter(Boolean).slice(0, 2).map((w) => w[0]!.toUpperCase()).join("");
 }
@@ -82,9 +86,16 @@ export default function Step2Barber() {
   }, []);
 
   function go(bid: string, bname: string) {
+    const bookingParams = {
+      sid: paramValue(params.sid),
+      sname: paramValue(params.sname),
+      sdur: paramValue(params.sdur),
+      sprice: paramValue(params.sprice),
+    };
+
     router.push({
       pathname: "/booking/step3-slot",
-      params: { ...params, bid, bname },
+      params: { ...bookingParams, bid, bname },
     });
   }
 
