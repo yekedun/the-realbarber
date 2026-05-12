@@ -102,6 +102,12 @@ export default function OwnerAgenda() {
         () => {
           void load();
         }
+      ).on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "block_slots", filter: `staff_id=eq.${member.id}` },
+        () => {
+          void load();
+        }
       );
     }
     channel.subscribe();
