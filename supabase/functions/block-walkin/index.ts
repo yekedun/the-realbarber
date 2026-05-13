@@ -23,13 +23,20 @@ serve(async (req) => {
 
   const { data: widgetToken } = await supabase
     .from("widget_tokens")
-    .select("id, shop_id, expires_at")
+    .select("id, shop_id, expires_at, last_used_at")
     .eq("token_hash", tokenHash)
     .single();
 
   if (!widgetToken) return error("Gecersiz token", 401);
   if (widgetToken.expires_at && new Date(widgetToken.expires_at) < new Date()) {
     return error("Token suresi dolmus", 401);
+  }
+  // Per-token cooldown using already-fetched last_used_at (no extra DB round-trip).
+  if (widgetToken.last_used_at) {
+    const msSinceLastUse = Date.now() - new Date(widgetToken.last_used_at).getTime();
+    if (msSinceLastUse < 2_000) {
+      return error("Çok hızlı istek. Lütfen bir saniye bekleyin.", 429);
+    }
   }
 
   let body: LegacyBlockWalkinRequest;

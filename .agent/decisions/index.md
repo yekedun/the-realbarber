@@ -1,5 +1,9 @@
 # Active Decisions
 
+## Schema
+
+- `001-supabase-schema-baseline` — baseline table definitions for all 11 tables
+
 ## Core Architecture
 
 - `001-calendar-architecture`

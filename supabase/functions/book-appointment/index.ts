@@ -16,6 +16,7 @@ function mapRpcErrorStatus(code?: string): number {
   if (code === "P0001") return 409;
   if (code === "P0002") return 404;
   if (code === "22023") return 400;
+  if (code === "P0004") return 429;
   return 500;
 }
 
@@ -50,6 +51,7 @@ serve(async (req) => {
 
   const slotDate = new Date(starts_at);
   if (isNaN(slotDate.getTime())) return error("Gecersiz starts_at");
+  if (slotDate.getTime() < Date.now() - 5 * 60_000) return error("Geçmiş bir saate randevu oluşturulamaz", 400);
 
   const supabase = createAdminClient();
   const { data, error: rpcError } = await supabase.rpc("create_appointment_atomic" as never, {
@@ -68,8 +70,9 @@ serve(async (req) => {
     const status = mapRpcErrorStatus(rpcError.code);
     if (status === 500) console.error("create_appointment_atomic failed:", rpcError);
     return error(rpcError.message ?? "Randevu olusturulamadi", status, {
-      code: status === 409 ? "BOOKING_CONFLICT" : "BOOKING_ERROR",
+      code: status === 429 ? "RATE_LIMITED" : status === 409 ? "BOOKING_CONFLICT" : "BOOKING_ERROR",
       should_refetch_availability: status === 409,
+      ...(status === 429 ? { retry_after: 600 } : {}),
     });
   }
 

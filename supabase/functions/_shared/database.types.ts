@@ -72,6 +72,7 @@ export type Database = {
       }
       appointments: {
         Row: {
+          booked_price_cents: number | null
           completed_at: string | null
           completed_commission_cents: number | null
           completed_commission_rate_bps: number | null
@@ -93,6 +94,7 @@ export type Database = {
           status: string
         }
         Insert: {
+          booked_price_cents?: number | null
           completed_at?: string | null
           completed_commission_cents?: number | null
           completed_commission_rate_bps?: number | null
@@ -114,6 +116,7 @@ export type Database = {
           status?: string
         }
         Update: {
+          booked_price_cents?: number | null
           completed_at?: string | null
           completed_commission_cents?: number | null
           completed_commission_rate_bps?: number | null

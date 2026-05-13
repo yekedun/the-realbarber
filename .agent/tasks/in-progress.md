@@ -14,7 +14,12 @@ allowed_statuses:
 
 # In Progress
 
-No active in-progress tasks.
+| ID       | Title                                       | Status      | Updated    |
+|----------|---------------------------------------------|-------------|------------|
+| TASK-001 | Fix H-3 + C-1 (customer cancel TOCTOU)      | completed   | 2026-05-13 |
+| TASK-002 | Fix C-2 (past-slot guard)                   | completed   | 2026-05-13 |
+| TASK-003 | Fix H-1 (any-staff advisory lock + recheck) | completed   | 2026-05-13 |
+| TASK-004 | Fix H-2 (rate limiting on booking endpoints)| in_progress | 2026-05-13 |
 
 # Rotation Rule
 
