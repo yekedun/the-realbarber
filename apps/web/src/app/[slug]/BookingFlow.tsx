@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback, useMemo } from "react";
+import { useRealtimeInvalidation } from "@berber/shared/use-realtime-invalidation";
 import Image from "next/image";
 import { createSupabaseBrowserClient } from "@/lib/supabase-browser";
 import type {
@@ -17,6 +18,8 @@ interface BookingFlowProps {
   shop: ShopPublic;
   staff: StaffPublic[];
   services: ServicePublic[];
+  lockedBarber?: StaffPublic;
+  inactiveBarberName?: string;
 }
 
 type StaffSelection = StaffPublic | "any";
@@ -51,9 +54,10 @@ function isSameYMD(a: Date, b: Date): boolean {
   return localYmd(a) === localYmd(b);
 }
 
-export function BookingFlow({ shop, staff, services }: BookingFlowProps) {
+export function BookingFlow({ shop, staff, services, lockedBarber, inactiveBarberName }: BookingFlowProps) {
   const [selectedService, setSelectedService] = useState<ServicePublic | null>(null);
-  const [selectedStaff, setSelectedStaff] = useState<StaffSelection | null>(null);
+  const [selectedStaff, setSelectedStaff] = useState<StaffSelection | null>(() => lockedBarber ?? null);
+  const [referralDismissed, setReferralDismissed] = useState(false);
   const [selectedDate, setSelectedDate] = useState<string>(() => localYmd(new Date()));
   const [serverSlots, setServerSlots] = useState<SlotItem[]>([]);
   const [selectedSlot, setSelectedSlot] = useState<Slot | null>(null);
@@ -125,34 +129,27 @@ export function BookingFlow({ shop, staff, services }: BookingFlowProps) {
     setSelectedSlot(null);
   }, [selectedService, selectedStaff, selectedDate]);
 
-  useEffect(() => {
-    if (!selectedService || selectedStaffId === null) return;
+  const targetStaffIds = useMemo(() =>
+    selectedStaffId === "any"
+      ? staff.map((b) => b.id)
+      : selectedStaffId
+      ? [selectedStaffId]
+      : [],
+    [selectedStaffId, staff]
+  );
 
-    const targetStaffIds =
-      selectedStaffId === "any"
-        ? staff.map((b) => b.id)
-        : [selectedStaffId];
+  const bookingTableFilters = useMemo(() => [
+    { table: "appointment_slots" as const, filters: targetStaffIds.map(id => `staff_id=eq.${id}`) },
+    { table: "block_slots" as const,       filters: targetStaffIds.map(id => `staff_id=eq.${id}`) },
+  ], [targetStaffIds]);
 
-    const channel = supabase.channel(`slots:${shop.id}:${selectedStaffId}`);
-
-    for (const bid of targetStaffIds) {
-      channel.on(
-        "postgres_changes",
-        { event: "*", schema: "public", table: "appointment_slots", filter: `staff_id=eq.${bid}` },
-        () => fetchSlots()
-      );
-      channel.on(
-        "postgres_changes",
-        { event: "*", schema: "public", table: "block_slots", filter: `staff_id=eq.${bid}` },
-        () => fetchSlots()
-      );
-    }
-
-    channel.subscribe();
-    return () => {
-      supabase.removeChannel(channel);
-    };
-  }, [selectedStaffId, selectedService, staff, shop.id, supabase, fetchSlots]);
+  useRealtimeInvalidation({
+    client: supabase,
+    channelName: `slots:${shop.id}:${selectedStaffId ?? "none"}`,
+    tableFilters: bookingTableFilters,
+    invalidate: fetchSlots,
+    enabled: !!selectedService && selectedStaffId !== null,
+  });
 
   const slots: Slot[] = useMemo(
     () =>
@@ -192,15 +189,38 @@ export function BookingFlow({ shop, staff, services }: BookingFlowProps) {
       })
     : null;
 
+  const showReferralBadge =
+    lockedBarber != null &&
+    !referralDismissed &&
+    selectedStaff !== "any" &&
+    (selectedStaff as StaffPublic | null)?.id === lockedBarber.id;
+
   return (
     <div className="flex flex-col gap-7">
+      {inactiveBarberName && (
+        <div className="rounded-cta border border-amber-200 bg-amber-50 px-4 py-3 text-[13px] text-amber-800">
+          <strong>{inactiveBarberName}</strong> artık bu dükkanda çalışmıyor. Başka bir usta seçebilirsin.
+        </div>
+      )}
+      {showReferralBadge && (
+        <div className="flex items-center gap-2 rounded-cta border border-navy/20 bg-blue-soft px-3 py-2 text-[12px] text-navy">
+          <span>🔒</span>
+          <span className="font-medium">{lockedBarber.name}&apos;in linkinden geldin</span>
+          <button
+            onClick={() => setReferralDismissed(true)}
+            className="ml-auto text-[10px] text-muted hover:text-ink"
+          >
+            ✕
+          </button>
+        </div>
+      )}
       <Section step={1} title="Hizmet Seç">
         <ServiceSelector
           services={services}
           selected={selectedService}
           onSelect={(service) => {
             setSelectedService(service);
-            setSelectedStaff(null);
+            if (!lockedBarber) setSelectedStaff(null);
           }}
         />
       </Section>
@@ -213,7 +233,7 @@ export function BookingFlow({ shop, staff, services }: BookingFlowProps) {
               subtitle="Uygun personele atanır"
               avatarUrl={null}
               selected={selectedStaff === "any"}
-              onSelect={() => setSelectedStaff("any")}
+              onSelect={() => { setSelectedStaff("any"); setReferralDismissed(true); }}
               isAny
             />
             {staff.map((staffMember) => (
@@ -221,8 +241,11 @@ export function BookingFlow({ shop, staff, services }: BookingFlowProps) {
                 key={staffMember.id}
                 name={staffMember.name}
                 avatarUrl={null}
-                selected={selectedStaff !== "any" && selectedStaff?.id === staffMember.id}
-                onSelect={() => setSelectedStaff(staffMember)}
+                selected={selectedStaff !== "any" && (selectedStaff as StaffPublic | null)?.id === staffMember.id}
+                onSelect={() => {
+                  setSelectedStaff(staffMember);
+                  if (lockedBarber && staffMember.id !== lockedBarber.id) setReferralDismissed(true);
+                }}
               />
             ))}
           </div>
