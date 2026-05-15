@@ -1,4 +1,5 @@
 import { useEffect, useState, useCallback, useMemo } from "react";
+import { useRealtimeInvalidation } from "@berber/shared/use-realtime-invalidation";
 import {
   View,
   Text,
@@ -203,38 +204,19 @@ export default function OwnerAgenda() {
 
   useEffect(() => { load(); }, [load]);
 
-  useEffect(() => {
-    if (!shopId || staff.length === 0) return;
+  const agendaTableFilters = useMemo(() => [
+    { table: "appointment_slots" as const, filters: staff.map(m => `staff_id=eq.${m.id}`) },
+    { table: "block_slots" as const,       filters: staff.map(m => `staff_id=eq.${m.id}`) },
+  ], [staff]);
 
-    const { start: dayStart, end: dayEnd } = getDayBoundsUTC(new Date(selectedDayKey), TZ);
-    const dayStartMs = dayStart.getTime();
-    const dayEndMs   = dayEnd.getTime();
-
-    let debounceTimer: ReturnType<typeof setTimeout> | null = null;
-
-    const handleChange = (payload: { new: Record<string, unknown>; old: Record<string, unknown> }) => {
-      const startsAt = (payload.new?.starts_at ?? payload.old?.starts_at) as string | undefined;
-      if (startsAt) {
-        const t = new Date(startsAt).getTime();
-        if (t < dayStartMs || t >= dayEndMs) return;
-      }
-      if (debounceTimer) clearTimeout(debounceTimer);
-      debounceTimer = setTimeout(() => { void load(); }, 300);
-    };
-
-    let channel = supabase.channel(`owner-agenda:${shopId}:${selectedDayKey}`);
-    for (const member of staff) {
-      channel = channel
-        .on("postgres_changes", { event: "*", schema: "public", table: "appointment_slots", filter: `staff_id=eq.${member.id}` }, handleChange)
-        .on("postgres_changes", { event: "*", schema: "public", table: "block_slots",       filter: `staff_id=eq.${member.id}` }, handleChange);
-    }
-    channel.subscribe();
-
-    return () => {
-      if (debounceTimer) clearTimeout(debounceTimer);
-      void supabase.removeChannel(channel);
-    };
-  }, [shopId, staff, selectedDayKey, load]);
+  useRealtimeInvalidation({
+    client: supabase,
+    channelName: `owner-agenda:${shopId}:${selectedDayKey}`,
+    tableFilters: agendaTableFilters,
+    invalidate: load,
+    enabled: !!shopId && staff.length > 0,
+    debounceMs: 300,
+  });
 
   function onRefresh() { setRefreshing(true); load(); }
 
