@@ -1,4 +1,5 @@
 import { useEffect, useState, useCallback, useMemo, useRef } from "react";
+import { useRealtimeInvalidation } from "@berber/shared/use-realtime-invalidation";
 import {
   View,
   Text,
@@ -155,27 +156,18 @@ export default function AppointmentsScreen() {
     return () => clearInterval(id);
   }, []);
 
-  useEffect(() => {
-    if (!staffId) return;
-    const channel = supabase
-      .channel(`appointments:${staffId}`)
-      .on(
-        "postgres_changes",
-        { event: "*", schema: "public", table: "appointments", filter: `staff_id=eq.${staffId}` },
-        () => {
-          void fetchDay(staffId, selectedDay);
-        }
-      )
-      .on(
-        "postgres_changes",
-        { event: "*", schema: "public", table: "blocks", filter: `staff_id=eq.${staffId}` },
-        () => {
-          void fetchDay(staffId, selectedDay);
-        }
-      )
-      .subscribe();
-    return () => { supabase.removeChannel(channel); };
-  }, [staffId, selectedDay, fetchDay]);
+  const realtimeTableFilters = useMemo(() => [
+    { table: "appointments" as const, filters: staffId ? [`staff_id=eq.${staffId}`] : [] },
+    { table: "blocks" as const,       filters: staffId ? [`staff_id=eq.${staffId}`] : [] },
+  ], [staffId]);
+
+  useRealtimeInvalidation({
+    client: supabase,
+    channelName: `appointments:${staffId ?? "none"}`,
+    tableFilters: realtimeTableFilters,
+    invalidate: () => { if (staffId) void fetchDay(staffId, selectedDay); },
+    enabled: !!staffId,
+  });
 
   const timeline: TimelineItem[] = useMemo(() => {
     const items: TimelineItem[] = [
