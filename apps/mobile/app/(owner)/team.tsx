@@ -16,12 +16,10 @@ import { useUserRole } from "../../lib/user-context";
 import { T, R, Shadow } from "../../lib/theme";
 import { StaffScheduleModal } from "../../components/StaffScheduleModal";
 
-const SUPABASE_URL = process.env.EXPO_PUBLIC_SUPABASE_URL!;
-const SUPABASE_ANON_KEY = process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY!;
-
 interface Staff {
   id: string;
   name: string;
+  slug: string | null;
   is_active: boolean;
   user_id: string | null;
   commission_type: "none" | "percentage";
@@ -38,6 +36,19 @@ function initials(s: string): string {
   return s.split(/\s+/).filter(Boolean).slice(0, 2).map((x) => x[0]!.toUpperCase()).join("");
 }
 
+function toSlug(name: string): string {
+  return name
+    .toLowerCase()
+    .replace(/[çÇ]/g, "c").replace(/[ğĞ]/g, "g").replace(/[ıİ]/g, "i")
+    .replace(/[öÖ]/g, "o").replace(/[şŞ]/g, "s").replace(/[üÜ]/g, "u")
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-|-$/g, "");
+}
+
+function isValidSlug(s: string): boolean {
+  return /^[a-z0-9]([a-z0-9-]*[a-z0-9])?$/.test(s);
+}
+
 export default function TeamScreen() {
   const { shopId } = useUserRole();
   const [staffList, setStaffList] = useState<Staff[]>([]);
@@ -50,6 +61,9 @@ export default function TeamScreen() {
   const [savingCommission, setSavingCommission] = useState(false);
   const [addStaffVisible, setAddStaffVisible] = useState(false);
   const [newStaffName, setNewStaffName] = useState("");
+  const [slugStaff, setSlugStaff] = useState<Staff | null>(null);
+  const [slugInput, setSlugInput] = useState("");
+  const [savingSlug, setSavingSlug] = useState(false);
 
   const load = useCallback(async () => {
     if (!shopId) return;
@@ -62,7 +76,7 @@ export default function TeamScreen() {
 
     const { data } = await supabase
       .from("staff")
-      .select("id, name, is_active, user_id")
+      .select("id, name, slug, is_active, user_id")
       .eq("shop_id", shopId)
       .order("created_at");
     let commissionByStaff = new Map<string, StaffCommissionConfig>();
@@ -93,9 +107,17 @@ export default function TeamScreen() {
   async function handleAddStaff(name: string): Promise<boolean> {
     setInviting(true);
     try {
+      const baseSlug = toSlug(name);
+      // Aynı shop içinde slug çakışması varsa suffix ekle
+      const existingSlugs = new Set(staffList.map((s) => s.slug).filter(Boolean));
+      let slug = baseSlug;
+      let suffix = 2;
+      while (slug && existingSlugs.has(slug)) {
+        slug = `${baseSlug}-${suffix++}`;
+      }
       const { error } = await supabase
         .from("staff")
-        .insert({ shop_id: shopId as string, name });
+        .insert({ shop_id: shopId as string, name, slug: slug || null, role: "staff", is_active: true });
       if (error) throw error;
       Alert.alert("Başarılı", `${name} başarıyla eklendi.`);
       await load();
@@ -179,6 +201,49 @@ export default function TeamScreen() {
     setCommissionInput("");
   }
 
+  function openSlugModal(staffMember: Staff) {
+    setSlugStaff(staffMember);
+    setSlugInput(staffMember.slug ?? "");
+  }
+
+  function closeSlugModal() {
+    if (savingSlug) return;
+    setSlugStaff(null);
+    setSlugInput("");
+  }
+
+  async function saveSlug() {
+    if (!slugStaff) return;
+    const trimmed = slugInput.trim().toLowerCase();
+
+    if (trimmed && !isValidSlug(trimmed)) {
+      Alert.alert("Geçersiz slug", "Sadece küçük harf, rakam ve tire (-) kullanılabilir.");
+      return;
+    }
+
+    // Aynı dükkan içinde başka birine ait mi kontrol et
+    const conflict = staffList.find((s) => s.id !== slugStaff.id && s.slug === trimmed);
+    if (trimmed && conflict) {
+      Alert.alert("Çakışma", `Bu slug zaten ${conflict.name} tarafından kullanılıyor.`);
+      return;
+    }
+
+    setSavingSlug(true);
+    const { error } = await supabase
+      .from("staff")
+      .update({ slug: trimmed || null })
+      .eq("id", slugStaff.id);
+    if (error) {
+      Alert.alert("Hata", error.message);
+      setSavingSlug(false);
+      return;
+    }
+    await load();
+    setSavingSlug(false);
+    setSlugStaff(null);
+    setSlugInput("");
+  }
+
   return (
     <View style={styles.root}>
       <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
@@ -225,6 +290,11 @@ export default function TeamScreen() {
                   <Text style={[styles.statusChip, b.is_active ? styles.activeChip : styles.inactiveChip]}>
                     {b.is_active ? "Aktif" : "Pasif"}
                   </Text>
+                  {b.slug ? (
+                    <Text style={styles.slugText} numberOfLines={1}>/{b.slug}</Text>
+                  ) : (
+                    <Text style={styles.slugMissing}>slug yok</Text>
+                  )}
                   {commissionEnabled && (
                     <Text style={styles.commissionText}>
                       {b.commission_type === "percentage" && b.commission_rate_bps != null
@@ -233,7 +303,6 @@ export default function TeamScreen() {
                     </Text>
                   )}
                 </View>
-                {/* Çalışma saatleri butonu */}
                 {commissionEnabled && (
                   <Pressable
                     onPress={() => openCommissionModal(b)}
@@ -244,13 +313,19 @@ export default function TeamScreen() {
                   </Pressable>
                 )}
                 <Pressable
+                  onPress={() => openSlugModal(b)}
+                  style={({ pressed }) => [styles.iconBtn, pressed && { opacity: 0.7 }]}
+                  hitSlop={8}
+                >
+                  <Feather name="link" size={18} color={b.slug ? T.navy : T.muted} />
+                </Pressable>
+                <Pressable
                   onPress={() => setModalStaff(b)}
                   style={({ pressed }) => [styles.iconBtn, pressed && { opacity: 0.7 }]}
                   hitSlop={8}
                 >
                   <Feather name="clock" size={18} color={T.blue} />
                 </Pressable>
-                {/* Aktif/Pasif toggle */}
                 <Pressable
                   onPress={() => handleToggleActive(b)}
                   style={({ pressed }) => [styles.iconBtn, pressed && { opacity: 0.7 }]}
@@ -264,20 +339,18 @@ export default function TeamScreen() {
         )}
       </ScrollView>
 
-      {/* Çalışma Saatleri Modalı */}
       <StaffScheduleModal
         visible={modalStaff !== null}
         staff={modalStaff}
         onClose={() => setModalStaff(null)}
       />
 
+      {/* Personel Ekle Modalı */}
       <Modal
         visible={addStaffVisible}
         transparent
         animationType="fade"
-        onRequestClose={() => {
-          if (!inviting) setAddStaffVisible(false);
-        }}
+        onRequestClose={() => { if (!inviting) setAddStaffVisible(false); }}
       >
         <View style={styles.modalBackdrop}>
           <View style={styles.commissionModal}>
@@ -293,9 +366,7 @@ export default function TeamScreen() {
             />
             <View style={styles.modalActions}>
               <Pressable
-                onPress={() => {
-                  if (!inviting) setAddStaffVisible(false);
-                }}
+                onPress={() => { if (!inviting) setAddStaffVisible(false); }}
                 disabled={inviting}
                 style={styles.secondaryBtn}
               >
@@ -304,15 +375,9 @@ export default function TeamScreen() {
               <Pressable
                 onPress={async () => {
                   const name = newStaffName.trim();
-                  if (name.length < 2) {
-                    Alert.alert("Geçersiz", "Geçerli bir ad gir.");
-                    return;
-                  }
+                  if (name.length < 2) { Alert.alert("Geçersiz", "Geçerli bir ad gir."); return; }
                   const created = await handleAddStaff(name);
-                  if (created) {
-                    setAddStaffVisible(false);
-                    setNewStaffName("");
-                  }
+                  if (created) { setAddStaffVisible(false); setNewStaffName(""); }
                 }}
                 disabled={inviting}
                 style={({ pressed }) => [styles.primaryBtn, (pressed || inviting) && { opacity: 0.85 }]}
@@ -324,6 +389,7 @@ export default function TeamScreen() {
         </View>
       </Modal>
 
+      {/* Komisyon Modalı */}
       <Modal visible={commissionStaff !== null} transparent animationType="fade" onRequestClose={closeCommissionModal}>
         <View style={styles.modalBackdrop}>
           <View style={styles.commissionModal}>
@@ -349,6 +415,44 @@ export default function TeamScreen() {
                 style={({ pressed }) => [styles.primaryBtn, (pressed || savingCommission) && { opacity: 0.85 }]}
               >
                 {savingCommission ? <ActivityIndicator color="#fff" /> : <Text style={styles.primaryText}>Kaydet</Text>}
+              </Pressable>
+            </View>
+          </View>
+        </View>
+      </Modal>
+
+      {/* Slug Düzenleme Modalı */}
+      <Modal visible={slugStaff !== null} transparent animationType="fade" onRequestClose={closeSlugModal}>
+        <View style={styles.modalBackdrop}>
+          <View style={styles.commissionModal}>
+            <Text style={styles.modalTitle}>Randevu Linki</Text>
+            <Text style={styles.modalText}>
+              {slugStaff?.name} için kısa URL parçası gir (sadece harf, rakam, tire). Boş bırakırsan link devre dışı kalır.
+            </Text>
+            <TextInput
+              value={slugInput}
+              onChangeText={(v) => setSlugInput(v.toLowerCase().replace(/[^a-z0-9-]/g, ""))}
+              placeholder="ahmet-usta"
+              autoCapitalize="none"
+              autoCorrect={false}
+              style={styles.commissionInput}
+              editable={!savingSlug}
+            />
+            {slugInput.length > 0 && (
+              <Text style={styles.slugPreview}>
+                siraladaki.app/…/u/{slugInput}
+              </Text>
+            )}
+            <View style={styles.modalActions}>
+              <Pressable onPress={closeSlugModal} disabled={savingSlug} style={styles.secondaryBtn}>
+                <Text style={styles.secondaryText}>Vazgeç</Text>
+              </Pressable>
+              <Pressable
+                onPress={saveSlug}
+                disabled={savingSlug}
+                style={({ pressed }) => [styles.primaryBtn, (pressed || savingSlug) && { opacity: 0.85 }]}
+              >
+                {savingSlug ? <ActivityIndicator color="#fff" /> : <Text style={styles.primaryText}>Kaydet</Text>}
               </Pressable>
             </View>
           </View>
@@ -404,7 +508,10 @@ const styles = StyleSheet.create({
   statusChip: { fontSize: 10, fontWeight: "600", marginTop: 4, alignSelf: "flex-start" },
   activeChip: { color: "#16a34a" },
   inactiveChip: { color: T.muted },
+  slugText: { fontSize: 11, color: T.navy, marginTop: 2, fontWeight: "500" },
+  slugMissing: { fontSize: 11, color: T.mutedAlt, marginTop: 2 },
   commissionText: { fontSize: 11, color: T.navy, marginTop: 3, fontWeight: "600" },
+  slugPreview: { marginTop: 6, fontSize: 11, color: T.muted, fontStyle: "italic" },
 
   toggleBtn: { padding: 4 },
   iconBtn:   { padding: 4 },
