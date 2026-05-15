@@ -17,6 +17,8 @@ import {
   listWidgetTokens,
   deleteWidgetToken,
 } from "../../lib/widget-bridge";
+import type { WorkingHours } from "@berber/shared/types";
+import { WorkingHoursEditor } from "../../components/WorkingHoursEditor";
 
 interface TokenMeta {
   id: string;
@@ -43,17 +45,19 @@ export default function OwnerSettingsScreen() {
   const [account, setAccount]   = useState<{ name: string; email: string }>({ name: "Sahip", email: "" });
   const [commissionEnabled, setCommissionEnabled] = useState(false);
   const [savingCommission, setSavingCommission] = useState(false);
+  const [workingHours, setWorkingHours] = useState<WorkingHours | null>(null);
 
   const loadAccount = useCallback(async () => {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return;
     const { data: shop } = await supabase
       .from("shops")
-      .select("display_name, commission_enabled")
+      .select("display_name, commission_enabled, working_hours")
       .or(`owner_user_id.eq.${user.id},owner_id.eq.${user.id}`)
       .single();
     setAccount({ name: shop?.display_name ?? "Dükkan", email: user.email ?? "" });
     setCommissionEnabled(Boolean(shop?.commission_enabled));
+    setWorkingHours((shop?.working_hours as unknown as WorkingHours) ?? null);
   }, []);
 
   const loadTokens = useCallback(async () => {
@@ -167,6 +171,17 @@ export default function OwnerSettingsScreen() {
             {commissionEnabled ? "Açık" : "Kapalı"}
           </Text>
         </Pressable>
+
+        <View style={styles.secHead}>
+          <Text style={styles.secLabel}>ÇALIŞMA SAATLERİ</Text>
+        </View>
+
+        {shopId && workingHours !== null && (
+          <WorkingHoursEditor
+            shopId={shopId}
+            initialHours={workingHours}
+          />
+        )}
 
         <View style={styles.secHead}>
           <Text style={styles.secLabel}>WIDGET TOKENLARI</Text>
