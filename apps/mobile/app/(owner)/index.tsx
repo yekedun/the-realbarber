@@ -1,4 +1,5 @@
-import { useEffect, useState, useCallback, useRef } from "react";
+import { useEffect, useState, useCallback, useRef, useMemo } from "react";
+import { useRealtimeInvalidation } from "@berber/shared/use-realtime-invalidation";
 import {
   View,
   Text,
@@ -266,6 +267,19 @@ export default function OwnerDashboard() {
   }, [shopId]); // selectedStaffId intentionally NOT a dep — filter is client-side
 
   useEffect(() => { load(); }, [load]);
+
+  // ── Realtime invalidation ─────────────────────────────────────────────────
+  const kpiTableFilters = useMemo(() => [
+    { table: "appointments" as const, filters: staff.map(s => `staff_id=eq.${s.id}`) },
+  ], [staff]);
+
+  useRealtimeInvalidation({
+    client: supabase,
+    channelName: `owner-kpi:${shopId}`,
+    tableFilters: kpiTableFilters,
+    invalidate: load,
+    enabled: !!shopId && staff.length > 0,
+  });
 
   // ── Client-side filter when picker changes ───────────────────────────────
   const handleSelectStaff = useCallback((id: string | null) => {
