@@ -2,13 +2,13 @@ export default function NotFound() {
   return (
     <main className="flex min-h-screen items-center justify-center bg-bg p-6">
       <div className="max-w-[520px] text-center">
-        <div className="mb-2 text-[11px] font-semibold uppercase tracking-[1.4px] text-red">
+        <div className="mb-2 text-overline font-semibold uppercase tracking-overline text-slate-500">
           404 · SAYFA YOK
         </div>
         <div className="mb-1 text-[96px] font-extrabold leading-none tracking-[-3px] tabular-nums text-navy">
           404
         </div>
-        <div className="mx-auto my-5 h-2 w-20 animate-barber rounded-sm opacity-55 barber-pole" />
+        <div className="mx-auto my-5 h-px w-20 bg-border" />
         <h1 className="m-0 mb-2 text-[30px] font-bold tracking-[-0.5px] text-ink">
           Berber Bulunamadı
         </h1>
