@@ -22,7 +22,7 @@ export function TextField({
 }: TextFieldProps) {
   return (
     <View style={styles.wrapper}>
-      <Text style={styles.label}>{label.toUpperCase()}</Text>
+      <Text style={styles.label}>{String(label).toUpperCase()}</Text>
       <TextInput
         value={value}
         onChangeText={onChange}

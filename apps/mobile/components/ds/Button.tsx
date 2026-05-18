@@ -42,6 +42,7 @@ export function Button({
   return (
     <Pressable
       onPress={disabled ? undefined : onPress}
+      disabled={disabled}
       style={[
         styles.base,
         {
