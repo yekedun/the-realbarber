@@ -11,12 +11,15 @@ export default function OwnerLayout() {
 
   useEffect(() => {
     if (!shopId) return;
-    supabase
-      .from("shops")
-      .select("commission_enabled")
-      .eq("id", shopId)
-      .single()
-      .then(({ data }) => setCommissionEnabled(Boolean(data?.commission_enabled)));
+    Promise.resolve(
+      supabase
+        .from("shops")
+        .select("commission_enabled")
+        .eq("id", shopId)
+        .single()
+    )
+      .then(({ data }) => setCommissionEnabled(Boolean(data?.commission_enabled)))
+      .catch(() => setCommissionEnabled(false));
   }, [shopId]);
 
   return (
