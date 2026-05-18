@@ -18,7 +18,7 @@ import { addDays, startOfDay, startOfWeek, isSameDay } from "date-fns";
 import { DEFAULT_TIMEZONE } from "@berber/shared/constants";
 import { getDayBoundsUTC } from "@berber/shared/slot-utils";
 import { supabase } from "../../lib/supabase";
-import { T, R, Shadow, POLE_COLORS } from "../../lib/theme";
+import { T, R, Shadow } from "../../lib/theme";
 import { AddAppointmentModal } from "../../components/AddAppointmentModal";
 import { AppointmentDetailSheet } from "../../components/AppointmentDetailSheet";
 
@@ -55,7 +55,6 @@ const TIME_COL = 52;
 const TRACK_COL = 28;
 const TRACK_WIDTH = 4;
 const TRACK_LEFT = TIME_COL + TRACK_COL / 2 - TRACK_WIDTH / 2;
-const POLE_STRIPE_H = 6; // each stripe height; 4 stripes = 24px period
 function fmtHM(iso: string | Date): string {
   const d = typeof iso === "string" ? new Date(iso) : iso;
   return d.toLocaleTimeString("tr-TR", {
@@ -407,9 +406,7 @@ function Timeline({
           <View style={[styles.trackPast, { height: splitY }]} />
         )}
         {trackHeight - splitY > 0 && (
-          <View style={[styles.trackFuture, { top: splitY }]}>
-            <BarberPole height={trackHeight - splitY} />
-          </View>
+          <View style={[styles.trackFuture, { top: splitY, height: trackHeight - splitY }]} />
         )}
       </View>
 
@@ -432,23 +429,6 @@ function Timeline({
   );
 }
 
-function BarberPole({ height }: { height: number }) {
-  if (height <= 0) return null;
-  const count = Math.ceil(height / POLE_STRIPE_H) + 1;
-  return (
-    <View style={{ width: TRACK_WIDTH, height, opacity: 0.6, overflow: "hidden" }}>
-      {Array.from({ length: count }).map((_, i) => (
-        <View
-          key={i}
-          style={{
-            height: POLE_STRIPE_H,
-            backgroundColor: POLE_COLORS[i % POLE_COLORS.length]!,
-          }}
-        />
-      ))}
-    </View>
-  );
-}
 
 function ApptRow({
   appt, isPast, onPress,
@@ -681,7 +661,7 @@ const styles = StyleSheet.create({
     backgroundColor: T.past,
     borderRadius: 2,
   },
-  trackFuture: { position: "absolute", left: 0, right: 0, bottom: 0, borderRadius: 2 },
+  trackFuture: { position: "absolute", left: 0, right: 0, bottom: 0, borderRadius: 2, backgroundColor: T.brand100, opacity: 0.6 },
 
   // Row
   row: { flexDirection: "row", alignItems: "stretch", paddingHorizontal: 0 },
