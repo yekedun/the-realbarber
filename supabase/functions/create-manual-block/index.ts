@@ -57,11 +57,11 @@ serve(async (req) => {
 
   const { data: shop } = await supabase
     .from("shops")
-    .select("owner_id")
+    .select("owner_id, owner_user_id")
     .eq("id", staff.shop_id)
     .single();
 
-  const isOwner = shop?.owner_id === user.id;
+  const isOwner = shop?.owner_id === user.id || shop?.owner_user_id === user.id;
   const isSelf = staff.user_id === user.id;
 
   if (!isOwner && !isSelf) {
