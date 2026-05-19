@@ -67,57 +67,7 @@ export const T = {
   warning:       "#6F4A14", // umber600
   danger:        "#A0303F", // coral600
   focusRing:     "rgba(30, 58, 138, 0.42)", // brand600 @ 42%
-
-  // ===== DEPRECATED SHIM (removed in P5) =====
-  // Old names that still appear in screens. Hex values remapped to Sıradaki so
-  // the rendered visual is already correct. Do NOT use these in new code.
-  /** @deprecated use slate50 */
-  surface:      "#FFFFFF",
-  /** @deprecated use bgSunken */
-  surfaceAlt:   "#EEF1F5",
-  /** @deprecated use border */
-  line:         "#D6DBE5",
-  /** @deprecated use slate300 */
-  hairAlt:      "#B4BBC8",
-  /** @deprecated use fg1 */
-  ink:          "#0B1220",
-  /** @deprecated use fg3 */
-  muted:        "#5B6477",
-  /** @deprecated use fg4 */
-  mutedAlt:     "#8590A4",
-  /** @deprecated use brand600 */
-  navy:         "#1E3A8A",
-  /** @deprecated use brand500 */
-  blue:         "#3B5BB8",
-  /** @deprecated use brand100 */
-  blueSoft:     "#DDE3F2",
-  /** @deprecated use coral600 */
-  red:          "#A0303F",
-  /** @deprecated use coral100 */
-  redSoft:      "#EFD3D8",
-  /** @deprecated use coral100 */
-  redBorder:    "#EFD3D8",
-  /** @deprecated use slate300 */
-  past:         "#B4BBC8",
-  /** @deprecated use slate500 */
-  blockInk:     "#5B6477",
-  /** @deprecated use brand100 */
-  avatarFrom:   "#DDE3F2",
-  /** @deprecated use brand100 */
-  avatarTo:     "#DDE3F2",
-  /** @deprecated use brand600 */
-  accentInk:    "#1E3A8A",
-  /** @deprecated use accentTint */
-  accentSoft:   "#DDE3F2",
-  /** @deprecated use bgElevated */
-  aptBg:        "#FFFFFF",
-  /** @deprecated use bgSunken */
-  blockBg:      "#EEF1F5",
-  /** @deprecated use coral100 */
-  dangerSoft:   "#EFD3D8",
 } as const;
-
-export type ThemeTokens = typeof T;
 
 // ===== Radii (Sıradaki: 5 fixed + pill) =====
 export const R = {
@@ -127,17 +77,6 @@ export const R = {
   lg: 18,
   xl: 24,
   pill: 9999,
-  // Deprecated shim
-  /** @deprecated use sm */
-  input: 8,
-  /** @deprecated use md */
-  card: 12,
-  /** @deprecated use md */
-  cta: 12,
-  /** @deprecated use md */
-  fab: 12,
-  /** @deprecated use lg */
-  sheet: 18,
 } as const;
 
 // ===== Spacing (4px base) =====
@@ -214,39 +153,6 @@ export const Shadow = {
     shadowOpacity: 0.30,
     shadowRadius: 48,
     shadowOffset: { width: 0, height: 24 },
-    elevation: 12,
-  },
-  // Deprecated shim — old shadow names map to closest Sıradaki shadow
-  /** @deprecated use Shadow.sm */
-  card: {
-    shadowColor: "#0B1220",
-    shadowOpacity: 0.05,
-    shadowRadius: 2,
-    shadowOffset: { width: 0, height: 1 },
-    elevation: 2,
-  },
-  /** @deprecated use Shadow.md */
-  pill: {
-    shadowColor: "#0B1220",
-    shadowOpacity: 0.22,
-    shadowRadius: 18,
-    shadowOffset: { width: 0, height: 6 },
-    elevation: 6,
-  },
-  /** @deprecated use Shadow.md */
-  cta: {
-    shadowColor: "#1E3A8A",
-    shadowOpacity: 0.22,
-    shadowRadius: 18,
-    shadowOffset: { width: 0, height: 6 },
-    elevation: 6,
-  },
-  /** @deprecated use Shadow.lg */
-  sheet: {
-    shadowColor: "#0B1220",
-    shadowOpacity: 0.30,
-    shadowRadius: 48,
-    shadowOffset: { width: 0, height: -24 },
     elevation: 12,
   },
 } as const;

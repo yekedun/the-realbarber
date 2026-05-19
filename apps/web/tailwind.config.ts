@@ -71,26 +71,6 @@ const config: Config = {
         warning: "#6F4A14",
         danger: "#A0303F",
 
-        // DEPRECATED SHIM — remove in P5
-        surface: "#FFFFFF",
-        surfaceAlt: "#EEF1F5",
-        hair: "#D6DBE5",
-        hairAlt: "#B4BBC8",
-        past: "#B4BBC8",
-        muted: "#5B6477",
-        mutedAlt: "#8590A4",
-        navy: "#1E3A8A",
-        red: {
-          DEFAULT: "#A0303F",
-          soft: "#EFD3D8",
-          border: "#EFD3D8",
-        },
-        blue: {
-          DEFAULT: "#3B5BB8",
-          soft: "#DDE3F2",
-        },
-        avatarFrom: "#DDE3F2",
-        avatarTo: "#DDE3F2",
       },
       borderRadius: {
         xs: "4px",
@@ -98,23 +78,12 @@ const config: Config = {
         md: "12px",
         lg: "18px",
         xl: "24px",
-        // Deprecated shim
-        input: "8px",
-        card: "12px",
-        cta: "12px",
-        fab: "12px",
-        sheet: "18px",
       },
       boxShadow: {
         xs: "0 1px 0 rgba(11,18,32,0.04)",
         sm: "0 1px 2px rgba(11,18,32,0.05), 0 1px 0 rgba(11,18,32,0.04)",
         md: "0 6px 18px -10px rgba(11,18,32,0.22), 0 1px 0 rgba(11,18,32,0.04)",
         lg: "0 24px 48px -22px rgba(11,18,32,0.30), 0 2px 0 rgba(11,18,32,0.05)",
-        // Deprecated shim
-        card: "0 1px 2px rgba(11,18,32,0.05), 0 1px 0 rgba(11,18,32,0.04)",
-        pill: "0 6px 18px -10px rgba(11,18,32,0.22)",
-        cta:  "0 6px 18px -10px rgba(30,58,138,0.45)",
-        sheet:"0 24px 48px -22px rgba(11,18,32,0.30)",
         now:  "0 0 0 1px #1E3A8A, 0 6px 18px -10px rgba(30,58,138,0.45)",
       },
       fontFamily: {

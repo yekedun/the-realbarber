@@ -157,25 +157,6 @@
   --track-tight:   -0.012em;
   --track-display: -0.02em;
 
-  /* ===== DEPRECATED ALIAS SHIM (removed in P5) =====
-     Old Tailwind class colors (`bg-red`, `text-muted`, etc.) compile from
-     tailwind.config.ts. These :root vars cover any direct var() reads. */
-  --surface:   var(--slate-0);
-  --surfaceAlt: var(--slate-100);
-  --hair:      var(--slate-200);
-  --hairAlt:   var(--slate-300);
-  --past:      var(--slate-300);
-  --muted:     var(--slate-500);
-  --mutedAlt:  var(--slate-400);
-  --ink:       var(--ink-900);
-  --navy:      var(--brand-600);
-  --red:       var(--coral-600);
-  --redSoft:   var(--coral-100);
-  --redBorder: var(--coral-100);
-  --blue:      var(--brand-500);
-  --blueSoft:  var(--brand-100);
-  --avatarFrom: var(--brand-100);
-  --avatarTo:   var(--brand-100);
 }
 
 /* ---------- Base elements ---------- */
@@ -237,7 +218,6 @@ p, .body {
   line-height: 1;
 }
 
-/* DEPRECATED — kept so existing screens still render; remove in P5. */
 .eyebrow {
   font-size: var(--fs-overline);
   font-weight: 600;
