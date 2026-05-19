@@ -12,7 +12,7 @@ import { T } from "../lib/theme";
 function RouterGuard({ session }: { session: Session | null | undefined }) {
   const router   = useRouter();
   const segments = useSegments();
-  const { role, loading } = useUserRole();
+  const { role, loading, error } = useUserRole();
 
   useEffect(() => {
     if (session === undefined || loading) return;
@@ -30,9 +30,15 @@ function RouterGuard({ session }: { session: Session | null | undefined }) {
       router.replace("/(owner)" as any);
     } else if (role === "staff" && !inApp) {
       router.replace("/(staff)" as any);
+    } else if (role === null && (error !== null)) {
+      // Profil yüklenirken ağ/DB hatası — kullanıcıyı sonsuz spinner'da
+      // bırakmamak için login ekranına düşür ve oturumu kapat.
+      void supabase.auth.signOut();
+      if (!inAuth) router.replace("/(auth)/login");
     }
-    // role === null → loading veya tanımsız kullanıcı (oturum açık ama DB'de yok)
-  }, [session, role, loading, segments, router]);
+    // role === null && error === null → tanımsız kullanıcı (auth user'ı var ama
+    // henüz shop/staff oluşmamış); auth screen'inde kalıyor.
+  }, [session, role, loading, error, segments, router]);
 
   return null;
 }

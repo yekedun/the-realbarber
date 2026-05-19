@@ -15,6 +15,7 @@ interface UserContextValue {
   shopId: string | null;
   staffId: string | null;
   loading: boolean;
+  error: string | null;
   reload: () => void;
 }
 
@@ -23,6 +24,7 @@ const UserContext = createContext<UserContextValue>({
   shopId: null,
   staffId: null,
   loading: true,
+  error: null,
   reload: () => {},
 });
 
@@ -31,6 +33,7 @@ export function UserProvider({ children }: { children: ReactNode }) {
   const [shopId, setShopId]   = useState<string | null>(null);
   const [staffId, setStaffId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError]     = useState<string | null>(null);
   const [tick, setTick]       = useState(0);
 
   const reload = useCallback(() => setTick((t) => t + 1), []);
@@ -39,37 +42,48 @@ export function UserProvider({ children }: { children: ReactNode }) {
     let cancelled = false;
     async function resolve() {
       setLoading(true);
+      setError(null);
       const { data: { user } } = await supabase.auth.getUser();
       if (!user || cancelled) { setLoading(false); return; }
 
-      // Önce dükkan sahibi mi?
-      const { data: shop } = await supabase
+      // Önce dükkan sahibi mi? PGRST116 = no rows, gerçek hata değil.
+      const shopRes = await supabase
         .from("shops")
         .select("id")
         .or(`owner_id.eq.${user.id},owner_user_id.eq.${user.id}`)
         .single();
+      const shopErr = shopRes.error && shopRes.error.code !== "PGRST116" ? shopRes.error : null;
 
-      if (shop && !cancelled) {
+      if (shopRes.data && !cancelled) {
         setRole("owner");
-        setShopId(shop.id);
+        setShopId(shopRes.data.id);
         setStaffId(null);
         setLoading(false);
         return;
       }
 
       // Usta mı?
-      const { data: staff } = await supabase
+      const staffRes = await supabase
         .from("staff")
         .select("id, shop_id")
         .eq("user_id", user.id)
         .single();
+      const staffErr = staffRes.error && staffRes.error.code !== "PGRST116" ? staffRes.error : null;
 
       if (!cancelled) {
-        if (staff) {
+        if (staffRes.data) {
           setRole("staff");
-          setStaffId(staff.id);
-          setShopId(staff.shop_id);
+          setStaffId(staffRes.data.id);
+          setShopId(staffRes.data.shop_id);
+        } else if (shopErr || staffErr) {
+          // Her iki sorgu da gerçek hatayla başarısız → retry edilebilir hata durumu.
+          // Ağ kesintisinde role'ü null'da bırakıp sonsuz spinner üretmiyoruz.
+          setRole(null);
+          setShopId(null);
+          setStaffId(null);
+          setError((shopErr ?? staffErr)?.message ?? "Profil yüklenemedi");
         } else {
+          // Hata yok ama hiçbir profil bulunamadı (auth user'ı henüz tamamlanmamış).
           setRole(null);
           setShopId(null);
           setStaffId(null);
@@ -90,7 +104,7 @@ export function UserProvider({ children }: { children: ReactNode }) {
   }, [reload]);
 
   return (
-    <UserContext.Provider value={{ role, shopId, staffId, loading, reload }}>
+    <UserContext.Provider value={{ role, shopId, staffId, loading, error, reload }}>
       {children}
     </UserContext.Provider>
   );
