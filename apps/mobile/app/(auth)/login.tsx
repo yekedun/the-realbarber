@@ -2,17 +2,35 @@ import { useState } from "react";
 import {
   View,
   Text,
-  TextInput,
-  TouchableOpacity,
-  StyleSheet,
   KeyboardAvoidingView,
   Platform,
-  ActivityIndicator,
   Alert,
+  StyleSheet,
+  TouchableOpacity,
 } from "react-native";
+import Svg, { Rect, Path, Circle } from "react-native-svg";
 import { useRouter } from "expo-router";
 import { supabase } from "../../lib/supabase";
-import { T, R, Shadow } from "../../lib/theme";
+import { T, S, Type } from "../../lib/theme";
+import { TextField } from "../../components/ds/TextField";
+import { Button } from "../../components/ds/Button";
+
+function MarkIcon({ size = 48 }: { size?: number }) {
+  return (
+    <Svg width={size} height={size} viewBox="0 0 64 64">
+      <Rect width="64" height="64" rx="14" fill={T.ink900} />
+      <Path
+        d="M23 16 L41 32 L23 48"
+        fill="none"
+        stroke="#FFFFFF"
+        strokeWidth="5"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+      <Circle cx="46" cy="48" r="2.8" fill={T.brand600} />
+    </Svg>
+  );
+}
 
 export default function LoginScreen() {
   const router = useRouter();
@@ -34,7 +52,9 @@ export default function LoginScreen() {
       behavior={Platform.OS === "ios" ? "padding" : undefined}
     >
       <View style={styles.inner}>
-        <BrandMark />
+        <View style={styles.mark}>
+          <MarkIcon size={48} />
+        </View>
 
         <Text style={styles.eyebrow}>BERBER · DÜKKAN PANELİ</Text>
         <Text style={styles.title}>Giriş Yap</Text>
@@ -42,175 +62,103 @@ export default function LoginScreen() {
           Randevu panelini açmak için hesabına giriş yap.
         </Text>
 
-        <View style={styles.field}>
-          <Text style={styles.label}>E-POSTA</Text>
-          <TextInput
-            style={styles.input}
-            placeholder="berber@dukkan.com"
-            placeholderTextColor={T.fg4}
+        <View style={styles.fields}>
+          <TextField
+            label="E-posta"
             value={email}
-            onChangeText={setEmail}
-            autoCapitalize="none"
-            keyboardType="email-address"
-            autoCorrect={false}
+            onChange={setEmail}
+            placeholder="berber@dukkan.com"
           />
-        </View>
-
-        <View style={styles.field}>
-          <Text style={styles.label}>ŞİFRE</Text>
-          <TextInput
-            style={styles.input}
-            placeholder="••••••••"
-            placeholderTextColor={T.fg4}
+          <TextField
+            label="Şifre"
             value={password}
-            onChangeText={setPassword}
-            secureTextEntry
+            onChange={setPassword}
+            placeholder="••••••••"
+            secure
           />
         </View>
 
-        <TouchableOpacity
-          style={[styles.button, (loading || !email || !password) && styles.buttonDisabled]}
-          onPress={handleLogin}
-          disabled={loading || !email || !password}
-          activeOpacity={0.9}
-        >
-          {loading ? (
-            <ActivityIndicator color="#fff" />
-          ) : (
-            <Text style={styles.buttonText}>Giriş Yap</Text>
-          )}
-        </TouchableOpacity>
-
-        <View style={styles.spacer} />
-
-        <TouchableOpacity onPress={() => router.push("/(auth)/register" as any)} disabled={loading}>
-          <Text style={styles.footer}>
-            Hesabın yok mu? <Text style={styles.footerLink}>Kayıt ol</Text>
-          </Text>
-        </TouchableOpacity>
+        <View style={styles.cta}>
+          <Button
+            variant="primary"
+            size="lg"
+            full
+            loading={loading}
+            disabled={!email || !password}
+            onPress={handleLogin}
+          >
+            Giriş Yap
+          </Button>
+          <TouchableOpacity
+            onPress={() => router.push("/(auth)/register" as any)}
+            disabled={loading}
+          >
+            <Text style={styles.registerText}>
+              Hesabın yok mu?{" "}
+              <Text style={styles.registerLink}>Kayıt ol</Text>
+            </Text>
+          </TouchableOpacity>
+        </View>
       </View>
     </KeyboardAvoidingView>
   );
 }
 
-function BrandMark() {
-  // 56×56 navy square with diagonal red stripe overlay
-  return (
-    <View style={brandStyles.outer}>
-      {[0, 1, 2, 3, 4].map((i) => (
-        <View
-          key={i}
-          style={[
-            brandStyles.stripe,
-            { left: -20 + i * 14, transform: [{ rotate: "135deg" }] },
-          ]}
-        />
-      ))}
-    </View>
-  );
-}
-
-const brandStyles = StyleSheet.create({
-  outer: {
-    width: 56,
-    height: 56,
-    borderRadius: 14,
-    backgroundColor: T.brand600,
-    overflow: "hidden",
-    marginBottom: 24,
-    position: "relative",
-    ...Shadow.md,
-  },
-  stripe: {
-    position: "absolute",
-    top: -20,
-    width: 4,
-    height: 96,
-    backgroundColor: "rgba(220,38,38,0.85)",
-  },
-});
-
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: T.bg,
+    backgroundColor: T.bgElevated,
   },
   inner: {
     flex: 1,
-    paddingHorizontal: 24,
-    paddingTop: 88,
-    paddingBottom: 24,
+    paddingHorizontal: S.s5,
+    paddingTop: 60,
+    paddingBottom: S.s6,
+  },
+  mark: {
+    marginBottom: 28,
   },
   eyebrow: {
     fontSize: 11,
-    fontWeight: "600",
-    letterSpacing: 1.4,
+    fontFamily: Type.family,
+    fontWeight: Type.weight.semibold,
+    letterSpacing: 1.76,
     textTransform: "uppercase",
     color: T.fg3,
-    marginBottom: 6,
+    marginBottom: 14,
   },
   title: {
     fontSize: 34,
-    fontWeight: "700",
+    fontFamily: Type.family,
+    fontWeight: Type.weight.bold,
     letterSpacing: -0.68,
     color: T.fg1,
-    marginBottom: 8,
+    marginBottom: 10,
+    lineHeight: 37,
   },
   lead: {
     fontSize: 16,
+    fontFamily: Type.family,
     color: T.fg2,
-    lineHeight: 21,
+    lineHeight: 24,
     marginBottom: 32,
   },
-  field: {
-    marginBottom: 16,
+  fields: {
+    gap: 14,
   },
-  label: {
-    fontSize: 11,
-    fontWeight: "600",
-    letterSpacing: 0.6,
-    color: T.fg3,
-    textTransform: "uppercase",
-    marginBottom: 6,
-  },
-  input: {
-    width: "100%",
-    paddingHorizontal: 14,
-    paddingVertical: 14,
-    backgroundColor: T.bgElevated,
-    borderWidth: 1.5,
-    borderColor: T.border,
-    borderRadius: R.md,
-    fontSize: 15,
-    color: T.fg1,
-  },
-  button: {
-    marginTop: 8,
-    width: "100%",
-    paddingVertical: 16,
-    backgroundColor: T.ink900,
-    borderRadius: R.md,
+  cta: {
+    marginTop: "auto",
+    gap: 14,
     alignItems: "center",
-    justifyContent: "center",
-    ...Shadow.md,
   },
-  buttonDisabled: {
-    opacity: 0.6,
-  },
-  buttonText: {
-    color: "#fff",
-    fontWeight: "600",
-    fontSize: 15,
-  },
-  spacer: { flex: 1 },
-  footer: {
-    textAlign: "center",
+  registerText: {
     fontSize: 13,
+    fontFamily: Type.family,
     color: T.fg3,
-    paddingBottom: 16,
+    textAlign: "center",
   },
-  footerLink: {
+  registerLink: {
     color: T.brand600,
-    fontWeight: "600",
+    fontWeight: Type.weight.semibold,
   },
 });

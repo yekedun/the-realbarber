@@ -1,4 +1,4 @@
-import { Pressable, Text, StyleSheet, ViewStyle } from "react-native";
+import { Pressable, Text, ActivityIndicator, StyleSheet, ViewStyle } from "react-native";
 import { T, R, Type } from "../../lib/theme";
 
 type Variant = "primary" | "secondary" | "ghost" | "danger" | "accent";
@@ -11,6 +11,7 @@ interface ButtonProps {
   onPress?: () => void;
   full?: boolean;
   disabled?: boolean;
+  loading?: boolean;
   style?: ViewStyle;
 }
 
@@ -35,14 +36,16 @@ export function Button({
   onPress,
   full = false,
   disabled = false,
+  loading = false,
   style,
 }: ButtonProps) {
   const v = variantMap[variant];
   const s = sizeMap[size];
+  const isDisabled = disabled || loading;
   return (
     <Pressable
-      onPress={disabled ? undefined : onPress}
-      disabled={disabled}
+      onPress={isDisabled ? undefined : onPress}
+      disabled={isDisabled}
       style={[
         styles.base,
         {
@@ -51,14 +54,18 @@ export function Button({
           backgroundColor: v.bg,
           borderColor: v.border,
           alignSelf: full ? "stretch" : "flex-start",
-          opacity: disabled ? 0.45 : 1,
+          opacity: isDisabled ? 0.45 : 1,
         },
         style,
       ]}
     >
-      <Text style={[styles.label, { fontSize: s.fontSize, color: v.fg }]}>
-        {children}
-      </Text>
+      {loading ? (
+        <ActivityIndicator color={v.fg} size="small" />
+      ) : (
+        <Text style={[styles.label, { fontSize: s.fontSize, color: v.fg }]}>
+          {children}
+        </Text>
+      )}
     </Pressable>
   );
 }

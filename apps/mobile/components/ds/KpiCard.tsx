@@ -15,7 +15,7 @@ export function KpiCard({ label, value, unit, sub, accent = false }: KpiCardProp
   const valueColor = accent ? T.fgOnAccent : T.ink900;
   return (
     <Card accent={accent} style={styles.card}>
-      <Text style={[styles.label, { color: metaColor }]}>
+      <Text style={[styles.label, { color: metaColor }]} numberOfLines={2}>
         {label.toUpperCase()}
       </Text>
       <View style={styles.valueRow}>
@@ -35,7 +35,7 @@ const styles = StyleSheet.create({
     fontSize: 10,
     fontFamily: Type.family,
     fontWeight: Type.weight.semibold,
-    letterSpacing: 1.6,
+    letterSpacing: 0.8,
   },
   valueRow: {
     flexDirection: "row",
