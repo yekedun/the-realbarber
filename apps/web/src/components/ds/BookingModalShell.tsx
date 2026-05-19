@@ -85,7 +85,7 @@ export function BookingModalShell({
             <h2 className="text-2xl font-bold tracking-[-0.018em] mt-3.5">Randevunuz alındı</h2>
             {summary && <div className="text-[14px] text-[var(--fg-3)] mt-2">{summary}</div>}
             <div className="bg-[var(--bg-sunken)] rounded-[12px] px-4 py-3.5 mt-[18px] text-[13px] text-[var(--fg-2)]">
-              Onay SMS'i yolda.
+              Onay SMS&apos;i yolda.
             </div>
             <button
               onClick={onClose}
