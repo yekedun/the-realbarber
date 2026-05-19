@@ -5,17 +5,20 @@ project_id = "berber-randevu"
 
 [api]
 enabled = true
-port = 54321
+port = 54201
 schemas = ["public", "storage", "graphql_public"]
 extra_search_path = ["public", "extensions"]
 max_rows = 1000
 
 [db]
-port = 54322
-shadow_port = 54320
+port = 54202
+shadow_port = 54200
 major_version = 17
 
 [db.pooler]
+enabled = false
+
+[analytics]
 enabled = false
 
 [realtime]
@@ -23,12 +26,12 @@ enabled = true
 
 [studio]
 enabled = true
-port = 54323
+port = 54203
 api_url = "http://127.0.0.1"
 
 [inbucket]
 enabled = true
-port = 54324
+port = 54204
 
 [auth]
 enabled = true
@@ -41,11 +44,11 @@ enable_signup = true
 enable_signup = true
 enable_confirmations = false  # Lokal dev'de e-mail confirmation kapalı
 
-[functions.get-availability]
+[functions.widget-get-availability]
 verify_jwt = false
 import_map = "./functions/import_map.json"
 
-[functions.book-appointment]
+[functions.widget-book-appointment]
 verify_jwt = false
 import_map = "./functions/import_map.json"
 
@@ -57,15 +60,14 @@ import_map = "./functions/import_map.json"
 verify_jwt = true
 import_map = "./functions/import_map.json"
 
-
 [functions.create-widget-token]
 verify_jwt = true
 import_map = "./functions/import_map.json"
 
-[functions.customer-cancel-appointment]
+[functions.app-cancel-appointment]
 verify_jwt = true
 import_map = "./functions/import_map.json"
 
-[functions.customer-book-appointment]
+[functions.app-book-appointment]
 verify_jwt = true
 import_map = "./functions/import_map.json"
