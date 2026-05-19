@@ -27,7 +27,7 @@ import {
   KeyboardAvoidingView,
   Platform,
 } from "react-native";
-import { Feather } from "@expo/vector-icons";
+import { X, ArrowRight, Save } from "lucide-react-native";
 import { supabase } from "../lib/supabase";
 import { T, R, Shadow } from "../lib/theme";
 
@@ -195,12 +195,12 @@ export function StaffScheduleModal({ visible, staff, onClose }: StaffScheduleMod
               <Text style={styles.title}>{staff?.name ?? ""}</Text>
             </View>
             <Pressable onPress={onClose} style={styles.closeBtn}>
-              <Feather name="x" size={20} color={T.ink} />
+              <X size={20} color={T.fg1} />
             </Pressable>
           </View>
 
           {loading ? (
-            <ActivityIndicator color={T.navy} style={{ marginTop: 60 }} />
+            <ActivityIndicator color={T.brand600} style={{ marginTop: 60 }} />
           ) : (
             <>
               {/* Gün Seçici */}
@@ -248,7 +248,7 @@ export function StaffScheduleModal({ visible, staff, onClose }: StaffScheduleMod
                     <Switch
                       value={cur.is_working}
                       onValueChange={(v) => update(cur.day_of_week, "is_working", v)}
-                      trackColor={{ false: T.line, true: T.navy }}
+                      trackColor={{ false: T.border, true: T.brand600 }}
                       thumbColor="#fff"
                     />
                   </View>
@@ -265,7 +265,7 @@ export function StaffScheduleModal({ visible, staff, onClose }: StaffScheduleMod
                           value={cur.work_start}
                           onChange={(v) => update(cur.day_of_week, "work_start", v)}
                         />
-                        <Feather name="arrow-right" size={16} color={T.muted} style={{ marginTop: 28 }} />
+                        <ArrowRight size={16} color={T.fg3} style={{ marginTop: 28 }} />
                         <TimeField
                           label="Kapanış"
                           value={cur.work_end}
@@ -284,7 +284,7 @@ export function StaffScheduleModal({ visible, staff, onClose }: StaffScheduleMod
                           onChange={(v) => update(cur.day_of_week, "break_start", v)}
                           placeholder="--:--"
                         />
-                        <Feather name="arrow-right" size={16} color={T.muted} style={{ marginTop: 28 }} />
+                        <ArrowRight size={16} color={T.fg3} style={{ marginTop: 28 }} />
                         <TimeField
                           label="Mola Bitiş"
                           value={cur.break_end}
@@ -311,7 +311,7 @@ export function StaffScheduleModal({ visible, staff, onClose }: StaffScheduleMod
                     <ActivityIndicator color="#fff" />
                   ) : (
                     <>
-                      <Feather name="save" size={16} color="#fff" />
+                      <Save size={16} color="#fff" />
                       <Text style={styles.saveBtnTxt}>Tüm Günleri Kaydet</Text>
                     </>
                   )}
@@ -347,7 +347,7 @@ function TimeField({
         value={value}
         onChangeText={onChange}
         placeholder={placeholder}
-        placeholderTextColor={T.mutedAlt}
+        placeholderTextColor={T.fg4}
         keyboardType="numeric"
         maxLength={5}
         autoCorrect={false}
@@ -357,20 +357,20 @@ function TimeField({
 }
 
 const tf = StyleSheet.create({
-  label: { fontSize: 11, fontWeight: "600", color: T.muted, marginBottom: 6, letterSpacing: 0.3 },
+  label: { fontSize: 11, fontWeight: "600", color: T.fg3, marginBottom: 6, letterSpacing: 0.3 },
   input: {
-    backgroundColor: T.surface,
+    backgroundColor: T.bgElevated,
     borderWidth: 1.5,
-    borderColor: T.line,
-    borderRadius: R.input,
+    borderColor: T.border,
+    borderRadius: R.sm,
     paddingHorizontal: 14,
     paddingVertical: 11,
     fontSize: 16,
     fontWeight: "600",
-    color: T.ink,
+    color: T.fg1,
     textAlign: "center",
   },
-  inputErr: { borderColor: T.red },
+  inputErr: { borderColor: T.coral600 },
 });
 
 // ── Styles ────────────────────────────────────────────────────────────────────
@@ -386,77 +386,77 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingBottom: 16,
     borderBottomWidth: 1,
-    borderBottomColor: T.line,
-    backgroundColor: T.surface,
-    ...Shadow.card,
+    borderBottomColor: T.border,
+    backgroundColor: T.bgElevated,
+    ...Shadow.sm,
   },
-  eyebrow: { fontSize: 10, fontWeight: "700", letterSpacing: 1.4, color: T.red, textTransform: "uppercase", marginBottom: 4 },
-  title: { fontSize: 22, fontWeight: "700", color: T.ink },
-  closeBtn: { padding: 8, backgroundColor: T.surfaceAlt, borderRadius: R.pill },
+  eyebrow: { fontSize: 10, fontWeight: "700", letterSpacing: 1.4, color: T.coral600, textTransform: "uppercase", marginBottom: 4 },
+  title: { fontSize: 22, fontWeight: "700", color: T.fg1 },
+  closeBtn: { padding: 8, backgroundColor: T.bgSunken, borderRadius: R.md },
 
   dayPicker: { paddingHorizontal: 20, paddingVertical: 14, gap: 8 },
   dayChip: {
     paddingHorizontal: 14,
     paddingVertical: 8,
-    borderRadius: R.pill,
+    borderRadius: R.md,
     borderWidth: 1.5,
-    borderColor: T.line,
-    backgroundColor: T.surface,
+    borderColor: T.border,
+    backgroundColor: T.bgElevated,
     alignItems: "center",
-    ...Shadow.card,
+    ...Shadow.sm,
   },
-  dayChipActive: { backgroundColor: T.navy, borderColor: T.navy },
+  dayChipActive: { backgroundColor: T.brand600, borderColor: T.brand600 },
   dayChipOff:    { opacity: 0.55 },
-  dayChipTxt:    { fontSize: 12, fontWeight: "600", color: T.ink },
+  dayChipTxt:    { fontSize: 12, fontWeight: "600", color: T.fg1 },
   dayChipTxtActive: { color: "#fff" },
-  offDot: { width: 5, height: 5, borderRadius: 3, backgroundColor: T.red, marginTop: 3 },
+  offDot: { width: 5, height: 5, borderRadius: 3, backgroundColor: T.coral600, marginTop: 3 },
 
   detail: { paddingHorizontal: 20, paddingTop: 4, paddingBottom: 20 },
-  dayTitle: { fontSize: 18, fontWeight: "700", color: T.ink, marginBottom: 16 },
+  dayTitle: { fontSize: 18, fontWeight: "700", color: T.fg1, marginBottom: 16 },
 
   row: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: T.surface,
+    backgroundColor: T.bgElevated,
     borderWidth: 1,
-    borderColor: T.line,
-    borderRadius: R.card,
+    borderColor: T.border,
+    borderRadius: R.md,
     padding: 14,
     gap: 12,
-    ...Shadow.card,
+    ...Shadow.sm,
   },
-  rowLabel: { fontSize: 14, fontWeight: "600", color: T.ink },
-  rowSub:   { fontSize: 12, color: T.muted, marginTop: 2 },
+  rowLabel: { fontSize: 14, fontWeight: "600", color: T.fg1 },
+  rowSub:   { fontSize: 12, color: T.fg3, marginTop: 2 },
 
-  divider: { height: 1, backgroundColor: T.line, marginVertical: 16 },
+  divider: { height: 1, backgroundColor: T.border, marginVertical: 16 },
 
   sectionLabel: {
     fontSize: 10,
     fontWeight: "700",
     letterSpacing: 1.2,
-    color: T.muted,
+    color: T.fg3,
     textTransform: "uppercase",
     marginBottom: 10,
   },
   timeRow: { flexDirection: "row", gap: 12, alignItems: "flex-end" },
-  hint:    { fontSize: 11, color: T.mutedAlt, marginTop: 10, lineHeight: 16 },
+  hint:    { fontSize: 11, color: T.fg4, marginTop: 10, lineHeight: 16 },
 
   footer: {
     padding: 20,
     paddingBottom: Platform.OS === "ios" ? 34 : 20,
     borderTopWidth: 1,
-    borderTopColor: T.line,
-    backgroundColor: T.surface,
+    borderTopColor: T.border,
+    backgroundColor: T.bgElevated,
   },
   saveBtn: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
     gap: 8,
-    backgroundColor: T.navy,
-    borderRadius: R.cta,
+    backgroundColor: T.brand600,
+    borderRadius: R.md,
     paddingVertical: 14,
-    ...Shadow.cta,
+    ...Shadow.md,
   },
   saveBtnTxt: { color: "#fff", fontSize: 14, fontWeight: "700" },
 });
