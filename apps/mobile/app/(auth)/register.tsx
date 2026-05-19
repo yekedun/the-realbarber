@@ -103,35 +103,35 @@ export default function RegisterScreen() {
       const user = authData.user;
       if (!user) throw new Error("Kullanıcı oluşturulamadı.");
 
-      // 2. Slug üret (benzersizlik için suffix ekle gerekirse)
+      // 2. Slug üret (benzersizlik için 23505 çakışmasında 3 kez suffix dene)
       const baseSlug = toSlug(shopT) || "dukkan";
-      const slug = baseSlug;
-
-      // 3. Shop oluştur
-      const { data: shop, error: shopError } = await supabase
-        .from("shops")
-        .insert({ owner_user_id: user.id, display_name: shopT, slug })
-        .select("id")
-        .single();
-
-      if (shopError) {
-        // Slug çakışması varsa suffix ekle
-        if (shopError.code === "23505") {
-          const fallbackSlug = `${baseSlug}-${Math.floor(Math.random() * 9000) + 1000}`;
-          const { data: shop2, error: shopError2 } = await supabase
-            .from("shops")
-            .insert({ owner_user_id: user.id, display_name: shopT, slug: fallbackSlug })
-            .select("id")
-            .single();
-          if (shopError2) throw shopError2;
-          if (!shop2) throw new Error("Dükkan oluşturulamadı.");
-          await createOwnerStaff(shop2.id, user.id, nameT);
-        } else {
+      let createdShopId: string | null = null;
+      let lastError: unknown = null;
+      for (let attempt = 0; attempt < 3 && !createdShopId; attempt++) {
+        const slug = attempt === 0
+          ? baseSlug
+          : `${baseSlug}-${Math.floor(Math.random() * 9000) + 1000}`;
+        const { data: shop, error: shopError } = await supabase
+          .from("shops")
+          .insert({ owner_user_id: user.id, display_name: shopT, slug })
+          .select("id")
+          .single();
+        if (shopError) {
+          lastError = shopError;
+          if (shopError.code === "23505") continue; // slug collision → retry
           throw shopError;
         }
-      } else {
-        if (!shop) throw new Error("Dükkan oluşturulamadı.");
-        await createOwnerStaff(shop.id, user.id, nameT);
+        if (!shop) { lastError = new Error("Dükkan oluşturulamadı."); continue; }
+        createdShopId = shop.id;
+      }
+      if (!createdShopId) throw (lastError as Error) ?? new Error("Dükkan oluşturulamadı.");
+
+      // 3. Owner staff oluştur; başarısız olursa orphan shop'u temizle.
+      try {
+        await createOwnerStaff(createdShopId, user.id, nameT);
+      } catch (staffErr) {
+        await supabase.from("shops").delete().eq("id", createdShopId);
+        throw staffErr;
       }
       // Auth state change will trigger RouterGuard → owner dashboard
     } catch (err) {
