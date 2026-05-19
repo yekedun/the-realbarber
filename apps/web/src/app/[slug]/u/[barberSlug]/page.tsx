@@ -123,8 +123,8 @@ function ProfileCard({
   avatarUrl: string | null;
 }) {
   return (
-    <aside className="rounded-card border border-hair bg-surface p-[22px] shadow-card md:sticky md:top-8 md:self-start">
-      <div className="relative mb-[18px] aspect-[4/3] w-full overflow-hidden rounded-card border border-hair">
+    <aside className="rounded-md border border-border bg-bgElevated p-[22px] shadow-sm md:sticky md:top-8 md:self-start">
+      <div className="relative mb-[18px] aspect-[4/3] w-full overflow-hidden rounded-md border border-border">
         {avatarUrl ? (
           <Image
             src={avatarUrl}
@@ -135,19 +135,19 @@ function ProfileCard({
             priority
           />
         ) : (
-          <div className="flex h-full w-full items-center justify-center bg-blue-soft">
-            <span className="text-[44px] font-bold text-navy">{initials(name)}</span>
+          <div className="flex h-full w-full items-center justify-center bg-brand-100">
+            <span className="text-[44px] font-bold text-brand">{initials(name)}</span>
           </div>
         )}
       </div>
 
-      <div className="mb-1 text-[11px] font-semibold uppercase tracking-[1.4px] text-red">
+      <div className="mb-1 text-[11px] font-semibold uppercase tracking-[1.4px] text-danger">
         BERBER · ONLINE RANDEVU
       </div>
       <h1 className="m-0 text-[30px] font-bold leading-tight tracking-[-0.5px] text-ink">
         {name}
       </h1>
-      {bio && <p className="mt-1 text-[13px] text-muted">{bio}</p>}
+      {bio && <p className="mt-1 text-[13px] text-slate-500">{bio}</p>}
     </aside>
   );
 }
