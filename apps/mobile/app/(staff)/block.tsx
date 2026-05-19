@@ -4,12 +4,12 @@ import {
   Text,
   Pressable,
   StyleSheet,
-  ActivityIndicator,
   Alert,
   ScrollView,
 } from "react-native";
 import { UserCheck, Coffee, User } from "lucide-react-native";
-import { T, R, Shadow } from "../../lib/theme";
+import { T, R, Type, Shadow } from "../../lib/theme";
+import { OverlineHeader, SectionLabel, Button } from "../../components/ds";
 
 const REASON_ICONS: Record<"walkin" | "break" | "personal", React.ComponentType<{ size: number; color: string }>> = {
   walkin: UserCheck,
@@ -103,13 +103,11 @@ export default function BlockScreen() {
   return (
     <View style={styles.root}>
       <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
-        <Text style={styles.eyebrow}>BLOK EKLE</Text>
-        <Text style={styles.title}>Takvimi Kapat</Text>
-        <Text style={styles.lead}>Şu andan itibaren seçtiğin süre boyunca takvim kapalı görünür.</Text>
+        <OverlineHeader eyebrow="BLOK EKLE" title="Takvimi Kapat" meta="Şu andan itibaren seçtiğin süre boyunca takvim kapalı görünür." />
 
         <NowBadge now={now} />
 
-        <SectionTitle>Süre</SectionTitle>
+        <SectionLabel>Süre</SectionLabel>
         <View style={styles.durGrid}>
           {DURATIONS.map((d) => {
             const sel = d === dur;
@@ -130,7 +128,7 @@ export default function BlockScreen() {
           })}
         </View>
 
-        <SectionTitle>Sebep</SectionTitle>
+        <SectionLabel>Sebep</SectionLabel>
         <View style={styles.reasonList}>
           {REASONS.map((r) => {
             const sel = r.id === reason;
@@ -157,7 +155,7 @@ export default function BlockScreen() {
           })}
         </View>
 
-        <SectionTitle>Önizleme</SectionTitle>
+        <SectionLabel>Önizleme</SectionLabel>
         <View style={styles.preview}>
           <Text style={styles.previewText}>
             {reasonObj.label.toUpperCase()} · {dur}DK
@@ -166,20 +164,12 @@ export default function BlockScreen() {
       </ScrollView>
 
       <View style={styles.fabWrap} pointerEvents="box-none">
-        <Pressable
-          style={({ pressed }) => [styles.fab, pressed && { transform: [{ scale: 0.985 }] }]}
-          onPress={handleBlock}
-          disabled={loading}
-        >
-          {loading ? <ActivityIndicator color="#fff" /> : <Text style={styles.fabText}>Kapat</Text>}
-        </Pressable>
+        <Button variant="primary" size="lg" full loading={loading} onPress={handleBlock}>
+          Kapat
+        </Button>
       </View>
     </View>
   );
-}
-
-function SectionTitle({ children }: { children: string }) {
-  return <Text style={styles.sectionTitle}>{children}</Text>;
 }
 
 function NowBadge({ now }: { now: Date }) {
@@ -195,17 +185,6 @@ const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: T.bg },
   scrollContent: { paddingTop: 64, paddingHorizontal: 20, paddingBottom: 120 },
 
-  eyebrow: {
-    fontSize: 11,
-    fontWeight: "600",
-    letterSpacing: 1.4,
-    textTransform: "uppercase",
-    color: T.fg3,
-    marginBottom: 6,
-  },
-  title: { fontSize: 34, fontWeight: "700", letterSpacing: -0.5, color: T.fg1, marginBottom: 8 },
-  lead: { fontSize: 14, color: T.fg3, lineHeight: 21 },
-
   nowBadge: {
     marginTop: 20,
     paddingVertical: 12,
@@ -215,18 +194,8 @@ const styles = StyleSheet.create({
     borderColor: T.border,
     borderRadius: R.md,
   },
-  nowLabel: { fontSize: 12, fontWeight: "700", color: T.fg1, letterSpacing: 0.4 },
-  nowSub: { fontSize: 12, color: T.fg3, marginTop: 2 },
-
-  sectionTitle: {
-    marginTop: 22,
-    marginBottom: 10,
-    fontSize: 11,
-    fontWeight: "600",
-    color: T.fg3,
-    textTransform: "uppercase",
-    letterSpacing: 0.6,
-  },
+  nowLabel: { fontFamily: Type.family, fontWeight: Type.weight.bold, fontSize: 12, color: T.fg1, letterSpacing: 0.4 },
+  nowSub: { fontFamily: Type.family, fontSize: 12, color: T.fg3, marginTop: 2 },
 
   durGrid: { flexDirection: "row", flexWrap: "wrap", gap: 8 },
   durChip: {
@@ -239,9 +208,9 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   durChipSel: { borderColor: T.ink900, backgroundColor: T.ink900 },
-  durNum: { fontSize: 18, fontWeight: "700", color: T.fg1 },
+  durNum: { fontFamily: Type.family, fontWeight: Type.weight.bold, fontSize: 18, color: T.fg1 },
   durNumSel: { color: "#fff" },
-  durMin: { fontSize: 11, color: T.fg3, marginTop: 2 },
+  durMin: { fontFamily: Type.family, fontSize: 11, color: T.fg3, marginTop: 2 },
 
   reasonList: { gap: 8 },
   reasonRow: {
@@ -255,8 +224,8 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   reasonRowSel: { borderColor: T.ink900, backgroundColor: T.ink900 },
-  reasonLabel: { fontSize: 14, fontWeight: "600", color: T.fg1 },
-  reasonMeta: { fontSize: 12, color: T.fg3, marginTop: 2 },
+  reasonLabel: { fontFamily: Type.family, fontWeight: Type.weight.semibold, fontSize: 14, color: T.fg1 },
+  reasonMeta: { fontFamily: Type.family, fontSize: 12, color: T.fg3, marginTop: 2 },
 
   preview: {
     paddingVertical: 14,
@@ -269,22 +238,13 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   previewText: {
+    fontFamily: Type.family,
+    fontWeight: Type.weight.bold,
     fontSize: 12,
-    fontWeight: "700",
     letterSpacing: 2,
     color: T.fg3,
     textTransform: "uppercase",
   },
 
   fabWrap: { position: "absolute", left: 16, right: 16, bottom: 24 },
-  fab: {
-    width: "100%",
-    paddingVertical: 16,
-    backgroundColor: T.ink900,
-    borderRadius: R.md,
-    alignItems: "center",
-    justifyContent: "center",
-    ...Shadow.md,
-  },
-  fabText: { color: "#fff", fontSize: 15, fontWeight: "600" },
 });
