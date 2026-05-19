@@ -9,11 +9,11 @@ import {
   Pressable,
   Text,
 } from "react-native";
-import { Star, TrendingUp, ChevronRight, X } from "lucide-react-native";
+import { Star, TrendingUp, ChevronRight } from "lucide-react-native";
 import { startOfDay, addDays } from "date-fns";
 import { supabase } from "../../lib/supabase";
 import { useUserRole } from "../../lib/user-context";
-import { T, R, S, Shadow } from "../../lib/theme";
+import { T, R, S, Type, Shadow } from "../../lib/theme";
 import {
   OverlineHeader,
   SectionLabel,
@@ -230,23 +230,18 @@ export default function OwnerDashboard() {
                 <Pressable
                   key={b.id}
                   onPress={() => handleSelectStaff(selectedStaffId === b.id ? null : b.id)}
-                  style={({ pressed }) => [
-                    styles.staffRow,
-                    selectedStaffId === b.id && styles.staffRowActive,
-                    pressed && { opacity: 0.8 },
-                  ]}
+                  style={({ pressed }) => [styles.staffRow, pressed && { opacity: 0.8 }]}
                 >
-                  <View style={[styles.staffDot, selectedStaffId === b.id && { backgroundColor: "#fff" }]} />
-                  <Text style={[styles.staffName, selectedStaffId === b.id && { color: "#fff" }]}>
-                    {b.name}
-                  </Text>
-                  <Text style={[styles.staffCount, selectedStaffId === b.id && { color: "rgba(255,255,255,0.8)" }]}>
-                    {b.count} randevu
-                  </Text>
-                  {selectedStaffId === b.id
-                    ? <X size={14} color="#fff" />
-                    : <ChevronRight size={14} color={T.fg3} />
-                  }
+                  <View style={[styles.avatar, selectedStaffId === b.id && { backgroundColor: T.brand100 }]}>
+                    <Text style={styles.avatarText}>
+                      {b.name.split(" ").map((n: string) => n[0] ?? "").join("").slice(0, 2).toUpperCase()}
+                    </Text>
+                  </View>
+                  <View style={{ flex: 1 }}>
+                    <Text style={styles.staffName}>{b.name}</Text>
+                    <Text style={styles.staffCount}>{b.count} randevu</Text>
+                  </View>
+                  <ChevronRight size={16} color={T.fg4} />
                 </Pressable>
               ))
             )}
@@ -265,17 +260,24 @@ const styles = StyleSheet.create({
   insightCard: { marginHorizontal: S.s5, marginBottom: 24, padding: 16 },
   insightItem: { flexDirection: "row", alignItems: "center", gap: 12 },
   insightDivider: { height: 1, backgroundColor: T.border, marginVertical: 12 },
-  insightLabel: { fontSize: 11, color: T.fg3, textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 2 },
-  insightValue: { fontSize: 14, fontWeight: "700", color: T.fg1 },
+  insightLabel: { fontSize: 11, fontFamily: Type.family, color: T.fg3, textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 2 },
+  insightValue: { fontSize: 14, fontFamily: Type.family, fontWeight: Type.weight.bold, color: T.fg1 },
   staffRow: {
-    flexDirection: "row", alignItems: "center", gap: 10,
-    paddingVertical: 12, paddingHorizontal: 14,
+    flexDirection: "row", alignItems: "center", gap: 12,
+    paddingVertical: 12, paddingHorizontal: 16,
     backgroundColor: T.bgElevated, borderWidth: 1, borderColor: T.border,
     borderRadius: R.md, marginHorizontal: S.s5, marginBottom: 8, ...Shadow.sm,
   },
-  staffRowActive: { backgroundColor: T.brand600, borderColor: T.brand600 },
-  staffDot: { width: 8, height: 8, borderRadius: 4, backgroundColor: T.brand600 },
-  staffName: { flex: 1, fontSize: 14, fontWeight: "600", color: T.fg1 },
-  staffCount: { fontSize: 13, color: T.fg3, fontWeight: "500" },
-  emptyTxt: { fontSize: 13, color: T.fg4, textAlign: "center", paddingVertical: 20 },
+  avatar: {
+    width: 36, height: 36, borderRadius: R.pill,
+    backgroundColor: T.slate100,
+    alignItems: "center", justifyContent: "center",
+  },
+  avatarText: {
+    fontSize: 13, fontFamily: Type.family,
+    fontWeight: Type.weight.bold, color: T.ink900,
+  },
+  staffName: { fontSize: 15, fontFamily: Type.family, fontWeight: Type.weight.semibold, color: T.fg1 },
+  staffCount: { fontSize: 12, fontFamily: Type.family, color: T.fg3, marginTop: 2 },
+  emptyTxt: { fontSize: 13, fontFamily: Type.family, color: T.fg4, textAlign: "center", paddingVertical: 20 },
 });

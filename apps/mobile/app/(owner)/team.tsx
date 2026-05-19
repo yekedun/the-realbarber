@@ -12,7 +12,7 @@ import {
 import { UserPlus, Percent, Link, Clock, PauseCircle, PlayCircle } from "lucide-react-native";
 import { supabase } from "../../lib/supabase";
 import { useUserRole } from "../../lib/user-context";
-import { T, R, S, Shadow } from "../../lib/theme";
+import { T, R, S, Type, Shadow } from "../../lib/theme";
 import { StaffScheduleModal } from "../../components/StaffScheduleModal";
 import {
   OverlineHeader,
@@ -337,10 +337,10 @@ const styles = StyleSheet.create({
   staffRowBorder: { borderTopWidth: 1, borderTopColor: T.divider },
   actions: { flexDirection: "row", gap: 4 },
   iconBtn: { padding: 4 },
-  emptyTxt: { fontSize: 13, color: T.fg4, textAlign: "center", paddingTop: 40 },
+  emptyTxt: { fontSize: 13, fontFamily: Type.family, color: T.fg4, textAlign: "center", paddingTop: 40 },
   sheetFooter: { flexDirection: "row", justifyContent: "flex-end", gap: 10 },
-  sheetDesc: { fontSize: 13, color: T.fg3, lineHeight: 18, marginBottom: 16 },
+  sheetDesc: { fontSize: 13, fontFamily: Type.family, color: T.fg3, lineHeight: 18, marginBottom: 16 },
   toggleRow: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: 16 },
-  toggleLabel: { fontSize: 14, fontWeight: "600", color: T.fg1 },
-  slugPreview: { marginTop: 6, fontSize: 11, color: T.fg3, fontStyle: "italic" },
+  toggleLabel: { fontSize: 14, fontFamily: Type.family, fontWeight: Type.weight.semibold, color: T.fg1 },
+  slugPreview: { marginTop: 6, fontFamily: Type.family, fontSize: 11, color: T.fg3, fontStyle: "italic" },
 });

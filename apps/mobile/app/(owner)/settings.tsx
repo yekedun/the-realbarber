@@ -5,7 +5,7 @@ import {
 import { Plus, Key, Lock } from "lucide-react-native";
 import { supabase } from "../../lib/supabase";
 import { useUserRole } from "../../lib/user-context";
-import { T, R, S, Shadow } from "../../lib/theme";
+import { T, R, S, Type, Shadow } from "../../lib/theme";
 import { generateWidgetToken, listWidgetTokens, deleteWidgetToken } from "../../lib/widget-bridge";
 import type { WorkingHours } from "@berber/shared/types";
 import { WorkingHoursEditor } from "../../components/WorkingHoursEditor";
@@ -169,19 +169,19 @@ const styles = StyleSheet.create({
   scrollContent: { paddingTop: 64, paddingBottom: 32 },
   accountCard: { marginHorizontal: S.s5, marginBottom: S.s6, flexDirection: "row", alignItems: "center", gap: 12 },
   avatar: { width: 44, height: 44, borderRadius: R.md, backgroundColor: T.brand100, alignItems: "center", justifyContent: "center" },
-  avatarTxt: { fontSize: 16, fontWeight: "700", color: T.brand600 },
-  accountName: { fontSize: 14, fontWeight: "600", color: T.fg1 },
-  accountEmail: { fontSize: 12, color: T.fg3, marginTop: 2 },
-  ownerBadge: { fontSize: 10, fontWeight: "600", color: T.brand600, marginTop: 3 },
+  avatarTxt: { fontSize: 16, fontFamily: Type.family, fontWeight: Type.weight.bold, color: T.brand600 },
+  accountName: { fontSize: 14, fontFamily: Type.family, fontWeight: Type.weight.semibold, color: T.fg1 },
+  accountEmail: { fontSize: 12, fontFamily: Type.family, color: T.fg3, marginTop: 2 },
+  ownerBadge: { fontSize: 10, fontFamily: Type.family, fontWeight: Type.weight.semibold, color: T.brand600, marginTop: 3 },
   secHead: { flexDirection: "row", alignItems: "baseline", justifyContent: "space-between", paddingRight: S.s5 },
-  secCount: { fontSize: 11, color: T.fg4, fontWeight: "500" },
+  secCount: { fontSize: 11, fontFamily: Type.family, color: T.fg4, fontWeight: Type.weight.medium },
   generateBtn: { marginHorizontal: S.s5, marginBottom: 12 },
   tokenRow: { marginHorizontal: S.s5, flexDirection: "row", alignItems: "center", gap: 12 },
   tokenIcon: { width: 36, height: 36, borderRadius: R.sm, backgroundColor: T.bgSunken, alignItems: "center", justifyContent: "center" },
-  tokenLabel: { fontSize: 14, fontWeight: "600", color: T.fg1 },
-  tokenMeta: { fontSize: 11, color: T.fg3, marginTop: 2 },
+  tokenLabel: { fontSize: 14, fontFamily: Type.family, fontWeight: Type.weight.semibold, color: T.fg1 },
+  tokenMeta: { fontSize: 11, fontFamily: Type.family, color: T.fg3, marginTop: 2 },
   empty: { paddingVertical: 30, alignItems: "center", gap: 8 },
-  emptyTitle: { fontSize: 14, color: T.fg3 },
+  emptyTitle: { fontSize: 14, fontFamily: Type.family, color: T.fg3 },
   signOut: { marginHorizontal: S.s5, marginTop: 28 },
-  version: { marginTop: 18, textAlign: "center", fontSize: 11, color: T.fg4 },
+  version: { marginTop: 18, fontFamily: Type.family, textAlign: "center", fontSize: 11, color: T.fg4 },
 });
