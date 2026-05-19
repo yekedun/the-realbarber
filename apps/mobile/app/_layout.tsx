@@ -61,13 +61,15 @@ export default function RootLayout() {
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
       <UserProvider>
-        <RouterGuard session={session} />
         {session === undefined || !fontsLoaded ? (
           <View style={{ flex: 1, alignItems: "center", justifyContent: "center", backgroundColor: T.bg }}>
             <ActivityIndicator color={T.brand600} />
           </View>
         ) : (
-          <Slot />
+          <>
+            <RouterGuard session={session} />
+            <Slot />
+          </>
         )}
       </UserProvider>
     </GestureHandlerRootView>
