@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import {
   View,
   Text,
@@ -7,8 +7,6 @@ import {
   ActivityIndicator,
   Alert,
   ScrollView,
-  Animated,
-  Easing,
 } from "react-native";
 import { T, R, Shadow } from "../../lib/theme";
 import { supabase } from "../../lib/supabase";
@@ -143,7 +141,7 @@ export default function BlockScreen() {
                   {sel && <View style={styles.radioInner} />}
                 </View>
                 <View style={{ flex: 1 }}>
-                  <Text style={[styles.reasonLabel, sel && { color: T.brand600 }]}>{r.label}</Text>
+                  <Text style={[styles.reasonLabel, sel && { color: "#fff" }]}>{r.label}</Text>
                   <Text style={styles.reasonMeta}>{r.meta}</Text>
                 </View>
               </Pressable>
@@ -177,36 +175,10 @@ function SectionTitle({ children }: { children: string }) {
 }
 
 function NowBadge({ now }: { now: Date }) {
-  const pulse = useRef(new Animated.Value(0)).current;
-
-  useEffect(() => {
-    const loop = Animated.loop(
-      Animated.timing(pulse, {
-        toValue: 1,
-        duration: 1600,
-        easing: Easing.out(Easing.ease),
-        useNativeDriver: true,
-      }),
-    );
-    loop.start();
-    return () => loop.stop();
-  }, [pulse]);
-
-  const haloScale = pulse.interpolate({ inputRange: [0, 1], outputRange: [1, 2.7] });
-  const haloOpacity = pulse.interpolate({ inputRange: [0, 0.7, 1], outputRange: [0.55, 0, 0] });
-
   return (
     <View style={styles.nowBadge}>
-      <View style={styles.nowDotWrap}>
-        <Animated.View
-          style={[styles.nowHalo, { transform: [{ scale: haloScale }], opacity: haloOpacity }]}
-        />
-        <View style={styles.nowDot} />
-      </View>
-      <View style={{ flex: 1 }}>
-        <Text style={styles.nowLabel}>ŞU AN · {fmtNow(now)}</Text>
-        <Text style={styles.nowSub}>Blok başlangıç saati otomatik atanır.</Text>
-      </View>
+      <Text style={styles.nowLabel}>ŞU AN · {fmtNow(now)}</Text>
+      <Text style={styles.nowSub}>Blok başlangıç saati otomatik atanır.</Text>
     </View>
   );
 }
@@ -230,18 +202,12 @@ const styles = StyleSheet.create({
     marginTop: 20,
     paddingVertical: 12,
     paddingHorizontal: 14,
-    backgroundColor: T.mint100,
+    backgroundColor: T.bgElevated,
     borderWidth: 1,
-    borderColor: T.mint100,
+    borderColor: T.border,
     borderRadius: R.md,
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 12,
   },
-  nowDotWrap: { width: 14, height: 14, alignItems: "center", justifyContent: "center" },
-  nowHalo: { position: "absolute", width: 14, height: 14, borderRadius: 14, backgroundColor: T.positive },
-  nowDot: { width: 14, height: 14, borderRadius: 14, backgroundColor: T.positive },
-  nowLabel: { fontSize: 12, fontWeight: "700", color: T.positive, letterSpacing: 0.4 },
+  nowLabel: { fontSize: 12, fontWeight: "700", color: T.fg1, letterSpacing: 0.4 },
   nowSub: { fontSize: 12, color: T.fg3, marginTop: 2 },
 
   sectionTitle: {
@@ -264,9 +230,9 @@ const styles = StyleSheet.create({
     borderRadius: R.sm,
     alignItems: "center",
   },
-  durChipSel: { borderColor: T.brand600, backgroundColor: T.accentTint },
+  durChipSel: { borderColor: T.ink900, backgroundColor: T.ink900 },
   durNum: { fontSize: 18, fontWeight: "700", color: T.fg1 },
-  durNumSel: { color: T.brand600 },
+  durNumSel: { color: "#fff" },
   durMin: { fontSize: 11, color: T.fg3, marginTop: 2 },
 
   reasonList: { gap: 8 },
@@ -280,7 +246,7 @@ const styles = StyleSheet.create({
     borderRadius: R.md,
     gap: 12,
   },
-  reasonRowSel: { borderColor: T.brand600, backgroundColor: T.accentTint },
+  reasonRowSel: { borderColor: T.ink900, backgroundColor: T.ink900 },
   radio: {
     width: 20,
     height: 20,
@@ -290,8 +256,8 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
   },
-  radioSel: { borderColor: T.brand600 },
-  radioInner: { width: 10, height: 10, borderRadius: 10, backgroundColor: T.brand600 },
+  radioSel: { borderColor: "#fff" },
+  radioInner: { width: 10, height: 10, borderRadius: 10, backgroundColor: "#fff" },
   reasonLabel: { fontSize: 14, fontWeight: "600", color: T.fg1 },
   reasonMeta: { fontSize: 12, color: T.fg3, marginTop: 2 },
 
@@ -317,7 +283,7 @@ const styles = StyleSheet.create({
   fab: {
     width: "100%",
     paddingVertical: 16,
-    backgroundColor: T.brand600,
+    backgroundColor: T.ink900,
     borderRadius: R.md,
     alignItems: "center",
     justifyContent: "center",
