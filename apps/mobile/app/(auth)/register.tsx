@@ -2,18 +2,19 @@ import { useState } from "react";
 import {
   View,
   Text,
-  TextInput,
   TouchableOpacity,
   StyleSheet,
   KeyboardAvoidingView,
   Platform,
-  ActivityIndicator,
   Alert,
   ScrollView,
 } from "react-native";
+import Svg, { Rect, Path, Circle } from "react-native-svg";
 import { useRouter } from "expo-router";
 import { supabase } from "../../lib/supabase";
-import { T, R, Shadow } from "../../lib/theme";
+import { T, Type } from "../../lib/theme";
+import { TextField } from "../../components/ds/TextField";
+import { Button } from "../../components/ds/Button";
 
 function toSlug(name: string): string {
   return name
@@ -24,38 +25,22 @@ function toSlug(name: string): string {
     .replace(/^-|-$/g, "");
 }
 
-function BrandMark() {
+function MarkIcon({ size = 48 }: { size?: number }) {
   return (
-    <View style={brandStyles.outer}>
-      {[0, 1, 2, 3, 4].map((i) => (
-        <View
-          key={i}
-          style={[brandStyles.stripe, { left: -20 + i * 14, transform: [{ rotate: "135deg" }] }]}
-        />
-      ))}
-    </View>
+    <Svg width={size} height={size} viewBox="0 0 64 64">
+      <Rect width="64" height="64" rx="14" fill={T.ink900} />
+      <Path
+        d="M23 16 L41 32 L23 48"
+        fill="none"
+        stroke="#FFFFFF"
+        strokeWidth="5"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+      <Circle cx="46" cy="48" r="2.8" fill={T.brand600} />
+    </Svg>
   );
 }
-
-const brandStyles = StyleSheet.create({
-  outer: {
-    width: 56,
-    height: 56,
-    borderRadius: 14,
-    backgroundColor: T.brand600,
-    overflow: "hidden",
-    marginBottom: 24,
-    position: "relative",
-    ...Shadow.md,
-  },
-  stripe: {
-    position: "absolute",
-    top: -20,
-    width: 4,
-    height: 96,
-    backgroundColor: "rgba(220,38,38,0.85)",
-  },
-});
 
 export default function RegisterScreen() {
   const router = useRouter();
@@ -157,7 +142,9 @@ export default function RegisterScreen() {
         keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}
       >
-        <BrandMark />
+        <View style={styles.markWrap}>
+          <MarkIcon size={56} />
+        </View>
 
         <Text style={styles.eyebrow}>BERBER · DÜKKAN PANELİ</Text>
         <Text style={styles.title}>Hesap Oluştur</Text>
@@ -175,92 +162,73 @@ export default function RegisterScreen() {
 
         {step === 1 ? (
           <>
-            <View style={styles.field}>
-              <Text style={styles.label}>E-POSTA</Text>
-              <TextInput
-                style={styles.input}
-                placeholder="berber@dukkan.com"
-                placeholderTextColor={T.fg4}
-                value={email}
-                onChangeText={setEmail}
-                autoCapitalize="none"
-                keyboardType="email-address"
-                autoCorrect={false}
-              />
+            <TextField
+              label="E-posta"
+              value={email}
+              onChange={setEmail}
+              placeholder="berber@dukkan.com"
+            />
+            <TextField
+              label="Şifre"
+              value={password}
+              onChange={setPassword}
+              placeholder="En az 6 karakter"
+              secure
+            />
+            <TextField
+              label="Şifre Tekrar"
+              value={confirm}
+              onChange={setConfirm}
+              placeholder="••••••••"
+              secure
+            />
+            <View style={styles.btnWrap}>
+              <Button
+                variant="primary"
+                size="lg"
+                full
+                disabled={!email || !password || !confirm}
+                onPress={goToStep2}
+              >
+                Devam Et
+              </Button>
             </View>
-            <View style={styles.field}>
-              <Text style={styles.label}>ŞİFRE</Text>
-              <TextInput
-                style={styles.input}
-                placeholder="En az 6 karakter"
-                placeholderTextColor={T.fg4}
-                value={password}
-                onChangeText={setPassword}
-                secureTextEntry
-              />
-            </View>
-            <View style={styles.field}>
-              <Text style={styles.label}>ŞİFRE TEKRAR</Text>
-              <TextInput
-                style={styles.input}
-                placeholder="••••••••"
-                placeholderTextColor={T.fg4}
-                value={confirm}
-                onChangeText={setConfirm}
-                secureTextEntry
-              />
-            </View>
-            <TouchableOpacity
-              style={[styles.button, (!email || !password || !confirm) && styles.buttonDisabled]}
-              onPress={goToStep2}
-              disabled={!email || !password || !confirm}
-              activeOpacity={0.9}
-            >
-              <Text style={styles.buttonText}>Devam Et →</Text>
-            </TouchableOpacity>
           </>
         ) : (
           <>
-            <View style={styles.field}>
-              <Text style={styles.label}>ADINI SOYADIN</Text>
-              <TextInput
-                style={styles.input}
-                placeholder="Ahmet Yılmaz"
-                placeholderTextColor={T.fg4}
-                value={ownerName}
-                onChangeText={setOwnerName}
-                autoCapitalize="words"
-              />
+            <TextField
+              label="Adın Soyadın"
+              value={ownerName}
+              onChange={setOwnerName}
+              placeholder="Ahmet Yılmaz"
+            />
+            <TextField
+              label="Dükkan Adı"
+              value={shopName}
+              onChange={setShopName}
+              placeholder="Ahmet Berber Salonu"
+            />
+            <View style={styles.btnWrap}>
+              <Button
+                variant="primary"
+                size="lg"
+                full
+                loading={loading}
+                disabled={!ownerName || !shopName}
+                onPress={handleRegister}
+              >
+                Hesabı Oluştur
+              </Button>
             </View>
-            <View style={styles.field}>
-              <Text style={styles.label}>DÜKKAN ADI</Text>
-              <TextInput
-                style={styles.input}
-                placeholder="Ahmet Berber Salonu"
-                placeholderTextColor={T.fg4}
-                value={shopName}
-                onChangeText={setShopName}
-                autoCapitalize="words"
-              />
+            <View style={styles.backBtnWrap}>
+              <Button
+                variant="ghost"
+                size="md"
+                onPress={() => setStep(1)}
+              >
+                ← Geri
+              </Button>
             </View>
-            <TouchableOpacity
-              style={[styles.button, (loading || !ownerName || !shopName) && styles.buttonDisabled]}
-              onPress={handleRegister}
-              disabled={loading || !ownerName || !shopName}
-              activeOpacity={0.9}
-            >
-              {loading
-                ? <ActivityIndicator color="#fff" />
-                : <Text style={styles.buttonText}>Hesabı Oluştur</Text>
-              }
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={styles.backBtn}
-              onPress={() => setStep(1)}
-              disabled={loading}
-            >
-              <Text style={styles.backBtnText}>← Geri</Text>
-            </TouchableOpacity>
           </>
         )}
 
@@ -268,7 +236,8 @@ export default function RegisterScreen() {
 
         <TouchableOpacity onPress={() => router.back()} disabled={loading}>
           <Text style={styles.footer}>
-            Zaten hesabın var mı? <Text style={styles.footerLink}>Giriş Yap</Text>
+            Zaten hesabın var mı?{" "}
+            <Text style={styles.footerLink}>Giriş Yap</Text>
           </Text>
         </TouchableOpacity>
       </ScrollView>
@@ -277,63 +246,58 @@ export default function RegisterScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: T.bg },
+  container: { flex: 1, backgroundColor: T.bgElevated },
   inner: {
     paddingHorizontal: 24,
     paddingTop: 88,
     paddingBottom: 32,
     minHeight: "100%",
   },
+  markWrap: { marginBottom: 24 },
   eyebrow: {
+    fontFamily: Type.family,
     fontSize: 11,
-    fontWeight: "600",
+    fontWeight: Type.weight.semibold,
     letterSpacing: 1.4,
     textTransform: "uppercase",
-    color: T.coral600,
+    color: T.fg3,
     marginBottom: 6,
   },
-  title: { fontSize: 30, fontWeight: "700", letterSpacing: -0.5, color: T.fg1, marginBottom: 8 },
-  lead: { fontSize: 14, color: T.fg3, lineHeight: 21, marginBottom: 20 },
+  title: {
+    fontFamily: Type.family,
+    fontSize: 30,
+    fontWeight: Type.weight.bold,
+    letterSpacing: -0.5,
+    color: T.fg1,
+    marginBottom: 8,
+  },
+  lead: {
+    fontFamily: Type.family,
+    fontSize: 14,
+    fontWeight: Type.weight.regular,
+    color: T.fg3,
+    lineHeight: 21,
+    marginBottom: 20,
+  },
   stepRow: { flexDirection: "row", alignItems: "center", marginBottom: 24 },
   stepDot: { width: 10, height: 10, borderRadius: 5, backgroundColor: T.border },
   stepDotActive: { backgroundColor: T.brand600 },
   stepLine: { flex: 1, height: 2, backgroundColor: T.border, marginHorizontal: 6 },
   stepLineActive: { backgroundColor: T.brand600 },
-  field: { marginBottom: 16 },
-  label: {
-    fontSize: 11,
-    fontWeight: "600",
-    letterSpacing: 0.6,
-    color: T.fg3,
-    textTransform: "uppercase",
-    marginBottom: 6,
-  },
-  input: {
-    width: "100%",
-    paddingHorizontal: 14,
-    paddingVertical: 14,
-    backgroundColor: T.bg,
-    borderWidth: 1.5,
-    borderColor: T.border,
-    borderRadius: R.sm,
-    fontSize: 14,
-    color: T.fg1,
-  },
-  button: {
-    marginTop: 8,
-    width: "100%",
-    paddingVertical: 16,
-    backgroundColor: T.brand600,
-    borderRadius: R.md,
-    alignItems: "center",
-    justifyContent: "center",
-    ...Shadow.md,
-  },
-  buttonDisabled: { opacity: 0.6 },
-  buttonText: { color: "#fff", fontWeight: "600", fontSize: 15 },
-  backBtn: { marginTop: 12, alignItems: "center", paddingVertical: 8 },
-  backBtnText: { fontSize: 14, color: T.fg3, fontWeight: "500" },
+  btnWrap: { marginTop: 8 },
+  backBtnWrap: { marginTop: 4, alignItems: "center" },
   spacer: { flex: 1, minHeight: 24 },
-  footer: { textAlign: "center", fontSize: 13, color: T.fg3, paddingBottom: 16 },
-  footerLink: { color: T.brand600, fontWeight: "600" },
+  footer: {
+    fontFamily: Type.family,
+    textAlign: "center",
+    fontSize: 13,
+    fontWeight: Type.weight.regular,
+    color: T.fg3,
+    paddingBottom: 16,
+  },
+  footerLink: {
+    fontFamily: Type.family,
+    color: T.brand600,
+    fontWeight: Type.weight.semibold,
+  },
 });
