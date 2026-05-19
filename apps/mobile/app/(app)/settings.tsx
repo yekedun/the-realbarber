@@ -10,7 +10,7 @@ import {
   Modal,
   Image,
 } from "react-native";
-import { Feather } from "@expo/vector-icons";
+import { Copy, Grid2x2, Share2 } from "lucide-react-native";
 import * as Clipboard from "expo-clipboard";
 import { supabase } from "../../lib/supabase";
 import { useUserRole } from "../../lib/user-context";
@@ -103,7 +103,7 @@ export default function SettingsScreen() {
             <View style={styles.linkRow}>
               <Text style={styles.linkText} numberOfLines={1}>{bookingLink}</Text>
               <Pressable onPress={handleCopyLink} style={styles.iconBtn}>
-                <Feather name="copy" size={16} color={T.navy} />
+                <Copy size={16} color={T.brand600} />
               </Pressable>
             </View>
 
@@ -111,7 +111,7 @@ export default function SettingsScreen() {
               style={({ pressed }) => [styles.linkActionBtn, pressed && { opacity: 0.85 }]}
               onPress={() => setQrVisible(true)}
             >
-              <Feather name="grid" size={15} color={T.navy} />
+              <Grid2x2 size={15} color={T.brand600} />
               <Text style={styles.linkActionText}>QR Kodu Göster</Text>
             </Pressable>
 
@@ -119,7 +119,7 @@ export default function SettingsScreen() {
               style={({ pressed }) => [styles.storyBtn, pressed && { opacity: 0.85 }]}
               onPress={handleShareLink}
             >
-              <Feather name="share-2" size={15} color="#fff" />
+              <Share2 size={15} color="#fff" />
               <Text style={styles.storyBtnText}>Linki Paylaş</Text>
             </Pressable>
           </>
@@ -160,80 +160,80 @@ const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: T.bg },
   scrollContent: { paddingTop: 64, paddingHorizontal: 20, paddingBottom: 32 },
 
-  eyebrow: { fontSize: 11, fontWeight: "600", letterSpacing: 1.4, textTransform: "uppercase", color: T.red, marginBottom: 6 },
-  title: { fontSize: 30, fontWeight: "700", letterSpacing: -0.5, color: T.ink, marginBottom: 8 },
+  eyebrow: { fontSize: 11, fontWeight: "600", letterSpacing: 1.4, textTransform: "uppercase", color: T.fg3, marginBottom: 6 },
+  title: { fontSize: 30, fontWeight: "700", letterSpacing: -0.5, color: T.fg1, marginBottom: 8 },
 
   accountCard: {
     marginTop: 22,
     paddingVertical: 14,
     paddingHorizontal: 14,
-    backgroundColor: T.surface,
+    backgroundColor: T.bgElevated,
     borderWidth: 1,
-    borderColor: T.line,
-    borderRadius: R.card,
+    borderColor: T.border,
+    borderRadius: R.md,
     flexDirection: "row",
     alignItems: "center",
     gap: 12,
-    ...Shadow.card,
+    ...Shadow.sm,
   },
   avatar: {
     width: 44, height: 44, borderRadius: 12,
-    backgroundColor: T.avatarFrom,
+    backgroundColor: T.brand100,
     alignItems: "center",
     justifyContent: "center",
   },
-  avatarTxt: { fontSize: 16, fontWeight: "700", color: T.navy },
-  accountName: { fontSize: 14, fontWeight: "600", color: T.ink },
-  accountEmail: { fontSize: 12, color: T.muted, marginTop: 2 },
+  avatarTxt: { fontSize: 16, fontWeight: "700", color: T.brand600 },
+  accountName: { fontSize: 14, fontWeight: "600", color: T.fg1 },
+  accountEmail: { fontSize: 12, color: T.fg3, marginTop: 2 },
 
   signOut: {
     marginTop: 28,
     paddingVertical: 14,
-    backgroundColor: T.redSoft,
+    backgroundColor: T.coral100,
     borderWidth: 1,
-    borderColor: T.redBorder,
-    borderRadius: R.card,
+    borderColor: T.coral100,
+    borderRadius: R.md,
     alignItems: "center",
   },
-  signOutText: { color: T.red, fontSize: 14, fontWeight: "600" },
+  signOutText: { color: T.coral600, fontSize: 14, fontWeight: "600" },
 
-  version: { marginTop: 18, textAlign: "center", fontSize: 11, color: T.mutedAlt },
+  version: { marginTop: 18, textAlign: "center", fontSize: 11, color: T.fg4 },
 
   secHead: { marginTop: 26, marginBottom: 12, flexDirection: "row", alignItems: "baseline" },
-  secLabel: { fontSize: 11, fontWeight: "600", color: T.muted, letterSpacing: 0.6, textTransform: "uppercase" },
+  secLabel: { fontSize: 11, fontWeight: "600", color: T.fg3, letterSpacing: 0.6, textTransform: "uppercase" },
 
   linkRow: {
     flexDirection: "row", alignItems: "center", gap: 10,
-    backgroundColor: T.surface, borderWidth: 1, borderColor: T.line,
-    borderRadius: R.card, paddingVertical: 12, paddingHorizontal: 14, ...Shadow.card,
+    backgroundColor: T.bgElevated, borderWidth: 1, borderColor: T.border,
+    borderRadius: R.md, paddingVertical: 12, paddingHorizontal: 14, ...Shadow.sm,
   },
-  linkText: { flex: 1, fontSize: 12, color: T.navy, fontWeight: "500" },
+  linkText: { flex: 1, fontSize: 12, color: T.brand600, fontWeight: "500" },
   iconBtn: { padding: 4 },
 
   linkActionBtn: {
     marginTop: 8, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8,
-    paddingVertical: 12, backgroundColor: T.surfaceAlt,
-    borderWidth: 1, borderColor: T.line, borderRadius: R.card,
+    paddingVertical: 12, backgroundColor: T.bgSunken,
+    borderWidth: 1, borderColor: T.border, borderRadius: R.md,
   },
-  linkActionText: { fontSize: 13, fontWeight: "600", color: T.navy },
+  linkActionText: { fontSize: 13, fontWeight: "600", color: T.brand600 },
 
   storyBtn: {
     marginTop: 8, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8,
-    paddingVertical: 12, backgroundColor: T.navy, borderRadius: R.cta, ...Shadow.cta,
+    paddingVertical: 12, backgroundColor: T.brand600, borderRadius: R.md, ...Shadow.md,
   },
   storyBtnText: { fontSize: 13, fontWeight: "600", color: "#fff" },
 
   qrOverlay: { flex: 1, backgroundColor: "rgba(0,0,0,0.55)", alignItems: "center", justifyContent: "center" },
   qrCard: {
-    width: 290, backgroundColor: T.surface, borderRadius: R.card,
-    padding: 24, alignItems: "center", gap: 14, ...Shadow.card,
+    width: 290, backgroundColor: T.bgElevated, borderRadius: R.md,
+    padding: 24, alignItems: "center", gap: 14, ...Shadow.sm,
   },
-  qrTitle: { fontSize: 16, fontWeight: "700", color: T.ink },
+  qrTitle: { fontSize: 16, fontWeight: "700", color: T.fg1 },
   qrImage: { width: 200, height: 200, borderRadius: 8 },
-  qrHint: { fontSize: 11, color: T.muted, textAlign: "center" },
+  qrHint: { fontSize: 11, color: T.fg3, textAlign: "center" },
   qrClose: {
     paddingVertical: 10, paddingHorizontal: 24,
-    backgroundColor: T.navy, borderRadius: R.cta,
+    backgroundColor: T.brand600, borderRadius: R.md,
   },
   qrCloseText: { color: "#fff", fontSize: 13, fontWeight: "600" },
 });

@@ -9,7 +9,7 @@ import {
   Easing,
   Linking,
 } from "react-native";
-import { Feather } from "@expo/vector-icons";
+import { Phone, MessageCircle, Pencil } from "lucide-react-native";
 import { T, R, Shadow } from "../lib/theme";
 
 interface Appointment {
@@ -127,23 +127,32 @@ export function AppointmentDetailSheet({
   );
 }
 
+type IconName = "phone" | "message-circle" | "edit-2";
+
+const ICON_MAP: Record<IconName, typeof Phone> = {
+  "phone": Phone,
+  "message-circle": MessageCircle,
+  "edit-2": Pencil,
+};
+
 function ActionBtn({
   icon, label, onPress, variant = "blue", disabled = false,
 }: {
-  icon: keyof typeof Feather.glyphMap;
+  icon: IconName;
   label: string;
   onPress: () => void;
   variant?: "blue" | "muted";
   disabled?: boolean;
 }) {
-  const bg = variant === "muted" ? T.surfaceAlt : T.blueSoft;
-  const tone = variant === "muted" ? T.ink : T.navy;
+  const bg = variant === "muted" ? T.bgSunken : T.accentTint;
+  const tone = variant === "muted" ? T.fg1 : T.brand600;
+  const IconComponent = ICON_MAP[icon];
   return (
     <Pressable
       style={[styles.action, { backgroundColor: bg, opacity: disabled ? 0.5 : 1 }]}
       onPress={disabled ? undefined : onPress}
     >
-      <Feather name={icon} size={18} color={tone} />
+      <IconComponent size={18} color={tone} />
       <Text style={[styles.actionLbl, { color: tone }]}>{label}</Text>
     </Pressable>
   );
@@ -154,25 +163,25 @@ const styles = StyleSheet.create({
   sheet: {
     position: "absolute",
     left: 0, right: 0, bottom: 0,
-    backgroundColor: T.surface,
-    borderTopLeftRadius: R.sheet,
-    borderTopRightRadius: R.sheet,
+    backgroundColor: T.bgElevated,
+    borderTopLeftRadius: R.lg,
+    borderTopRightRadius: R.lg,
     paddingBottom: 24,
-    ...Shadow.sheet,
+    ...Shadow.lg,
   },
   grabberWrap: { alignItems: "center", paddingTop: 10, paddingBottom: 6 },
-  grabber: { width: 40, height: 4, borderRadius: 4, backgroundColor: T.line },
+  grabber: { width: 40, height: 4, borderRadius: 4, backgroundColor: T.border },
 
   head: { paddingHorizontal: 20, paddingTop: 8, paddingBottom: 4 },
   eyebrow: {
     fontSize: 11,
     fontWeight: "700",
-    color: T.blue,
+    color: T.brand500,
     letterSpacing: 1.2,
     textTransform: "uppercase",
   },
-  name: { fontSize: 24, fontWeight: "700", color: T.ink, marginTop: 4 },
-  svc: { fontSize: 14, color: T.muted, marginTop: 2 },
+  name: { fontSize: 24, fontWeight: "700", color: T.fg1, marginTop: 4 },
+  svc: { fontSize: 14, color: T.fg3, marginTop: 2 },
 
   actions: {
     paddingHorizontal: 20,
@@ -184,7 +193,7 @@ const styles = StyleSheet.create({
     flex: 1,
     paddingVertical: 12,
     paddingHorizontal: 8,
-    borderRadius: R.card,
+    borderRadius: R.md,
     alignItems: "center",
     gap: 4,
   },
@@ -199,18 +208,18 @@ const styles = StyleSheet.create({
   cancelBtn: {
     flex: 1,
     paddingVertical: 12,
-    borderRadius: R.card,
-    backgroundColor: T.redSoft,
+    borderRadius: R.md,
+    backgroundColor: T.coral100,
     borderWidth: 1,
-    borderColor: T.redBorder,
+    borderColor: T.coral100,
     alignItems: "center",
   },
-  cancelTxt: { color: T.red, fontSize: 14, fontWeight: "600" },
+  cancelTxt: { color: T.coral600, fontSize: 14, fontWeight: "600" },
   doneBtn: {
     flex: 1,
     paddingVertical: 12,
-    borderRadius: R.card,
-    backgroundColor: T.navy,
+    borderRadius: R.md,
+    backgroundColor: T.brand600,
     alignItems: "center",
   },
   doneTxt: { color: "#fff", fontSize: 14, fontWeight: "600" },
