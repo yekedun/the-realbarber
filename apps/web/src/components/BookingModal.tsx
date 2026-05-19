@@ -63,7 +63,7 @@ export function BookingModal({
 
     try {
       const res = await fetch(
-        `${process.env.NEXT_PUBLIC_SUPABASE_URL}/functions/v1/book-appointment`,
+        `${process.env.NEXT_PUBLIC_SUPABASE_URL}/functions/v1/widget-book-appointment`,
         {
           method: "POST",
           headers: {

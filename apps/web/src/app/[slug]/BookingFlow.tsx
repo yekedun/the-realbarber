@@ -78,7 +78,7 @@ export function BookingFlow({ shop, staff, services, lockedBarber, inactiveBarbe
       staff_id: selectedStaffId ?? "",
     });
 
-    fetch(`${process.env.NEXT_PUBLIC_SUPABASE_URL}/functions/v1/get-availability?${params}`, {
+    fetch(`${process.env.NEXT_PUBLIC_SUPABASE_URL}/functions/v1/widget-get-availability?${params}`, {
       headers: { apikey: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY! },
     })
       .then(async (res) => {
