@@ -458,7 +458,7 @@ export default function RandevularScreen() {
               body: {
                 shop_slug: staffShopSlug,
                 service_id: data.serviceId,
-                staff_id: staffId,
+                staff_id: data.staffId ?? staffId,
                 starts_at: `${data.date}T${data.time}:00`,
                 customer_name: data.customerName,
                 customer_phone: data.customerPhone || null,
