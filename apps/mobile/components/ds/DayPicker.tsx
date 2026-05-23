@@ -55,6 +55,7 @@ export function DayPicker({ selected, onSelect, dayCount = 7 }: DayPickerProps) 
     <ScrollView
       horizontal
       showsHorizontalScrollIndicator={false}
+      style={styles.scroll}
       contentContainerStyle={styles.content}
     >
       {days.map((d) => {
@@ -84,9 +85,17 @@ export function DayPicker({ selected, onSelect, dayCount = 7 }: DayPickerProps) 
 }
 
 const styles = StyleSheet.create({
+  /* Explicit height prevents Android horizontal ScrollView from flex-expanding */
+  scroll: {
+    height: 80,
+    flexGrow: 0,
+    flexShrink: 0,
+  },
   content: {
     gap: 6,
     paddingHorizontal: 16,
+    paddingVertical: 8,
+    alignItems: 'center',
   },
 
   day: {

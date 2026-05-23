@@ -51,11 +51,11 @@ export default function AppLayout() {
         }}
       />
 
-      {/* M10 — Takvim Kapat (Blok) */}
+      {/* M10 — Blok */}
       <Tabs.Screen
         name="block"
         options={{
-          title: 'Takvim Kapat',
+          title: 'Blok',
           tabBarIcon: ({ focused }) => <TabIndicator focused={focused} />,
         }}
       />

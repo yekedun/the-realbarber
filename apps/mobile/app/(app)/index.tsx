@@ -73,6 +73,7 @@ function DayPicker({
     <ScrollView
       horizontal
       showsHorizontalScrollIndicator={false}
+      style={styles.dayPickerScroll}
       contentContainerStyle={styles.dayPickerContent}
     >
       {days.map((d, i) => {
@@ -442,10 +443,18 @@ const styles = StyleSheet.create({
     marginTop: 8,
   },
 
-  /* DayPicker: gap 6, paddingHorizontal 16 */
+  /* DayPicker outer scroll — explicit height prevents Android flex-expand bug */
+  dayPickerScroll: {
+    height: 80,         // cell 64 + 8 top + 8 bottom padding
+    flexGrow: 0,
+    flexShrink: 0,
+  },
+  /* DayPicker: gap 6, paddingHorizontal 16, paddingVertical 8 */
   dayPickerContent: {
     gap: 6,
     paddingHorizontal: 16,
+    paddingVertical: 8,
+    alignItems: 'center',
   },
 
   /* Day cell: width 56, height 64, borderRadius 12, gap 2 */
