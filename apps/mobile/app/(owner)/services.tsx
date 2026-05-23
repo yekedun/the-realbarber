@@ -372,7 +372,7 @@ export default function ServicesScreen() {
   async function loadServices() {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return;
-    const { data: shopData } = await supabase.from('shops').select('id').eq('owner_user_id', user.id).maybeSingle();
+    const { data: shopData } = await supabase.from('shops').select('id').or(`owner_user_id.eq.${user.id},owner_id.eq.${user.id}`).maybeSingle();
     if (!shopData) { setShopId(null); return; }
     setShopId(shopData.id);
     const { data } = await supabase.from('services').select('id, name, duration_min, price_cents, active').eq('shop_id', shopData.id).order('name');

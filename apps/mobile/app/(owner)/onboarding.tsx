@@ -525,7 +525,7 @@ export default function OnboardingScreen() {
       const { data: shop } = await supabase
         .from('shops')
         .select('id, name, address')
-        .eq('owner_user_id', user.id)
+        .or(`owner_user_id.eq.${user.id},owner_id.eq.${user.id}`)
         .maybeSingle();
       if (shop) {
         setShopId(shop.id);
