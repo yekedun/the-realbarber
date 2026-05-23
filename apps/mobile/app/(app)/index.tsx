@@ -280,7 +280,7 @@ export default function RandevularScreen() {
   const [showDetail, setShowDetail] = useState(false);
   const [selectedAppt, setSelectedAppt] = useState<import('../../components/AppointmentDetailSheet').AppointmentDetail | null>(null);
   const [showAdd, setShowAdd]   = useState(false);
-  const [barberId, setBarberId] = useState<string | null>(null);
+  const [staffId, setStaffId] = useState<string | null>(null);
   const [items, setItems] = useState<ListItem[]>([]);
   const [services, setServices] = useState<ServiceOption[]>([]);
 
@@ -289,10 +289,10 @@ export default function RandevularScreen() {
   useEffect(() => {
     supabase.auth.getUser().then(({ data: { user } }) => {
       if (!user) return;
-      supabase.from('barbers').select('id, shop_id').eq('user_id', user.id).maybeSingle()
+      supabase.from('staff').select('id, shop_id').eq('user_id', user.id).eq('is_active', true).maybeSingle()
         .then(({ data }) => {
           if (data) {
-            setBarberId((data as any).id);
+            setStaffId((data as any).id);
             supabase.from('services').select('id, name, duration_min, price_cents').eq('shop_id', (data as any).shop_id).eq('active', true)
               .then(({ data: svcs }) => {
                 if (svcs) setServices((svcs as any[]).map(s => ({ id: s.id, label: s.name, dur: s.duration_min, price: `${Math.round(s.price_cents/100)}₺` })));
@@ -303,12 +303,12 @@ export default function RandevularScreen() {
   }, []);
 
   useEffect(() => {
-    if (!barberId) return;
+    if (!staffId) return;
     fetchAppointments();
-  }, [barberId, dayIndex]);
+  }, [staffId, dayIndex]);
 
   async function fetchAppointments() {
-    if (!barberId) return;
+    if (!staffId) return;
 
     const today = new Date(); today.setHours(0,0,0,0);
     const targetDate = new Date(today); targetDate.setDate(today.getDate() - 2 + dayIndex);
@@ -317,10 +317,10 @@ export default function RandevularScreen() {
 
     const [{ data: appts }, { data: blocks }] = await Promise.all([
       supabase.from('appointments').select('id, customer_name, service_name, starts_at, duration_min, status')
-        .eq('barber_id', barberId).neq('status', 'cancelled')
+        .eq('staff_id', staffId).neq('status', 'cancelled')
         .gte('starts_at', dayStart.toISOString()).lt('starts_at', dayEnd.toISOString()).order('starts_at'),
       supabase.from('blocks').select('id, starts_at, ends_at, reason')
-        .eq('barber_id', barberId)
+        .eq('staff_id', staffId)
         .gte('starts_at', dayStart.toISOString()).lt('starts_at', dayEnd.toISOString()),
     ]);
 

@@ -243,7 +243,7 @@ export default function OzetScreen() {
     const { data: shopData } = await supabase.from('shops').select('id').eq('owner_user_id', user.id).maybeSingle();
     if (!shopData) return;
 
-    const { data: barbers } = await supabase.from('barbers').select('id, name').eq('shop_id', shopData.id);
+    const { data: barbers } = await supabase.from('staff').select('id, name').eq('shop_id', shopData.id).eq('is_active', true);
     if (!barbers) return;
 
     setStaffList([{ id: 'all', name: 'Tüm Ekip' }, ...(barbers as any[]).map((b: any) => ({ id: b.id, name: b.name }))]);
@@ -256,7 +256,7 @@ export default function OzetScreen() {
 
     const { data: appts } = await supabase.from('appointments')
       .select('id, status, completed_price_cents')
-      .in('barber_id', filteredIds)
+      .in('staff_id', filteredIds)
       .gte('starts_at', dayStart.toISOString())
       .lt('starts_at', dayEnd.toISOString())
       .neq('status', 'cancelled');

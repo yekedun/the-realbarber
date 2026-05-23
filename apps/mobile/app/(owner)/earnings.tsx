@@ -78,7 +78,7 @@ export default function EarningsScreen() {
     if (!user) return;
     const { data: shopData } = await supabase.from('shops').select('id').eq('owner_user_id', user.id).maybeSingle();
     if (!shopData) return;
-    const { data: barbers } = await supabase.from('barbers').select('id, name').eq('shop_id', shopData.id);
+    const { data: barbers } = await supabase.from('staff').select('id, name').eq('shop_id', shopData.id).eq('is_active', true);
     if (barbers) setBarberIds(barbers.map((b: any) => b.id));
   }
 
@@ -96,8 +96,8 @@ export default function EarningsScreen() {
 
     const { data } = await supabase
       .from('appointments')
-      .select('barber_id, completed_price_cents, completed_commission_cents, completed_shop_share_cents, status')
-      .in('barber_id', barberIds)
+      .select('staff_id, completed_price_cents, completed_commission_cents, completed_shop_share_cents, status')
+      .in('staff_id', barberIds)
       .eq('status', 'completed')
       .gte('starts_at', since.toISOString());
 
@@ -112,14 +112,14 @@ export default function EarningsScreen() {
       // Group by barber
       const byBarber: Record<string, { appts: number; ciro: number; pay: number }> = {};
       for (const a of data) {
-        if (!byBarber[a.barber_id]) byBarber[a.barber_id] = { appts: 0, ciro: 0, pay: 0 };
-        byBarber[a.barber_id].appts += 1;
-        byBarber[a.barber_id].ciro += a.completed_price_cents ?? 0;
-        byBarber[a.barber_id].pay += a.completed_commission_cents ?? 0;
+        if (!byBarber[a.staff_id]) byBarber[a.staff_id] = { appts: 0, ciro: 0, pay: 0 };
+        byBarber[a.staff_id].appts += 1;
+        byBarber[a.staff_id].ciro += a.completed_price_cents ?? 0;
+        byBarber[a.staff_id].pay += a.completed_commission_cents ?? 0;
       }
       // Fetch barber names to label distribution
       if (Object.keys(byBarber).length > 0) {
-        const { data: barbers } = await supabase.from('barbers').select('id, name').in('id', Object.keys(byBarber));
+        const { data: barbers } = await supabase.from('staff').select('id, name').in('id', Object.keys(byBarber));
         if (barbers) {
           setStaffDist(barbers.map((b: any) => ({
             name: b.name,

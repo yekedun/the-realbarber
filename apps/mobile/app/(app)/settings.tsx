@@ -40,7 +40,7 @@ export default function HesabimScreen() {
   useEffect(() => {
     supabase.auth.getUser().then(({ data: { user } }) => {
       if (!user) return;
-      supabase.from('barbers').select('name').eq('user_id', user.id).maybeSingle()
+      supabase.from('staff').select('name').eq('user_id', user.id).maybeSingle()
         .then(({ data }) => {
           setProfile({ name: data?.name ?? user.email?.split('@')[0] ?? '—', email: user.email ?? '—' });
         });

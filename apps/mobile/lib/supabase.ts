@@ -18,7 +18,7 @@ export async function determineUserRole(userId: string): Promise<'owner' | 'staf
     .from('shops').select('id').eq('owner_user_id', userId).maybeSingle();
   if (shop) return 'owner';
   const { data: barber } = await supabase
-    .from('barbers').select('id').eq('user_id', userId).maybeSingle();
+    .from('staff').select('id').eq('user_id', userId).eq('is_active', true).maybeSingle();
   if (barber) return 'staff';
   return null;
 }

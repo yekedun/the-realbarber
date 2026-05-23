@@ -112,7 +112,7 @@ export default function AgendaScreen() {
       const { data: shopData } = await supabase.from('shops').select('id').eq('owner_user_id', user.id).maybeSingle();
       if (!shopData) return;
       setShopId(shopData.id);
-      const { data: barbers } = await supabase.from('barbers').select('id, name').eq('shop_id', shopData.id);
+      const { data: barbers } = await supabase.from('staff').select('id, name').eq('shop_id', shopData.id).eq('is_active', true);
       setBarberList((barbers ?? []) as { id: string; name: string }[]);
     })();
   }, []);
@@ -133,19 +133,19 @@ export default function AgendaScreen() {
     if (!barbers?.length) { setCols([]); return; }
 
     const [{ data: appts }, { data: blocks }] = await Promise.all([
-      supabase.from('appointments').select('id, barber_id, customer_name, service_name, starts_at, duration_min, status')
-        .in('barber_id', barbers.map((b: any) => b.id))
+      supabase.from('appointments').select('id, staff_id, customer_name, service_name, starts_at, duration_min, status')
+        .in('staff_id', barbers.map((b: any) => b.id))
         .gte('starts_at', dayStart.toISOString()).lt('starts_at', dayEnd.toISOString())
         .neq('status', 'cancelled'),
-      supabase.from('blocks').select('id, barber_id, starts_at, ends_at, reason')
-        .in('barber_id', barbers.map((b: any) => b.id))
+      supabase.from('blocks').select('id, staff_id, starts_at, ends_at, reason')
+        .in('staff_id', barbers.map((b: any) => b.id))
         .gte('starts_at', dayStart.toISOString()).lt('starts_at', dayEnd.toISOString()),
     ]);
 
     const now = new Date();
     const newCols: StaffCol[] = (barbers as any[]).map(barber => {
-      const barberAppts = (appts ?? []).filter((a: any) => a.barber_id === barber.id);
-      const barberBlocks = (blocks ?? []).filter((b: any) => b.barber_id === barber.id);
+      const barberAppts = (appts ?? []).filter((a: any) => a.staff_id === barber.id);
+      const barberBlocks = (blocks ?? []).filter((b: any) => b.staff_id === barber.id);
 
       const items: ColItem[] = [
         ...barberAppts.map((a: any) => {

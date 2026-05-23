@@ -121,13 +121,13 @@ export default function BlockScreen() {
   const [reason, setReason] = useState<'anlik' | 'mola' | 'kisisel'>('mola');
   const [blocked, setBlocked] = useState(false);
   const [startTime] = useState<string>(nowTime); // captured when screen mounts
-  const [barberId, setBarberId] = useState<string | null>(null);
+  const [staffId, setStaffId] = useState<string | null>(null);
 
   useEffect(() => {
     supabase.auth.getUser().then(({ data: { user } }) => {
       if (!user) return;
-      supabase.from('barbers').select('id').eq('user_id', user.id).maybeSingle()
-        .then(({ data }) => { if (data) setBarberId((data as any).id); });
+      supabase.from('staff').select('id').eq('user_id', user.id).eq('is_active', true).maybeSingle()
+        .then(({ data }) => { if (data) setStaffId((data as any).id); });
     });
   }, []);
 
@@ -292,14 +292,14 @@ export default function BlockScreen() {
         {/* Button variant="primary" size="lg" full "Kapat" */}
         <View style={styles.btnWrap}>
           <TouchableOpacity style={styles.primaryBtn} onPress={async () => {
-            if (barberId) {
+            if (staffId) {
               const [h, m] = startTime.split(':').map(Number);
               const now = new Date();
               now.setHours(h, m, 0, 0);
               const end = new Date(now.getTime() + dur * 60000);
               const reasonMap: Record<string, string> = { anlik: 'walkin', mola: 'break', kisisel: 'personal' };
               await supabase.from('blocks').insert({
-                barber_id: barberId,
+                staff_id: staffId,
                 starts_at: now.toISOString(),
                 ends_at: end.toISOString(),
                 reason: reasonMap[reason] ?? 'break',
