@@ -575,7 +575,11 @@ export default function SettingsScreen() {
   useEffect(() => {
     supabase.auth.getUser().then(({ data: { user } }) => {
       if (!user) return;
-      supabase.from('shops').select('id, name, address, bio, phone, slug, commission_enabled, working_hours').eq('owner_user_id', user.id).maybeSingle()
+      supabase
+        .from('shops')
+        .select('id, name, address, bio, phone, slug, commission_enabled, working_hours')
+        .or(`owner_user_id.eq.${user.id},owner_id.eq.${user.id}`)
+        .maybeSingle()
         .then(({ data }) => {
           if (!data) return;
           setShopId(data.id);
