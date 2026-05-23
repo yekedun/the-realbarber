@@ -114,7 +114,11 @@ export default function AgendaScreen() {
     (async () => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
-      const { data: shopData } = await supabase.from('shops').select('id, slug').eq('owner_user_id', user.id).maybeSingle();
+      const { data: shopData } = await supabase
+        .from('shops')
+        .select('id, slug')
+        .or(`owner_user_id.eq.${user.id},owner_id.eq.${user.id}`)
+        .maybeSingle();
       if (!shopData) return;
       setShopId(shopData.id);
       setShopSlug(shopData.slug);
