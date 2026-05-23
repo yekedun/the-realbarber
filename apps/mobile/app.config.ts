@@ -1,6 +1,7 @@
 import { ExpoConfig, ConfigContext } from 'expo/config';
+import { withGradleProperties } from '@expo/config-plugins';
 
-export default ({ config }: ConfigContext): ExpoConfig => ({
+const baseConfig = ({ config }: ConfigContext): ExpoConfig => ({
   ...config,
   name: 'Sıradaki',
   slug: 'siradaki',
@@ -48,3 +49,17 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
     },
   },
 });
+
+export default (ctx: ConfigContext): ExpoConfig => {
+  const cfg = baseConfig(ctx);
+  return withGradleProperties(cfg as any, (props) => {
+    const idx = props.modResults.findIndex(
+      (item) => item.type === 'property' && item.key === 'org.gradle.jvmargs'
+    );
+    if (idx !== -1) {
+      (props.modResults[idx] as { type: 'property'; key: string; value: string }).value =
+        '-Xmx4096m -XX:MaxMetaspaceSize=512m';
+    }
+    return props;
+  }) as ExpoConfig;
+};
