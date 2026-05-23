@@ -16,19 +16,18 @@
  *       Button variant="danger"  full size="lg" "İptal Et"
  *       Button variant="accent"  full size="lg" "Tamamlandı"
  */
-import React from 'react';
+import React, { useState } from 'react';
 import {
   View,
   Text,
   StyleSheet,
   TouchableOpacity,
   Linking,
+  Alert,
 } from 'react-native';
 import { Sheet } from './ds/Sheet';
 import { colors } from '../lib/theme';
-
-// TODO: connect Supabase — fetch appointment detail by id
-// supabase.from('appointments').select('*, services(name, price, duration_min), customers(name, phone)').eq('id', id).single()
+import { supabase } from '../lib/supabase';
 
 export interface AppointmentDetail {
   id: string;
@@ -56,6 +55,7 @@ export function AppointmentDetailSheet({
   onCancel,
   onComplete,
 }: AppointmentDetailSheetProps) {
+  const [busy, setBusy] = useState(false);
   if (!appointment) return null;
 
   const appt = appointment;
@@ -71,6 +71,47 @@ export function AppointmentDetailSheet({
     Linking.openURL(`sms:${appt.customerPhone}`);
   }
 
+  async function handleCancel() {
+    Alert.alert(
+      'Randevuyu İptal Et',
+      `${appt.customerName} için randevuyu iptal etmek istiyor musunuz?`,
+      [
+        { text: 'Vazgeç', style: 'cancel' },
+        {
+          text: 'İptal Et', style: 'destructive',
+          onPress: async () => {
+            setBusy(true);
+            const { error } = await supabase
+              .from('appointments')
+              .update({ status: 'cancelled' })
+              .eq('id', appt.id);
+            setBusy(false);
+            if (error) {
+              Alert.alert('Hata', error.message);
+              return;
+            }
+            onCancel(appt.id);
+            onClose();
+          },
+        },
+      ],
+    );
+  }
+
+  async function handleComplete() {
+    setBusy(true);
+    const { error } = await supabase.rpc('complete_appointment_with_revenue', {
+      p_appointment_id: appt.id,
+    });
+    setBusy(false);
+    if (error) {
+      Alert.alert('Hata', error.message);
+      return;
+    }
+    onComplete(appt.id);
+    onClose();
+  }
+
   return (
     <Sheet
       visible={visible}
@@ -82,24 +123,18 @@ export function AppointmentDetailSheet({
            Button variant="accent" full size="lg" "Tamamlandı" */
         <View style={styles.footerRow}>
           <TouchableOpacity
-            style={[styles.footerBtn, styles.dangerBtn]}
-            onPress={() => {
-              // TODO: connect Supabase — cancel appointment RPC
-              onCancel(appointment.id);
-              onClose();
-            }}
+            style={[styles.footerBtn, styles.dangerBtn, busy && styles.footerDisabled]}
+            onPress={busy ? undefined : handleCancel}
+            activeOpacity={0.8}
           >
             <Text style={styles.dangerBtnText}>İptal Et</Text>
           </TouchableOpacity>
           <TouchableOpacity
-            style={[styles.footerBtn, styles.accentBtn]}
-            onPress={() => {
-              // TODO: connect Supabase — mark appointment completed RPC
-              onComplete(appointment.id);
-              onClose();
-            }}
+            style={[styles.footerBtn, styles.accentBtn, busy && styles.footerDisabled]}
+            onPress={busy ? undefined : handleComplete}
+            activeOpacity={0.8}
           >
-            <Text style={styles.accentBtnText}>Tamamlandı</Text>
+            <Text style={styles.accentBtnText}>{busy ? '…' : 'Tamamlandı'}</Text>
           </TouchableOpacity>
         </View>
       }
@@ -219,6 +254,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 1,
+  },
+  footerDisabled: {
+    opacity: 0.5,
   },
 
   /* Button variant="danger" full size="lg":

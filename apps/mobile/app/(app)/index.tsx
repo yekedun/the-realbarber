@@ -430,9 +430,9 @@ export default function RandevularScreen() {
         visible={showDetail}
         onClose={() => { setShowDetail(false); setSelectedAppt(null); }}
         appointment={selectedAppt}
-        onEdit={() => { /* TODO: connect Supabase */ }}
-        onCancel={() => { /* TODO: connect Supabase */ }}
-        onComplete={() => { /* TODO: connect Supabase */ }}
+        onEdit={() => { /* edit flow: close sheet, open AddAppointmentModal in edit mode — future */ }}
+        onCancel={() => fetchAppointments()}
+        onComplete={() => fetchAppointments()}
       />
 
       {/* Add appointment modal */}
