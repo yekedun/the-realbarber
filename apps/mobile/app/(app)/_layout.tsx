@@ -18,6 +18,7 @@
  */
 import { Tabs } from 'expo-router';
 import { View, StyleSheet } from 'react-native';
+import { Clock3, MinusCircle, Settings } from 'lucide-react-native';
 import { colors } from '../../lib/theme';
 
 /**
@@ -47,7 +48,12 @@ export default function AppLayout() {
         name="index"
         options={{
           title: 'Randevular',
-          tabBarIcon: ({ focused }) => <TabIndicator focused={focused} />,
+          tabBarIcon: ({ color, focused }) => (
+            <>
+              <TabIndicator focused={focused} />
+              <Clock3 size={20} color={color} />
+            </>
+          ),
         }}
       />
 
@@ -56,7 +62,12 @@ export default function AppLayout() {
         name="block"
         options={{
           title: 'Blok',
-          tabBarIcon: ({ focused }) => <TabIndicator focused={focused} />,
+          tabBarIcon: ({ color, focused }) => (
+            <>
+              <TabIndicator focused={focused} />
+              <MinusCircle size={20} color={color} />
+            </>
+          ),
         }}
       />
 
@@ -65,7 +76,12 @@ export default function AppLayout() {
         name="settings"
         options={{
           title: 'Hesabım',
-          tabBarIcon: ({ focused }) => <TabIndicator focused={focused} />,
+          tabBarIcon: ({ color, focused }) => (
+            <>
+              <TabIndicator focused={focused} />
+              <Settings size={20} color={color} />
+            </>
+          ),
         }}
       />
     </Tabs>

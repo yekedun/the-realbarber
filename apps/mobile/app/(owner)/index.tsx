@@ -55,22 +55,12 @@ import { OverlineHeader } from '../../components/ds/OverlineHeader';
 import { SectionLabel } from '../../components/ds/SectionLabel';
 import { Chip } from '../../components/ds/Chip';
 
-// TODO: connect Supabase — replace dummy data with get_owner_summary RPC
+// TODO: connect Supabase — replace with get_owner_summary RPC
 
-const STAFF = [
-  { id: 'all',    name: 'Tüm Ekip', count: 12 },
-  { id: 'mehmet', name: 'Mehmet',   count: 5  },
-  { id: 'can',    name: 'Can',      count: 4  },
-  { id: 'ayse',   name: 'Ayşe',     count: 3  },
+/** Chip list — populated from Supabase once connected */
+const STAFF: { id: string; name: string }[] = [
+  { id: 'all', name: 'Tüm Ekip' },
 ];
-
-const STAFF_COLORS: Record<string, string> = {
-  mehmet: colors.brand[600],
-  can:    colors.umber[600],
-  ayse:   colors.mint[700],
-};
-
-const TOTAL = 12;
 
 /* ── Sparkline (bar-chart approximation in RN) ──────────────── */
 function Sparkline({ data, dark }: { data: number[]; dark: boolean }) {
@@ -145,8 +135,6 @@ interface KpiPolishedProps {
   label: string;
   value: string;
   unit?: string;
-  trend?: number;
-  trendLabel?: string;
   accent?: boolean;
   spark?: number[];
   progress?: number;
@@ -157,8 +145,6 @@ function KpiPolished({
   label,
   value,
   unit,
-  trend,
-  trendLabel,
   accent = false,
   spark,
   progress,
@@ -169,14 +155,6 @@ function KpiPolished({
   const fg     = dark ? '#ffffff'                    : colors.ink[900];
   const sub    = dark ? 'rgba(255,255,255,0.5)'      : colors.slate[500];
   const borCol = dark ? colors.ink[700]              : colors.slate[200];
-  const up     = trend !== undefined && trend >= 0;
-
-  const trendBg = up
-    ? (dark ? 'rgba(0,184,148,0.12)' : colors.mint[100])
-    : (dark ? 'rgba(160,48,63,0.18)' : colors.coral[100]);
-  const trendFg = up
-    ? (dark ? 'rgba(0,255,180,0.75)' : colors.mint[700])
-    : (dark ? 'rgba(255,120,100,0.8)' : colors.coral[700]);
 
   return (
     <View style={[kpi.card, { backgroundColor: bg, borderColor: borCol }]}>
@@ -188,17 +166,15 @@ function KpiPolished({
         <View style={{ minWidth: 0, flex: 1 }}>
           {/* Value + unit */}
           <View style={{ flexDirection: 'row', alignItems: 'flex-end' }}>
-            <Text style={[kpi.value, { color: fg }]}>{value}</Text>
+            <Text
+              style={[kpi.value, { color: fg }]}
+              numberOfLines={1}
+              adjustsFontSizeToFit
+            >
+              {value}
+            </Text>
             {unit ? <Text style={[kpi.unit, { color: sub }]}>{unit}</Text> : null}
           </View>
-          {/* Trend pill */}
-          {trend !== undefined ? (
-            <View style={[kpi.trendPill, { backgroundColor: trendBg }]}>
-              <Text style={[kpi.trendText, { color: trendFg }]}>
-                {up ? '↑' : '↓'} {Math.abs(trend)}% {trendLabel ?? 'dün'}
-              </Text>
-            </View>
-          ) : null}
         </View>
         {/* Sparkline or Ring — right side */}
         {spark && <Sparkline data={spark} dark={dark} />}
@@ -252,17 +228,6 @@ const kpi = StyleSheet.create({
     letterSpacing: 0.6,            // 0.06em × 10
     marginBottom: 2,
   },
-  trendPill: {
-    marginTop: 6,
-    alignSelf: 'flex-start',
-    borderRadius: 999,
-    paddingHorizontal: 7,
-    paddingVertical: 2,
-  },
-  trendText: {
-    fontSize: 10,
-    fontFamily: 'Montserrat-Bold',
-  },
 });
 
 /* ── Main Screen ─────────────────────────────────────────────── */
@@ -275,8 +240,6 @@ export default function OzetScreen() {
     // TODO: connect Supabase — refetch today's summary
     setRefreshing(false);
   }
-
-  const teamMembers = STAFF.slice(1); // Mehmet, Can, Ayşe
 
   return (
     <ScrollView
@@ -309,75 +272,47 @@ export default function OzetScreen() {
       <View style={styles.kpiRow}>
         <KpiPolished
           label="Toplam"
-          value="12"
-          trend={8}
-          spark={[7, 9, 8, 10, 7, 11, 12]}
+          value="—"
         />
         <KpiPolished
           label="Tamamlanan"
-          value="8"
-          trend={5}
-          progress={8}
-          max={12}
+          value="—"
         />
         <KpiPolished
           label="Tahmini"
-          value="2.840"
+          value="—"
           unit="₺"
           accent
-          trend={12}
-          spark={[2100, 2300, 2200, 2650, 2480, 2840]}
         />
       </View>
 
-      {/* Öngörüler section */}
+      {/* Öngörüler section — TODO: connect Supabase */}
       <SectionLabel>Öngörüler (30 gün)</SectionLabel>
       <View style={styles.insightsCard}>
-        {/* Row 1 — En Çok Tercih Edilen */}
         <View style={[styles.insightRow, styles.insightBorder]}>
           <View>
             <Text style={styles.insightRowLabel}>En Çok Tercih Edilen</Text>
-            <Text style={styles.insightRowValue}>Saç + Sakal</Text>
+            <Text style={styles.insightRowValue}>—</Text>
           </View>
-          <Text style={styles.insightRowRight}>%34</Text>
+          <Text style={styles.insightRowRight}>—</Text>
         </View>
-        {/* Row 2 — En Yoğun Gün */}
         <View style={styles.insightRow}>
           <View>
             <Text style={styles.insightRowLabel}>En Yoğun Gün</Text>
-            <Text style={styles.insightRowValue}>Cumartesi</Text>
+            <Text style={styles.insightRowValue}>—</Text>
           </View>
-          <Text style={styles.insightRowRight}>32 randevu</Text>
+          <Text style={styles.insightRowRight}>—</Text>
         </View>
       </View>
 
-      {/* Usta Bazında */}
+      {/* Usta Bazında — TODO: connect Supabase */}
       <SectionLabel>Usta Bazında</SectionLabel>
       <View style={styles.staffList}>
-        {teamMembers.map(s => {
-          const accentColor = STAFF_COLORS[s.id] ?? colors.brand[600];
-          const fillWidth   = (s.count / TOTAL) * 36;
-          return (
-            <View key={s.id} style={styles.staffCard}>
-              {/* Avatar — 34×34 borderRadius:999 */}
-              <View style={[styles.avatar, { backgroundColor: accentColor }]}>
-                <Text style={styles.avatarText}>{s.name[0]}</Text>
-              </View>
-              {/* Name + meta */}
-              <View style={styles.staffInfo}>
-                <Text style={styles.staffName}>{s.name}</Text>
-                <Text style={styles.staffMeta}>{s.count} randevu</Text>
-              </View>
-              {/* Mini bar — width:36 */}
-              <View style={styles.miniBarWrap}>
-                <Text style={[styles.miniCount, { color: colors.ink[900] }]}>{s.count}</Text>
-                <View style={styles.miniTrack}>
-                  <View style={[styles.miniFill, { width: fillWidth, backgroundColor: accentColor }]} />
-                </View>
-              </View>
-            </View>
-          );
-        })}
+        <View style={[styles.insightsCard, { marginHorizontal: 0, paddingVertical: 16, alignItems: 'center' }]}>
+          <Text style={{ fontSize: 13, fontFamily: 'Montserrat-Regular', color: colors.slate[400] }}>
+            Henüz veri yok
+          </Text>
+        </View>
       </View>
     </ScrollView>
   );

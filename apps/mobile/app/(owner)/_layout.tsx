@@ -8,20 +8,12 @@
  *   { key:'kazanc',  icon:'wallet',        label:'Kazanç'  }
  *   { key:'ekip',    icon:'users',         label:'Ekip'    }
  *   { key:'ayarlar', icon:'settings',      label:'Ayarlar' }
- *
- * TabBar styles (components.jsx TabBar):
- *   borderTop: '1px solid var(--slate-200)'
- *   background: 'rgba(247,248,250,0.94)'
- *   height: 74
- *   paddingBottom: 6
- *   active color:   ink-900
- *   inactive color: slate-500
- *   label: fontSize:10 fontWeight:600 letterSpacing:0.04em
- *
- * Hidden screens (href:null): onboarding, services
  */
 import { Tabs } from 'expo-router';
+import { BarChart3, CalendarDays, Wallet, Users, Settings } from 'lucide-react-native';
 import { colors } from '../../lib/theme';
+
+const ICON_SIZE = 20;
 
 export default function OwnerLayout() {
   return (
@@ -40,15 +32,45 @@ export default function OwnerLayout() {
         tabBarLabelStyle: {
           fontFamily: 'Montserrat-SemiBold',
           fontSize: 10,
-          letterSpacing: 0.4,    // 0.04em × 10
+          letterSpacing: 0.4,
         },
       }}
     >
-      <Tabs.Screen name="index"    options={{ title: 'Özet'    }} />
-      <Tabs.Screen name="agenda"   options={{ title: 'Ajanda'  }} />
-      <Tabs.Screen name="earnings" options={{ title: 'Kazanç'  }} />
-      <Tabs.Screen name="team"     options={{ title: 'Ekip'    }} />
-      <Tabs.Screen name="settings" options={{ title: 'Ayarlar' }} />
+      <Tabs.Screen
+        name="index"
+        options={{
+          title: 'Özet',
+          tabBarIcon: ({ color }) => <BarChart3 size={ICON_SIZE} color={color} />,
+        }}
+      />
+      <Tabs.Screen
+        name="agenda"
+        options={{
+          title: 'Ajanda',
+          tabBarIcon: ({ color }) => <CalendarDays size={ICON_SIZE} color={color} />,
+        }}
+      />
+      <Tabs.Screen
+        name="earnings"
+        options={{
+          title: 'Kazanç',
+          tabBarIcon: ({ color }) => <Wallet size={ICON_SIZE} color={color} />,
+        }}
+      />
+      <Tabs.Screen
+        name="team"
+        options={{
+          title: 'Ekip',
+          tabBarIcon: ({ color }) => <Users size={ICON_SIZE} color={color} />,
+        }}
+      />
+      <Tabs.Screen
+        name="settings"
+        options={{
+          title: 'Ayarlar',
+          tabBarIcon: ({ color }) => <Settings size={ICON_SIZE} color={color} />,
+        }}
+      />
       {/* Non-tab screens — hidden from tab bar */}
       <Tabs.Screen name="onboarding" options={{ href: null }} />
       <Tabs.Screen name="services"   options={{ href: null }} />
