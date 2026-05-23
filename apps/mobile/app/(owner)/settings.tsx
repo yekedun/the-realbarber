@@ -246,6 +246,7 @@ function ProfileEditorSheet({ open, onClose, shopId, initialName, initialAddress
                   placeholder="örn. Keskin Berber"
                   placeholderTextColor={colors.slate[300]}
                   autoCorrect={false}
+                  spellCheck={false}
                   style={styles.textInput}
                 />
                 <Text style={styles.fieldHint}>
@@ -262,6 +263,7 @@ function ProfileEditorSheet({ open, onClose, shopId, initialName, initialAddress
                   placeholder="Mahalle, Sokak No, İl"
                   placeholderTextColor={colors.slate[300]}
                   autoCorrect={false}
+                  spellCheck={false}
                   style={styles.textInput}
                 />
               </View>
@@ -293,6 +295,7 @@ function ProfileEditorSheet({ open, onClose, shopId, initialName, initialAddress
                   multiline
                   numberOfLines={3}
                   autoCorrect={false}
+                  spellCheck={false}
                   style={[styles.textInput, styles.textArea]}
                 />
                 <Text style={styles.fieldHint}>{bio.length}/200 karakter</Text>
