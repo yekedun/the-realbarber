@@ -3,7 +3,10 @@ apps/mobile/android/
 apps/mobile/ios/
 apps/mobile/.expo/
 apps/mobile/build-archive/
+apps/mobile/build-archive/**
 
-# Dev artifacts
+# Heavy dirs excluded by EAS by default — listed here as safety net
 node_modules/
-.turbo/
+**/node_modules/
+.pnpm-store/
+**/.turbo/
