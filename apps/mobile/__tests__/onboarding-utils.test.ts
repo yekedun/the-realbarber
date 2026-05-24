@@ -1,4 +1,4 @@
-import { buildOnboardingServiceInsert } from '../lib/onboarding-utils';
+import { buildOnboardingServiceInsert, buildBarberLink } from '../lib/onboarding-utils';
 
 describe('buildOnboardingServiceInsert', () => {
   it('uses is_active (not active) matching the services table schema', () => {
@@ -21,5 +21,20 @@ describe('buildOnboardingServiceInsert', () => {
     const payload = buildOnboardingServiceInsert('shop-uuid', 'Test', 60, '100');
     expect(payload.shop_id).toBe('shop-uuid');
     expect(payload.duration_min).toBe(60);
+  });
+});
+
+describe('buildBarberLink', () => {
+  it('returns the full siradaki.app URL for a barber', () => {
+    expect(buildBarberLink('keskin-berber', 'ahmet')).toBe('https://siradaki.app/keskin-berber/u/ahmet');
+  });
+
+  it('returns null when staff slug is missing', () => {
+    expect(buildBarberLink('keskin-berber', null)).toBeNull();
+    expect(buildBarberLink('keskin-berber', '')).toBeNull();
+  });
+
+  it('returns null when shop slug is missing', () => {
+    expect(buildBarberLink(null, 'ahmet')).toBeNull();
   });
 });

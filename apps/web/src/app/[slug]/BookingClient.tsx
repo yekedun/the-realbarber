@@ -12,7 +12,7 @@ import { nextBookingSuccessState } from './booking-flow-state';
 /* ── Types ────────────────────────────────────────────────────── */
 interface StaffMember { id: string; name: string; }
 interface Shop { id: string; name: string; address: string | null; slug: string; }
-interface Props { shop: Shop; services: Service[]; staff: StaffMember[]; }
+interface Props { shop: Shop; services: Service[]; staff: StaffMember[]; preselectedStaffId?: string | null; }
 interface RawSlot { starts_at: string; available: boolean; }
 
 /* ── Helpers ──────────────────────────────────────────────────── */
@@ -38,11 +38,11 @@ function buildDays(n: number): Date[] {
 const FN_BASE = process.env.NEXT_PUBLIC_SUPABASE_URL + '/functions/v1';
 
 /* ── Component ────────────────────────────────────────────────── */
-export default function BookingClient({ shop, services, staff }: Props) {
+export default function BookingClient({ shop, services, staff, preselectedStaffId }: Props) {
   const days = buildDays(14);
 
   const [selService, setSelService] = useState<string | null>(services[0]?.id ?? null);
-  const [selStaff,   setSelStaff]   = useState<string | null>(null); // null = any
+  const [selStaff,   setSelStaff]   = useState<string | null>(preselectedStaffId ?? null);
   const [selDate,    setSelDate]    = useState<Date>(() => { const d=new Date(); d.setHours(0,0,0,0); return d; });
   const [selSlot,    setSelSlot]    = useState<string | null>(null); // HH:MM label
 
@@ -95,6 +95,10 @@ export default function BookingClient({ shop, services, staff }: Props) {
     ? `${svc.name} · ${svc.duration_min} dk · ${toDateStr(selDate).split('-').reverse().join('.')} ${selSlot ?? ''}${staffName ? ' · '+staffName : ''}`
     : '';
 
+  /* Barber badge: shown when pre-selected, disappears when user picks someone else */
+  const preselectedName = preselectedStaffId ? staff.find(s => s.id === preselectedStaffId)?.name : null;
+  const showBarberBadge = preselectedName !== null && preselectedName !== undefined && selStaff === preselectedStaffId;
+
   return (
     <div style={{ minHeight: '100vh', background: 'var(--bg)', fontFamily: 'var(--font-sans)' }}>
 
@@ -109,6 +113,16 @@ export default function BookingClient({ shop, services, staff }: Props) {
           </h1>
           {shop.address && (
             <div style={{ fontSize: 13, color: 'var(--fg-3)', marginTop: 5 }}>{shop.address}</div>
+          )}
+          {showBarberBadge && (
+            <div style={{
+              display: 'inline-flex', alignItems: 'center', gap: 6,
+              marginTop: 10, padding: '4px 10px', borderRadius: 999,
+              background: 'var(--brand-50, #EEF2FF)', border: '1px solid var(--brand-200, #A5B4FC)',
+              fontSize: 12, fontWeight: 600, color: 'var(--brand-700, #3730A3)',
+            }}>
+              ✂ {preselectedName}&apos;in linkindesin
+            </div>
           )}
         </div>
       </header>

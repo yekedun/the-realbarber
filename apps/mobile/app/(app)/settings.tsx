@@ -1,29 +1,12 @@
 /**
  * M11 — Staff: Hesabım screen
- * Source: index.html → HesabimScreen + screens.jsx (implicit)
- *
- * Layout (exact from index.html HesabimScreen):
- *   height: '100%', overflowY: 'auto', paddingBottom: 24
- *   OverlineHeader eyebrow="Ayarlar" title="Hesabım"
- *   Card (padding 16, margin '0 20px'):
- *     overline "Personel" (11px SemiBold 0.14em uppercase slate-500)
- *     name    "Mehmet Demir"  (17px Bold marginTop 6)
- *     email   "mehmet@dukkan.com" (13px Regular fg-3 marginTop 2)
- *   Button variant="danger" full size="lg" "Çıkış Yap"
- *     (margin '32px 20px 0')
- *   Footer note "Sıradaki · Usta Ekranı"
- *     (textAlign center, 11px, color slate-400, marginTop 24, letterSpacing 0.08em)
- *
- * Sign-out Alert (exact strings from Button onPress):
- *   title:   "Çıkış Yap"
- *   message: "Hesaptan çıkmak istediğinizden emin misiniz?"
- *   buttons: [{ text: 'Vazgeç', style: 'cancel' }, { text: 'Çıkış Yap', style: 'destructive' }]
  */
 import React, { useEffect, useState } from 'react';
 import {
   View,
   Text,
   ScrollView,
+  Share,
   TouchableOpacity,
   StyleSheet,
   Alert,
@@ -32,17 +15,34 @@ import {
 import { useRouter } from 'expo-router';
 import { colors } from '../../lib/theme';
 import { supabase } from '../../lib/supabase';
+import { buildBarberLink } from '../../lib/onboarding-utils';
+
+interface Profile {
+  name: string;
+  email: string;
+  barberLink: string | null;
+}
 
 export default function HesabimScreen() {
   const router = useRouter();
-  const [profile, setProfile] = useState<{ name: string; email: string } | null>(null);
+  const [profile, setProfile] = useState<Profile | null>(null);
 
   useEffect(() => {
     supabase.auth.getUser().then(({ data: { user } }) => {
       if (!user) return;
-      supabase.from('staff').select('name').eq('user_id', user.id).maybeSingle()
+      supabase
+        .from('staff')
+        .select('name, slug, shops(slug)')
+        .eq('user_id', user.id)
+        .maybeSingle()
         .then(({ data }) => {
-          setProfile({ name: data?.name ?? user.email?.split('@')[0] ?? '—', email: user.email ?? '—' });
+          const shopSlug = (data?.shops as any)?.slug ?? null;
+          const staffSlug = data?.slug ?? null;
+          setProfile({
+            name: data?.name ?? user.email?.split('@')[0] ?? '—',
+            email: user.email ?? '—',
+            barberLink: buildBarberLink(shopSlug, staffSlug),
+          });
         });
     });
   }, []);
@@ -88,6 +88,13 @@ export default function HesabimScreen() {
     );
   }
 
+  async function handleShare() {
+    if (!profile?.barberLink) return;
+    try {
+      await Share.share({ message: profile.barberLink });
+    } catch {}
+  }
+
   return (
     <SafeAreaView style={styles.safe}>
       <ScrollView
@@ -95,32 +102,39 @@ export default function HesabimScreen() {
         contentContainerStyle={styles.content}
         showsVerticalScrollIndicator={false}
       >
-        {/* OverlineHeader: eyebrow="Ayarlar", title="Hesabım"
-            padding: '8px 20px 16px'
-            eyebrow: 11px SemiBold 0.16em uppercase slate-500
-            title:   32px Bold -0.02em ink-900 marginTop 10 lineHeight 1.05 */}
         <View style={styles.header}>
           <Text style={styles.eyebrow}>Ayarlar</Text>
           <Text style={styles.title}>Hesabım</Text>
         </View>
 
-        {/* Card: padding 16, margin '0 20px'
-            bg slate-0, border slate-200, borderRadius 12, shadow 0 1px 2px */}
+        {/* Profile card */}
         <View style={styles.cardWrap}>
           <View style={styles.card}>
-            {/* overline "Personel": 11px SemiBold 0.14em uppercase slate-500 */}
             <Text style={styles.cardOverline}>Personel</Text>
-            {/* name: 17px Bold marginTop 6 ink-900 */}
             <Text style={styles.cardName}>{profile?.name ?? '—'}</Text>
-            {/* email: 13px Regular fg-3 marginTop 2 */}
             <Text style={styles.cardEmail}>{profile?.email ?? '—'}</Text>
           </View>
         </View>
 
-        {/* Button variant="danger" full size="lg" "Çıkış Yap"
-            Source: Button danger = transparent bg, border coral-600, color coral-600
-            size lg = height 52, paddingHorizontal 20, fontSize 15
-            padding: '32px 20px 0' */}
+        {/* Randevu linki — only shown when staff has a slug */}
+        {profile?.barberLink ? (
+          <View style={styles.linkSection}>
+            <Text style={styles.linkSectionLabel}>Randevu Linkim</Text>
+            <View style={styles.linkCard}>
+              <Text style={styles.linkUrl} numberOfLines={1} ellipsizeMode="tail">
+                {profile.barberLink}
+              </Text>
+              <TouchableOpacity style={styles.shareBtn} onPress={handleShare} activeOpacity={0.75}>
+                <Text style={styles.shareBtnText}>Paylaş</Text>
+              </TouchableOpacity>
+            </View>
+            <Text style={styles.linkHint}>
+              Müşterilerinle bu linki paylaş — doğrudan sana randevu alabilirler.
+            </Text>
+          </View>
+        ) : null}
+
+        {/* Danger actions */}
         <View style={styles.signOutWrap}>
           <TouchableOpacity style={styles.dangerBtn} onPress={handleSignOut}>
             <Text style={styles.dangerBtnText}>Çıkış Yap</Text>
@@ -130,8 +144,6 @@ export default function HesabimScreen() {
           </TouchableOpacity>
         </View>
 
-        {/* Footer note: "Sıradaki · Usta Ekranı"
-            textAlign center, 11px, color slate-400, marginTop 24, letterSpacing 0.08em */}
         <Text style={styles.footer}>Sıradaki · Usta Ekranı</Text>
       </ScrollView>
     </SafeAreaView>
@@ -139,28 +151,15 @@ export default function HesabimScreen() {
 }
 
 const styles = StyleSheet.create({
-  safe: {
-    flex: 1,
-    backgroundColor: colors.slate[50],
-  },
+  safe: { flex: 1, backgroundColor: colors.slate[50] },
   scroll: { flex: 1 },
-  content: {
-    paddingBottom: 24,
-  },
+  content: { paddingBottom: 24 },
 
-  /* OverlineHeader (components.jsx):
-     padding: '8px 20px 16px'
-     eyebrow: 11px SemiBold 0.16em uppercase slate-500 lineHeight 1
-     title:   32px Bold -0.02em ink-900 marginTop 10 lineHeight 1.05 */
-  header: {
-    paddingHorizontal: 20,
-    paddingTop: 8,
-    paddingBottom: 16,
-  },
+  header: { paddingHorizontal: 20, paddingTop: 8, paddingBottom: 16 },
   eyebrow: {
     fontFamily: 'Montserrat-SemiBold',
     fontSize: 11,
-    letterSpacing: 11 * 0.16,   // 0.16em
+    letterSpacing: 11 * 0.16,
     textTransform: 'uppercase',
     color: colors.slate[500],
     lineHeight: 11,
@@ -168,17 +167,13 @@ const styles = StyleSheet.create({
   title: {
     fontFamily: 'Montserrat-Bold',
     fontSize: 32,
-    letterSpacing: 32 * -0.02,  // -0.02em
+    letterSpacing: 32 * -0.02,
     color: colors.ink[900],
     marginTop: 10,
-    lineHeight: 33.6,           // 1.05
+    lineHeight: 33.6,
   },
 
-  /* Card wrapper: margin '0 20px' */
-  cardWrap: {
-    paddingHorizontal: 20,
-  },
-  /* Card: padding 16, bg slate-0, border slate-200, borderRadius 12, shadow */
+  cardWrap: { paddingHorizontal: 20 },
   card: {
     padding: 16,
     backgroundColor: colors.slate[0],
@@ -191,36 +186,62 @@ const styles = StyleSheet.create({
     shadowRadius: 2,
     elevation: 1,
   },
-  /* overline "Personel": 11px SemiBold 0.14em uppercase slate-500 */
   cardOverline: {
     fontFamily: 'Montserrat-SemiBold',
     fontSize: 11,
-    letterSpacing: 11 * 0.14,   // 0.14em
+    letterSpacing: 11 * 0.14,
     textTransform: 'uppercase',
     color: colors.slate[500],
   },
-  /* name: 17px Bold marginTop 6 ink-900 */
-  cardName: {
+  cardName: { fontFamily: 'Montserrat-Bold', fontSize: 17, color: colors.ink[900], marginTop: 6 },
+  cardEmail: { fontFamily: 'Montserrat-Regular', fontSize: 13, color: colors.slate[500], marginTop: 2 },
+
+  linkSection: { paddingHorizontal: 20, marginTop: 20 },
+  linkSectionLabel: {
     fontFamily: 'Montserrat-Bold',
-    fontSize: 17,
-    color: colors.ink[900],
-    marginTop: 6,
-  },
-  /* email: 13px Regular fg-3 (slate-500) marginTop 2 */
-  cardEmail: {
-    fontFamily: 'Montserrat-Regular',
-    fontSize: 13,
+    fontSize: 10,
+    letterSpacing: 10 * 0.16,
+    textTransform: 'uppercase',
     color: colors.slate[500],
-    marginTop: 2,
+    marginBottom: 8,
+  },
+  linkCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: colors.brand[50] ?? colors.slate[50],
+    borderWidth: 1,
+    borderColor: colors.brand[200] ?? colors.brand[600],
+    borderRadius: 12,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+    gap: 10,
+  },
+  linkUrl: {
+    flex: 1,
+    fontFamily: 'Montserrat-SemiBold',
+    fontSize: 13,
+    color: colors.brand[600],
+  },
+  shareBtn: {
+    backgroundColor: colors.brand[600],
+    borderRadius: 8,
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+  },
+  shareBtnText: {
+    fontFamily: 'Montserrat-SemiBold',
+    fontSize: 12,
+    color: '#ffffff',
+  },
+  linkHint: {
+    marginTop: 7,
+    fontFamily: 'Montserrat-Regular',
+    fontSize: 11,
+    color: colors.slate[400],
+    lineHeight: 16,
   },
 
-  /* Button variant="danger" full size="lg":
-     transparent bg, border coral-600, color coral-600, height 52, borderRadius 12
-     wrapper: padding '32px 20px 0' */
-  signOutWrap: {
-    paddingHorizontal: 20,
-    paddingTop: 32,
-  },
+  signOutWrap: { paddingHorizontal: 20, paddingTop: 32 },
   dangerBtn: {
     height: 52,
     borderRadius: 12,
@@ -237,14 +258,12 @@ const styles = StyleSheet.create({
     letterSpacing: 15 * -0.005,
   },
 
-  /* Footer: "Sıradaki · Usta Ekranı"
-     textAlign center, 11px, color slate-400, marginTop 24, letterSpacing 0.08em */
   footer: {
     textAlign: 'center',
     fontFamily: 'Montserrat-Regular',
     fontSize: 11,
     color: colors.slate[400],
     marginTop: 24,
-    letterSpacing: 11 * 0.08,   // 0.08em
+    letterSpacing: 11 * 0.08,
   },
 });

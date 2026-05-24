@@ -1,3 +1,11 @@
+export function buildBarberLink(
+  shopSlug: string | null | undefined,
+  staffSlug: string | null | undefined,
+): string | null {
+  if (!shopSlug || !staffSlug) return null;
+  return `https://siradaki.app/${shopSlug}/u/${staffSlug}`;
+}
+
 export function buildOnboardingServiceInsert(
   shopId: string,
   name: string,
