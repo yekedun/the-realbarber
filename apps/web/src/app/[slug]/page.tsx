@@ -44,7 +44,7 @@ export default async function ShopPage({ params }: Props) {
     .from('services')
     .select('id, name, duration_min, price_cents')
     .eq('shop_id', shop.id)
-    .eq('active', true)
+    .eq('is_active', true)
     .order('name');
 
   // Active staff
