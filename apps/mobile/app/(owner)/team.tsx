@@ -557,26 +557,32 @@ export default function TeamScreen() {
   }, []);
 
   async function loadStaff() {
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return;
-    const { data: shopData } = await supabase
+    const { data: { user }, error: authErr } = await supabase.auth.getUser();
+    if (authErr) console.warn('[team] auth error:', authErr);
+    if (!user) { console.warn('[team] no user — not logged in'); return; }
+    const { data: shopData, error: shopErr } = await supabase
       .from('shops')
       .select('id')
       .or(`owner_user_id.eq.${user.id},owner_id.eq.${user.id}`)
       .maybeSingle();
-    if (!shopData) return;
+    if (shopErr) { console.warn('[team] shops error:', shopErr); Alert.alert('Hata', `Dükkan yüklenemedi: ${shopErr.message}`); return; }
+    if (!shopData) { console.warn('[team] no shop for user', user.id); return; }
     setShopId(shopData.id);
-    const { data } = await supabase.from('staff').select('id, name, is_active, commission_type, commission_rate_bps').eq('shop_id', shopData.id);
-    if (data) {
-      setStaff(data.map((s: any) => ({
-        id: s.id,
-        name: s.name,
-        status: s.is_active ? 'Aktif' : 'Pasif',
-        meta: s.commission_type && s.commission_rate_bps
-          ? `%${Math.round(s.commission_rate_bps / 100)} komisyon`
-          : 'Komisyon yok',
-      })));
-    }
+    const { data, error: staffErr } = await supabase
+      .from('staff')
+      .select('id, name, is_active, commission_type, commission_rate_bps')
+      .eq('shop_id', shopData.id)
+      .order('created_at');
+    if (staffErr) { console.warn('[team] staff error:', staffErr); Alert.alert('Hata', `Personel listesi yüklenemedi: ${staffErr.message}`); return; }
+    console.log('[team] loaded', (data ?? []).length, 'staff for shop', shopData.id);
+    setStaff((data ?? []).map((s: any) => ({
+      id: s.id,
+      name: s.name,
+      status: s.is_active ? 'Aktif' : 'Pasif',
+      meta: s.commission_type && s.commission_rate_bps
+        ? `%${Math.round(s.commission_rate_bps / 100)} komisyon`
+        : 'Komisyon yok',
+    })));
   }
 
   function handleToggleStatus(s: StaffMember) {
@@ -649,9 +655,12 @@ export default function TeamScreen() {
     }
 
     if (insertErr || !data) {
-      Alert.alert('Hata', 'Personel eklenemedi. Lütfen tekrar deneyin.');
+      console.warn('[team] add-staff failed:', insertErr);
+      const msg = (insertErr as any)?.message ?? 'bilinmeyen hata';
+      Alert.alert('Hata', `Personel eklenemedi: ${msg}`);
       return;
     }
+    console.log('[team] added staff', (data as any).id);
 
     const rate = (data as any).commission_rate_bps;
     setStaff((prev) => [

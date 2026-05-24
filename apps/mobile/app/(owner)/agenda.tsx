@@ -109,33 +109,41 @@ export default function AgendaScreen() {
   const [showAdd, setShowAdd] = useState(false);
   const [services, setServices] = useState<ServiceOption[]>([]);
 
-  // Fetch shop + barbers once on mount
+  async function loadShopAndChildren() {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return;
+    const { data: shopData, error: shopErr } = await supabase
+      .from('shops')
+      .select('id, slug')
+      .or(`owner_user_id.eq.${user.id},owner_id.eq.${user.id}`)
+      .maybeSingle();
+    if (shopErr) { console.warn('[agenda] shops query error:', shopErr); return; }
+    if (!shopData) return;
+    setShopId(shopData.id);
+    setShopSlug(shopData.slug);
+    const { data: barbers, error: staffErr } = await supabase.from('staff').select('id, name').eq('shop_id', shopData.id).eq('is_active', true);
+    if (staffErr) console.warn('[agenda] staff query error:', staffErr);
+    setBarberList((barbers ?? []) as { id: string; name: string }[]);
+    const { data: svcs, error: svcErr } = await supabase.from('services')
+      .select('id, name, duration_min, price_cents')
+      .eq('shop_id', shopData.id)
+      .eq('is_active', true);
+    if (svcErr) console.warn('[agenda] services query error:', svcErr);
+    setServices((svcs ?? []).map((s: any) => ({
+      id: s.id,
+      label: s.name,
+      dur: s.duration_min,
+      price: `${Math.round(s.price_cents / 100)}₺`,
+    })));
+  }
+
+  useEffect(() => { loadShopAndChildren(); }, []);
+
+  // Refresh services + staff when the Add modal opens so new entries from
+  // other screens (services, team) appear without restart.
   useEffect(() => {
-    (async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
-      const { data: shopData } = await supabase
-        .from('shops')
-        .select('id, slug')
-        .or(`owner_user_id.eq.${user.id},owner_id.eq.${user.id}`)
-        .maybeSingle();
-      if (!shopData) return;
-      setShopId(shopData.id);
-      setShopSlug(shopData.slug);
-      const { data: barbers } = await supabase.from('staff').select('id, name').eq('shop_id', shopData.id).eq('is_active', true);
-      setBarberList((barbers ?? []) as { id: string; name: string }[]);
-      const { data: svcs } = await supabase.from('services')
-        .select('id, name, duration_min, price_cents')
-        .eq('shop_id', shopData.id)
-        .eq('is_active', true);
-      setServices((svcs ?? []).map((s: any) => ({
-        id: s.id,
-        label: s.name,
-        dur: s.duration_min,
-        price: `${Math.round(s.price_cents / 100)}₺`,
-      })));
-    })();
-  }, []);
+    if (showAdd) loadShopAndChildren();
+  }, [showAdd]);
 
   useEffect(() => {
     if (barberList.length) loadAgenda();
@@ -289,24 +297,37 @@ export default function AgendaScreen() {
         services={services}
         staffList={barberList}
         onSave={async (data) => {
-          if (!shopSlug) return;
-          try {
-            const { error } = await supabase.functions.invoke('app-book-appointment', {
-              body: {
-                shop_slug: shopSlug,
-                service_id: data.serviceId,
-                staff_id: data.staffId,
-                starts_at: `${data.date}T${data.time}:00`,
-                customer_name: data.customerName,
-                customer_phone: data.customerPhone || null,
-              },
-            });
-            if (error) throw error;
-            setShowAdd(false);
-            loadAgenda();
-          } catch {
-            Alert.alert('Hata', 'Randevu eklenemedi. Seçilen saat dolu olabilir.');
+          if (!shopSlug) {
+            Alert.alert('Hata', 'Dükkan bilgisi yüklenmedi. Sayfayı yenileyin.');
+            return;
           }
+          const { error: fnErr } = await supabase.functions.invoke('app-book-appointment', {
+            body: {
+              shop_slug: shopSlug,
+              service_id: data.serviceId,
+              staff_id: data.staffId,
+              starts_at: `${data.date}T${data.time}:00`,
+              customer_name: data.customerName,
+              customer_phone: data.customerPhone || null,
+            },
+          });
+          if (fnErr) {
+            console.warn('[agenda] app-book-appointment error:', fnErr);
+            const status = (fnErr as any)?.context?.status ?? 0;
+            const ctxBody = (fnErr as any)?.context?.body;
+            const ctxMsg = typeof ctxBody === 'string' ? ctxBody : '';
+            let msg: string;
+            if (status === 409) msg = 'Bu saat dolu. Başka bir saat seçin.';
+            else if (status === 404) msg = 'Dükkan veya hizmet bulunamadı. Sayfayı yenileyin.';
+            else if (status === 429) msg = 'Çok fazla deneme. Birkaç dakika bekleyin.';
+            else if (status === 401) msg = 'Oturum gerekli. Tekrar giriş yapın.';
+            else if (status === 400) msg = `Geçersiz bilgi: ${fnErr.message || ctxMsg || 'detay yok'}`;
+            else msg = `Randevu eklenemedi (HTTP ${status || '?'}): ${fnErr.message || ctxMsg || 'bilinmeyen hata'}`;
+            Alert.alert('Hata', msg);
+            return;
+          }
+          setShowAdd(false);
+          loadAgenda();
         }}
       />
     </View>

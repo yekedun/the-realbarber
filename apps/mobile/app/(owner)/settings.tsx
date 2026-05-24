@@ -594,15 +594,18 @@ export default function SettingsScreen() {
   const [hoursInitialSchedule, setHoursInitialSchedule] = useState<ScheduleDay[] | undefined>(undefined);
 
   useEffect(() => {
-    supabase.auth.getUser().then(({ data: { user } }) => {
-      if (!user) return;
+    supabase.auth.getUser().then(({ data: { user }, error: authErr }) => {
+      if (authErr) console.warn('[settings] auth error:', authErr);
+      if (!user) { console.warn('[settings] no user — not logged in'); return; }
       supabase
         .from('shops')
         .select('id, name, address, bio, phone, slug, commission_enabled, working_hours')
         .or(`owner_user_id.eq.${user.id},owner_id.eq.${user.id}`)
         .maybeSingle()
-        .then(({ data }) => {
-          if (!data) return;
+        .then(({ data, error }) => {
+          if (error) { console.warn('[settings] shops query error:', error); Alert.alert('Hata', `Dükkan yüklenemedi: ${error.message}`); return; }
+          if (!data) { console.warn('[settings] no shop row for user', user.id); return; }
+          console.log('[settings] loaded shop', data.id, data.slug);
           setShopId(data.id);
           setShop({
             name: data.name ?? '',
