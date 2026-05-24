@@ -55,6 +55,7 @@ import { OverlineHeader } from '../../components/ds/OverlineHeader';
 import { SectionLabel } from '../../components/ds/SectionLabel';
 import { Chip } from '../../components/ds/Chip';
 import { supabase } from '../../lib/supabase';
+import { estimatedAppointmentRevenueCents } from '../../lib/revenue-mappers';
 
 /* ── Sparkline (bar-chart approximation in RN) ──────────────── */
 function Sparkline({ data, dark }: { data: number[]; dark: boolean }) {
@@ -240,14 +241,16 @@ export default function OzetScreen() {
   async function loadSummary() {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return;
-    const { data: shopData } = await supabase
+    const { data: shopData, error: shopErr } = await supabase
       .from('shops')
       .select('id')
       .or(`owner_user_id.eq.${user.id},owner_id.eq.${user.id}`)
       .maybeSingle();
+    if (shopErr) { console.warn('[owner-summary] shops query error:', shopErr); return; }
     if (!shopData) return;
 
-    const { data: barbers } = await supabase.from('staff').select('id, name').eq('shop_id', shopData.id).eq('is_active', true);
+    const { data: barbers, error: staffErr } = await supabase.from('staff').select('id, name').eq('shop_id', shopData.id).eq('is_active', true);
+    if (staffErr) { console.warn('[owner-summary] staff query error:', staffErr); return; }
     if (!barbers) return;
 
     setStaffList([{ id: 'all', name: 'Tüm Ekip' }, ...(barbers as any[]).map((b: any) => ({ id: b.id, name: b.name }))]);
@@ -258,17 +261,18 @@ export default function OzetScreen() {
     const filteredIds = filter === 'all' ? (barbers as any[]).map((b: any) => b.id) : [filter];
     if (!filteredIds.length) { setKpiTotal('0'); setKpiCompleted('0'); setKpiRevenue('—'); return; }
 
-    const { data: appts } = await supabase.from('appointments')
-      .select('id, status, completed_price_cents')
+    const { data: appts, error: apptsErr } = await supabase.from('appointments')
+      .select('id, status, booked_price_cents, completed_price_cents')
       .in('staff_id', filteredIds)
       .gte('starts_at', dayStart.toISOString())
       .lt('starts_at', dayEnd.toISOString())
       .neq('status', 'cancelled');
+    if (apptsErr) { console.warn('[owner-summary] appointments query error:', apptsErr); return; }
 
     if (appts) {
       const total = appts.length;
       const completed = (appts as any[]).filter((a: any) => a.status === 'completed').length;
-      const revenue = (appts as any[]).filter((a: any) => a.status === 'completed').reduce((s: number, a: any) => s + (a.completed_price_cents ?? 0), 0);
+      const revenue = (appts as any[]).reduce((s: number, a: any) => s + estimatedAppointmentRevenueCents(a), 0);
       setKpiTotal(String(total));
       setKpiCompleted(String(completed));
       setKpiRevenue(revenue === 0 ? '—' : (revenue / 100).toLocaleString('tr-TR', { maximumFractionDigits: 0 }));

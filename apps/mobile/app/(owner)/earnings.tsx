@@ -23,6 +23,7 @@ import {
 } from 'react-native';
 import { colors } from '../../lib/theme';
 import { supabase } from '../../lib/supabase';
+import { estimatedAppointmentRevenueCents } from '../../lib/revenue-mappers';
 
 /* ─── Types ─────────────────────────────────────────────────── */
 
@@ -96,13 +97,13 @@ export default function EarningsScreen() {
 
     const { data } = await supabase
       .from('appointments')
-      .select('staff_id, completed_price_cents, completed_commission_cents, completed_shop_share_cents, status')
+      .select('staff_id, booked_price_cents, completed_price_cents, completed_commission_cents, completed_shop_share_cents, status')
       .in('staff_id', barberIds)
-      .eq('status', 'completed')
-      .gte('starts_at', since.toISOString());
+      .gte('starts_at', since.toISOString())
+      .neq('status', 'cancelled');
 
     if (data) {
-      const totalCiro = data.reduce((s: number, a: any) => s + (a.completed_price_cents ?? 0), 0);
+      const totalCiro = data.reduce((s: number, a: any) => s + estimatedAppointmentRevenueCents(a), 0);
       const totalKomisyon = data.reduce((s: number, a: any) => s + (a.completed_commission_cents ?? 0), 0);
       const totalDukkan = data.reduce((s: number, a: any) => s + (a.completed_shop_share_cents ?? 0), 0);
       setPeriodCiro(data.length === 0 ? '—' : formatCents(totalCiro));
@@ -114,7 +115,7 @@ export default function EarningsScreen() {
       for (const a of data) {
         if (!byBarber[a.staff_id]) byBarber[a.staff_id] = { appts: 0, ciro: 0, pay: 0 };
         byBarber[a.staff_id].appts += 1;
-        byBarber[a.staff_id].ciro += a.completed_price_cents ?? 0;
+        byBarber[a.staff_id].ciro += estimatedAppointmentRevenueCents(a);
         byBarber[a.staff_id].pay += a.completed_commission_cents ?? 0;
       }
       // Fetch barber names to label distribution
