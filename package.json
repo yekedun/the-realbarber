@@ -4,7 +4,7 @@
   "scripts": {
     "dev": "turbo dev",
     "build": "turbo build",
-    "type-check": "turbo type-check",
+    "type-check": "turbo typecheck",
     "lint": "turbo lint",
     "backend:proof": "powershell -ExecutionPolicy Bypass -File scripts/scheduling-proof.ps1",
     "backend:proof:fast": "powershell -ExecutionPolicy Bypass -File scripts/scheduling-proof.ps1 -SkipReset",
