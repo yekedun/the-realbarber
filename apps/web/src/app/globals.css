@@ -2,6 +2,38 @@
 @tailwind components;
 @tailwind utilities;
 
+@font-face {
+  font-family: 'MontserratLocal';
+  src: url('/fonts/Montserrat-Regular.otf') format('opentype');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'MontserratLocal';
+  src: url('/fonts/Montserrat-Medium.otf') format('opentype');
+  font-weight: 500;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'MontserratLocal';
+  src: url('/fonts/Montserrat-SemiBold.otf') format('opentype');
+  font-weight: 600;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'MontserratLocal';
+  src: url('/fonts/Montserrat-Bold.otf') format('opentype');
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
+
 /* ── Custom properties (design tokens) ─────────────────────────── */
 :root {
   /* foreground scale */
@@ -44,7 +76,7 @@
   --coral-600: #A0303F;
 
   /* font */
-  --font-sans: var(--font-montserrat), 'Helvetica Neue', Arial, sans-serif;
+  --font-sans: 'MontserratLocal', 'Helvetica Neue', Arial, sans-serif;
   --font-mono: ui-monospace, 'Cascadia Code', 'Source Code Pro', Menlo, Consolas, monospace;
 
   /* shadows */

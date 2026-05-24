@@ -42,6 +42,7 @@ import {
 import { useRouter } from 'expo-router';
 import { colors } from '../../lib/theme';
 import { supabase } from '../../lib/supabase';
+import { serviceFormToDb, serviceRowToView } from '../../lib/service-mappers';
 
 /* ─── Data ──────────────────────────────────────────────────── */
 
@@ -375,18 +376,13 @@ export default function ServicesScreen() {
     const { data: shopData } = await supabase.from('shops').select('id').or(`owner_user_id.eq.${user.id},owner_id.eq.${user.id}`).maybeSingle();
     if (!shopData) { setShopId(null); return; }
     setShopId(shopData.id);
-    const { data } = await supabase.from('services').select('id, name, duration_min, price_cents, active').eq('shop_id', shopData.id).order('name');
-    if (data) setServices(data.map((s: any) => ({ id: s.id, name: s.name, duration: s.duration_min, price: Math.round(s.price_cents / 100), active: s.active })));
+    const { data } = await supabase.from('services').select('id, name, duration_min, price_cents, is_active').eq('shop_id', shopData.id).order('name');
+    if (data) setServices(data.map((s: any) => serviceRowToView(s)));
   }
 
   async function saveEdit(data: Omit<Service, 'id'>) {
     if (!editing) return;
-    await supabase.from('services').update({
-      name: data.name,
-      duration_min: data.duration,
-      price_cents: data.price * 100,
-      active: data.active,
-    }).eq('id', editing.id);
+    await supabase.from('services').update(serviceFormToDb(data)).eq('id', editing.id);
     setServices((s) => s.map((sv) => sv.id === editing.id ? { ...sv, ...data } : sv));
     setEditing(null);
   }
@@ -402,19 +398,10 @@ export default function ServicesScreen() {
     if (!shopId) return;
     const { data: inserted } = await supabase.from('services').insert({
       shop_id: shopId,
-      name: data.name,
-      duration_min: data.duration,
-      price_cents: data.price * 100,
-      active: data.active,
-    }).select('id, name, duration_min, price_cents, active').single();
+      ...serviceFormToDb(data),
+    }).select('id, name, duration_min, price_cents, is_active').single();
     if (inserted) {
-      setServices((s) => [...s, {
-        id: (inserted as any).id,
-        name: (inserted as any).name,
-        duration: (inserted as any).duration_min,
-        price: Math.round((inserted as any).price_cents / 100),
-        active: (inserted as any).active,
-      }]);
+      setServices((s) => [...s, serviceRowToView(inserted as any)]);
     }
     setAdding(false);
   }
@@ -422,7 +409,7 @@ export default function ServicesScreen() {
   async function toggleActive(id: string) {
     const sv = services.find(s => s.id === id);
     if (!sv) return;
-    await supabase.from('services').update({ active: !sv.active }).eq('id', id);
+    await supabase.from('services').update({ is_active: !sv.active }).eq('id', id);
     setServices((s) => s.map((sv) => sv.id === id ? { ...sv, active: !sv.active } : sv));
   }
 

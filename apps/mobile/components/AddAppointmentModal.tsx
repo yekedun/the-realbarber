@@ -48,6 +48,11 @@ import {
   TextInput,
 } from 'react-native';
 import { colors } from '../lib/theme';
+import {
+  getInitialAppointmentServiceId,
+  isAppointmentModalSaveEnabled,
+  resolveAppointmentServiceId,
+} from '../lib/appointment-modal-state';
 
 // TODO: connect Supabase — fetch services for this shop: supabase.from('shop_services').select('*').eq('shop_id', shopId)
 // TODO: connect Supabase — on Kaydet, insert appointment: supabase.from('appointments').insert({ ... })
@@ -161,7 +166,7 @@ export function AddAppointmentModal({
 }: AddAppointmentModalProps) {
   const [name,           setName]           = useState('');
   const [phone,          setPhone]          = useState('');
-  const [svc,            setSvc]            = useState('sac-sakal');   // default selection from source
+  const [svc,            setSvc]            = useState<string | null>(() => getInitialAppointmentServiceId(services));
   const [dayIdx,         setDayIdx]         = useState(2);              // index 2 = today
   const [slot,           setSlot]           = useState('');
   const [selectedStaffId, setSelectedStaffId] = useState<string | null>(initialStaffId ?? null);
@@ -170,9 +175,19 @@ export function AddAppointmentModal({
     if (visible) setSelectedStaffId(initialStaffId ?? null);
   }, [visible, initialStaffId]);
 
+  useEffect(() => {
+    if (!visible) return;
+    setSvc((current) => resolveAppointmentServiceId(current, services));
+  }, [visible, services]);
+
   const curSvc  = services.find(s => s.id === svc);
-  const canSave = name.trim().length >= 2 && !!slot &&
-    (!(staffList && staffList.length > 0) || !!selectedStaffId);
+  const canSave = isAppointmentModalSaveEnabled({
+    customerName: name,
+    slot,
+    serviceId: svc,
+    staffListHasItems: !!(staffList && staffList.length > 0),
+    selectedStaffId,
+  });
 
   /* Build date label for ÖZET card */
   const TODAY_B = new Date();
@@ -187,6 +202,7 @@ export function AddAppointmentModal({
 
   function handleSave() {
     if (!canSave) return;
+    if (!svc) return;
     // TODO: connect Supabase — insert appointment record
     onSave({
       customerName: name.trim(),

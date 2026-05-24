@@ -1,3 +1,5 @@
+'use client';
+
 import Link from 'next/link';
 
 // W4 — 404 page from 404.html

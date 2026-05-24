@@ -7,6 +7,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { ServiceSelector, type Service } from '../../components/ServiceSelector';
 import { SlotGrid } from '../../components/SlotGrid';
 import { BookingModal } from '../../components/BookingModal';
+import { nextBookingSuccessState } from './booking-flow-state';
 
 /* ── Types ────────────────────────────────────────────────────── */
 interface StaffMember { id: string; name: string; }
@@ -212,7 +213,10 @@ export default function BookingClient({ shop, services, staff }: Props) {
       {/* ── Booking Modal ────────────────────────────────────── */}
       <BookingModal
         open={modalOpen}
-        onClose={() => setModalOpen(false)}
+        onClose={() => {
+          setModalOpen(false);
+          setSelSlot(null);
+        }}
         summary={summary}
         shopId={shop.id}
         shopSlug={shop.slug}
@@ -220,8 +224,9 @@ export default function BookingClient({ shop, services, staff }: Props) {
         serviceId={selService ?? ''}
         startsAt={selISO}
         onSuccess={() => {
-          setSelSlot(null);
-          setModalOpen(false);
+          const next = nextBookingSuccessState({ modalOpen, selectedSlot: selSlot });
+          setModalOpen(next.modalOpen);
+          setSelSlot(next.selectedSlot);
           fetchSlots();
         }}
       />
