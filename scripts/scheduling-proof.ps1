@@ -9,6 +9,14 @@ $root = Split-Path -Parent $PSScriptRoot
 $proofSql = Join-Path $root "supabase\snippets\scheduling-proof.sql"
 $dbContainer = "supabase_db_berber-randevu"
 
+# Race fixture timestamps must always be in the future so create_appointment_atomic's
+# past_slot_guard accepts them. Compute the next Monday relative to today (Europe/Istanbul
+# semantics; Get-Date is local but day-of-week math is identical for Mondays).
+$today = (Get-Date).Date
+$daysUntilMonday = (8 - [int]$today.DayOfWeek) % 7
+if ($daysUntilMonday -eq 0) { $daysUntilMonday = 7 }
+$raceBaseDate = $today.AddDays($daysUntilMonday).ToString('yyyy-MM-dd')
+
 function Invoke-SupabaseQueryFile {
   param(
     [Parameter(Mandatory = $true)]
@@ -225,16 +233,17 @@ set is_working = true,
 
 delete from public.appointments
 where staff_id = '00000000-0000-4000-8000-100000000201'
-  and starts_at = '2026-05-18 14:00 Europe/Istanbul';
+  and starts_at = '$raceBaseDate 14:00 Europe/Istanbul';
 "@ | Set-Content -Path $setupSql -Encoding UTF8
 
 @"
+set role service_role;
 select public.create_appointment_atomic(
   'proof-race',
   null,
   '00000000-0000-4000-8000-100000000301',
   '00000000-0000-4000-8000-100000000201',
-  '2026-05-18 14:00 Europe/Istanbul',
+  '$raceBaseDate 14:00 Europe/Istanbul',
   'Proof Race',
   null,
   null,
@@ -251,7 +260,7 @@ begin
   select count(*) into v_count
   from public.appointments
   where staff_id = '00000000-0000-4000-8000-100000000201'
-    and starts_at = '2026-05-18 14:00 Europe/Istanbul'
+    and starts_at = '$raceBaseDate 14:00 Europe/Istanbul'
     and status = 'confirmed';
 
   if v_count <> 1 then
@@ -262,7 +271,7 @@ begin
   from public.appointment_slots aps
   join public.appointments a on a.id = aps.appointment_id
   where a.staff_id = '00000000-0000-4000-8000-100000000201'
-    and a.starts_at = '2026-05-18 14:00 Europe/Istanbul'
+    and a.starts_at = '$raceBaseDate 14:00 Europe/Istanbul'
     and a.status = 'confirmed';
 
   if v_mirror_count <> 1 then
@@ -290,19 +299,20 @@ $commonRaceSetup
 
 delete from public.appointments
 where staff_id = '00000000-0000-4000-8000-100000000201'
-  and starts_at = '2026-05-18 15:00 Europe/Istanbul';
+  and starts_at = '$raceBaseDate 15:00 Europe/Istanbul';
 delete from public.blocks
 where staff_id = '00000000-0000-4000-8000-100000000201'
-  and starts_at = '2026-05-18 15:00 Europe/Istanbul';
+  and starts_at = '$raceBaseDate 15:00 Europe/Istanbul';
 "@ | Set-Content -Path $bookVsBlockSetupSql -Encoding UTF8
 
 @"
+set role service_role;
 select public.create_appointment_atomic(
   'proof-race',
   null,
   '00000000-0000-4000-8000-100000000301',
   '00000000-0000-4000-8000-100000000201',
-  '2026-05-18 15:00 Europe/Istanbul',
+  '$raceBaseDate 15:00 Europe/Istanbul',
   'Proof Race Book Vs Block',
   null,
   null,
@@ -311,10 +321,11 @@ select public.create_appointment_atomic(
 "@ | Set-Content -Path $bookAttemptSql -Encoding UTF8
 
 @"
+set role service_role;
 select public.create_block_atomic(
   '00000000-0000-4000-8000-100000000201',
-  '2026-05-18 15:00 Europe/Istanbul',
-  '2026-05-18 15:30 Europe/Istanbul',
+  '$raceBaseDate 15:00 Europe/Istanbul',
+  '$raceBaseDate 15:30 Europe/Istanbul',
   'walkin',
   'widget'
 );
@@ -329,13 +340,13 @@ begin
   select count(*) into v_appt_count
   from public.appointments
   where staff_id = '00000000-0000-4000-8000-100000000201'
-    and starts_at = '2026-05-18 15:00 Europe/Istanbul'
+    and starts_at = '$raceBaseDate 15:00 Europe/Istanbul'
     and status = 'confirmed';
 
   select count(*) into v_block_count
   from public.blocks
   where staff_id = '00000000-0000-4000-8000-100000000201'
-    and starts_at = '2026-05-18 15:00 Europe/Istanbul';
+    and starts_at = '$raceBaseDate 15:00 Europe/Istanbul';
 
   if (v_appt_count + v_block_count) <> 1 then
     raise exception 'book-vs-block proof expected exactly one persisted row, got appointments=% blocks=%', v_appt_count, v_block_count;
@@ -349,33 +360,35 @@ select 'scheduling-book-vs-block-ok' as result;
 @"
 delete from public.appointments
 where staff_id = '00000000-0000-4000-8000-100000000201'
-  and starts_at = '2026-05-18 15:00 Europe/Istanbul';
+  and starts_at = '$raceBaseDate 15:00 Europe/Istanbul';
 delete from public.blocks
 where staff_id = '00000000-0000-4000-8000-100000000201'
-  and starts_at = '2026-05-18 15:00 Europe/Istanbul';
+  and starts_at = '$raceBaseDate 15:00 Europe/Istanbul';
 "@ | Set-Content -Path $bookVsBlockCleanupSql -Encoding UTF8
 
 @"
 delete from public.blocks
 where staff_id = '00000000-0000-4000-8000-100000000201'
-  and starts_at = '2026-05-18 16:00 Europe/Istanbul';
+  and starts_at = '$raceBaseDate 16:00 Europe/Istanbul';
 "@ | Set-Content -Path $blockVsBlockSetupSql -Encoding UTF8
 
 @"
+set role service_role;
 select public.create_block_atomic(
   '00000000-0000-4000-8000-100000000201',
-  '2026-05-18 16:00 Europe/Istanbul',
-  '2026-05-18 16:30 Europe/Istanbul',
+  '$raceBaseDate 16:00 Europe/Istanbul',
+  '$raceBaseDate 16:30 Europe/Istanbul',
   'walkin',
   'widget'
 );
 "@ | Set-Content -Path $blockAttempt1Sql -Encoding UTF8
 
 @"
+set role service_role;
 select public.create_block_atomic(
   '00000000-0000-4000-8000-100000000201',
-  '2026-05-18 16:00 Europe/Istanbul',
-  '2026-05-18 16:30 Europe/Istanbul',
+  '$raceBaseDate 16:00 Europe/Istanbul',
+  '$raceBaseDate 16:30 Europe/Istanbul',
   'personal',
   'app'
 );
@@ -389,7 +402,7 @@ begin
   select count(*) into v_count
   from public.blocks
   where staff_id = '00000000-0000-4000-8000-100000000201'
-    and starts_at = '2026-05-18 16:00 Europe/Istanbul';
+    and starts_at = '$raceBaseDate 16:00 Europe/Istanbul';
 
   if v_count <> 1 then
     raise exception 'block-vs-block proof expected exactly one block, got %', v_count;
@@ -403,7 +416,7 @@ select 'scheduling-block-vs-block-ok' as result;
 @"
 delete from public.blocks
 where staff_id = '00000000-0000-4000-8000-100000000201'
-  and starts_at = '2026-05-18 16:00 Europe/Istanbul';
+  and starts_at = '$raceBaseDate 16:00 Europe/Istanbul';
 "@ | Set-Content -Path $blockVsBlockCleanupSql -Encoding UTF8
 
 @"
@@ -413,16 +426,17 @@ where staff_id in (
   from public.staff
   where shop_id = '00000000-0000-4000-8000-100000000101'
 )
-and starts_at = '2026-05-18 09:30 Europe/Istanbul';
+and starts_at = '$raceBaseDate 09:30 Europe/Istanbul';
 "@ | Set-Content -Path $anyStaffSetupSql -Encoding UTF8
 
 @"
+set role service_role;
 select public.create_appointment_atomic(
   'proof-race',
   null,
   '00000000-0000-4000-8000-100000000301',
   null,
-  '2026-05-18 09:30 Europe/Istanbul',
+  '$raceBaseDate 09:30 Europe/Istanbul',
   'Proof Any Staff Race 1',
   null,
   null,
@@ -431,12 +445,13 @@ select public.create_appointment_atomic(
 "@ | Set-Content -Path $anyStaffAttempt1Sql -Encoding UTF8
 
 @"
+set role service_role;
 select public.create_appointment_atomic(
   'proof-race',
   null,
   '00000000-0000-4000-8000-100000000301',
   null,
-  '2026-05-18 09:30 Europe/Istanbul',
+  '$raceBaseDate 09:30 Europe/Istanbul',
   'Proof Any Staff Race 2',
   null,
   null,
@@ -452,7 +467,7 @@ declare
 begin
   select count(*) into v_count
   from public.appointments
-  where starts_at = '2026-05-18 09:30 Europe/Istanbul'
+  where starts_at = '$raceBaseDate 09:30 Europe/Istanbul'
     and staff_id in (
       select id
       from public.staff
@@ -462,7 +477,7 @@ begin
 
   select count(distinct staff_id) into v_distinct_staff
   from public.appointments
-  where starts_at = '2026-05-18 09:30 Europe/Istanbul'
+  where starts_at = '$raceBaseDate 09:30 Europe/Istanbul'
     and staff_id in (
       select id
       from public.staff
@@ -489,7 +504,7 @@ where staff_id in (
   from public.staff
   where shop_id = '00000000-0000-4000-8000-100000000101'
 )
-and starts_at = '2026-05-18 09:30 Europe/Istanbul';
+and starts_at = '$raceBaseDate 09:30 Europe/Istanbul';
 "@ | Set-Content -Path $anyStaffCleanupSql -Encoding UTF8
 
 try {

@@ -5,6 +5,7 @@ create temp table scheduling_proof_ids (
   customer_id uuid not null,
   other_customer_id uuid not null,
   staff_user_id uuid not null,
+  dst_owner_id uuid not null,
   shop_id uuid not null,
   dst_shop_id uuid not null,
   staff_a uuid not null,
@@ -12,23 +13,46 @@ create temp table scheduling_proof_ids (
   staff_closed uuid not null,
   dst_staff uuid not null,
   service_30 uuid not null,
-  service_dst uuid not null
+  service_dst uuid not null,
+  base_date date not null,
+  dst_date date not null
 ) on commit drop;
 
-insert into scheduling_proof_ids values (
-  '00000000-0000-4000-8000-000000000001',
-  '00000000-0000-4000-8000-000000000002',
-  '00000000-0000-4000-8000-000000000003',
-  '00000000-0000-4000-8000-000000000004',
-  '00000000-0000-4000-8000-000000000101',
-  '00000000-0000-4000-8000-000000000102',
-  '00000000-0000-4000-8000-000000000201',
-  '00000000-0000-4000-8000-000000000202',
-  '00000000-0000-4000-8000-000000000203',
-  '00000000-0000-4000-8000-000000000204',
-  '00000000-0000-4000-8000-000000000301',
-  '00000000-0000-4000-8000-000000000302'
-);
+-- dst_owner_id is a distinct auth user because shops.owner_user_id is now
+-- unique per user (shops_owner_user_id_unique_idx); the DST shop needs its
+-- own owner so the fixture mirrors the one-shop-per-owner production rule.
+--
+-- base_date is the Monday of the week AFTER today (Europe/Istanbul), so the
+-- proof never lands on a past slot regardless of when it runs. dst_date is
+-- the first Sunday of November of the year following base_date — guaranteed
+-- to be in the future and to fall on a US DST end transition.
+insert into scheduling_proof_ids
+select
+  '00000000-0000-4000-8000-000000000001'::uuid,
+  '00000000-0000-4000-8000-000000000002'::uuid,
+  '00000000-0000-4000-8000-000000000003'::uuid,
+  '00000000-0000-4000-8000-000000000004'::uuid,
+  '00000000-0000-4000-8000-000000000005'::uuid,
+  '00000000-0000-4000-8000-000000000101'::uuid,
+  '00000000-0000-4000-8000-000000000102'::uuid,
+  '00000000-0000-4000-8000-000000000201'::uuid,
+  '00000000-0000-4000-8000-000000000202'::uuid,
+  '00000000-0000-4000-8000-000000000203'::uuid,
+  '00000000-0000-4000-8000-000000000204'::uuid,
+  '00000000-0000-4000-8000-000000000301'::uuid,
+  '00000000-0000-4000-8000-000000000302'::uuid,
+  (current_date + (8 - extract(isodow from current_date)::int))::date,
+  -- First Sunday of November in year after base_date (US DST end transition).
+  (
+    select d::date
+    from generate_series(
+      make_date(extract(year from current_date)::int + 1, 11, 1),
+      make_date(extract(year from current_date)::int + 1, 11, 7),
+      interval '1 day'
+    ) d
+    where extract(dow from d) = 0
+    limit 1
+  );
 
 do $$
 begin
@@ -42,7 +66,8 @@ begin
     ('00000000-0000-4000-8000-000000000001'::uuid, 'proof-owner@example.test'),
     ('00000000-0000-4000-8000-000000000002'::uuid, 'proof-customer@example.test'),
     ('00000000-0000-4000-8000-000000000003'::uuid, 'proof-other-customer@example.test'),
-    ('00000000-0000-4000-8000-000000000004'::uuid, 'proof-staff@example.test')
+    ('00000000-0000-4000-8000-000000000004'::uuid, 'proof-staff@example.test'),
+    ('00000000-0000-4000-8000-000000000005'::uuid, 'proof-dst-owner@example.test')
   ) as u(id, email)
   on conflict (id) do nothing;
 end $$;
@@ -67,7 +92,7 @@ on conflict (id) do update set working_hours = excluded.working_hours;
 insert into public.shops (
   id, owner_user_id, owner_id, slug, display_name, name, timezone, working_hours
 )
-select dst_shop_id, owner_id, owner_id, 'proof-dst', 'Proof DST', 'Proof DST',
+select dst_shop_id, dst_owner_id, dst_owner_id, 'proof-dst', 'Proof DST', 'Proof DST',
        'America/New_York',
        '{
          "mon": {"open": "00:00", "close": "23:59", "enabled": true},
@@ -144,12 +169,19 @@ declare
 begin
   select * into ids from scheduling_proof_ids;
 
+  -- create_appointment_atomic's authorization check expects either a
+  -- service_role context (edge functions / admin scripts) or an authenticated
+  -- JWT. Direct psql connects as `postgres` but with role='none', so we set
+  -- service_role explicitly. Per-test customer/anon switches use `reset role
+  -- to service_role` to return to this baseline.
+  execute 'set local role service_role';
+
   perform public.create_appointment_atomic(
     'proof-scheduling',
     null,
     ids.service_30,
     ids.staff_a,
-    '2026-05-18 10:00 Europe/Istanbul',
+    ((ids.base_date::text || ' 10:00')::timestamp at time zone 'Europe/Istanbul'),
     'Proof Customer',
     '05550000000',
     null,
@@ -158,8 +190,8 @@ begin
 
   select public.schedule_has_conflict(
     ids.staff_a,
-    '2026-05-18 10:00 Europe/Istanbul',
-    '2026-05-18 10:30 Europe/Istanbul'
+    ((ids.base_date::text || ' 10:00')::timestamp at time zone 'Europe/Istanbul'),
+    ((ids.base_date::text || ' 10:30')::timestamp at time zone 'Europe/Istanbul')
   ) into v_conflict;
   if not v_conflict then
     raise exception 'schedule_has_conflict did not see confirmed appointment';
@@ -167,8 +199,8 @@ begin
 
   select public.schedule_has_conflict(
     ids.staff_a,
-    '2026-05-18 10:00 Europe/Istanbul',
-    '2026-05-18 10:30 Europe/Istanbul'
+    ((ids.base_date::text || ' 10:00')::timestamp at time zone 'Europe/Istanbul'),
+    ((ids.base_date::text || ' 10:30')::timestamp at time zone 'Europe/Istanbul')
   ) into v_conflict;
   if not v_conflict then
     raise exception 'exact overlap conflict was not detected';
@@ -176,8 +208,8 @@ begin
 
   select public.schedule_has_conflict(
     ids.staff_a,
-    '2026-05-18 10:15 Europe/Istanbul',
-    '2026-05-18 10:45 Europe/Istanbul'
+    ((ids.base_date::text || ' 10:15')::timestamp at time zone 'Europe/Istanbul'),
+    ((ids.base_date::text || ' 10:45')::timestamp at time zone 'Europe/Istanbul')
   ) into v_conflict;
   if not v_conflict then
     raise exception 'partial overlap conflict was not detected';
@@ -185,8 +217,8 @@ begin
 
   select public.schedule_has_conflict(
     ids.staff_a,
-    '2026-05-18 10:30 Europe/Istanbul',
-    '2026-05-18 11:00 Europe/Istanbul'
+    ((ids.base_date::text || ' 10:30')::timestamp at time zone 'Europe/Istanbul'),
+    ((ids.base_date::text || ' 11:00')::timestamp at time zone 'Europe/Istanbul')
   ) into v_conflict;
   if v_conflict then
     raise exception 'back-to-back appointment was incorrectly treated as a conflict';
@@ -197,7 +229,7 @@ begin
     null,
     ids.service_30,
     ids.staff_a,
-    '2026-05-18 10:30 Europe/Istanbul',
+    ((ids.base_date::text || ' 10:30')::timestamp at time zone 'Europe/Istanbul'),
     'Proof Back To Back',
     null,
     null,
@@ -210,7 +242,7 @@ begin
       null,
       ids.service_30,
       ids.staff_a,
-      '2026-05-18 10:00 Europe/Istanbul',
+      ((ids.base_date::text || ' 10:00')::timestamp at time zone 'Europe/Istanbul'),
       'Proof Double',
       null,
       null,
@@ -226,7 +258,7 @@ begin
     null,
     ids.service_30,
     ids.staff_a,
-    '2026-05-18 11:00 Europe/Istanbul',
+    ((ids.base_date::text || ' 11:00')::timestamp at time zone 'Europe/Istanbul'),
     'Proof Cancelled',
     null,
     null,
@@ -235,13 +267,13 @@ begin
   update public.appointments
      set status = 'cancelled'
    where staff_id = ids.staff_a
-     and starts_at = '2026-05-18 11:00 Europe/Istanbul';
+     and starts_at = ((ids.base_date::text || ' 11:00')::timestamp at time zone 'Europe/Istanbul');
   perform public.create_appointment_atomic(
     'proof-scheduling',
     null,
     ids.service_30,
     ids.staff_a,
-    '2026-05-18 11:00 Europe/Istanbul',
+    ((ids.base_date::text || ' 11:00')::timestamp at time zone 'Europe/Istanbul'),
     'Proof Rebook',
     null,
     null,
@@ -254,7 +286,7 @@ begin
       null,
       ids.service_30,
       ids.staff_a,
-      '2026-05-18 12:00 Europe/Istanbul',
+      ((ids.base_date::text || ' 12:00')::timestamp at time zone 'Europe/Istanbul'),
       'Proof Break',
       null,
       null,
@@ -271,7 +303,7 @@ begin
       null,
       ids.service_30,
       ids.staff_closed,
-      '2026-05-18 10:00 Europe/Istanbul',
+      ((ids.base_date::text || ' 10:00')::timestamp at time zone 'Europe/Istanbul'),
       'Proof Closed',
       null,
       null,
@@ -288,7 +320,7 @@ begin
       null,
       ids.service_30,
       ids.staff_a,
-      '2026-05-18 18:00 Europe/Istanbul',
+      ((ids.base_date::text || ' 18:00')::timestamp at time zone 'Europe/Istanbul'),
       'Proof Outside Shift',
       null,
       null,
@@ -304,7 +336,7 @@ begin
     null,
     ids.service_30,
     null,
-    '2026-05-18 09:00 Europe/Istanbul',
+    ((ids.base_date::text || ' 09:00')::timestamp at time zone 'Europe/Istanbul'),
     'Proof Any',
     null,
     null,
@@ -316,8 +348,8 @@ begin
 
   perform public.create_block_atomic(
     ids.staff_a,
-    '2026-05-18 13:00 Europe/Istanbul',
-    '2026-05-18 13:30 Europe/Istanbul',
+    ((ids.base_date::text || ' 13:00')::timestamp at time zone 'Europe/Istanbul'),
+    ((ids.base_date::text || ' 13:30')::timestamp at time zone 'Europe/Istanbul'),
     'personal',
     'app'
   );
@@ -327,7 +359,7 @@ begin
       null,
       ids.service_30,
       ids.staff_a,
-      '2026-05-18 13:00 Europe/Istanbul',
+      ((ids.base_date::text || ' 13:00')::timestamp at time zone 'Europe/Istanbul'),
       'Proof Block Conflict',
       null,
       null,
@@ -341,8 +373,8 @@ begin
   begin
     perform public.create_block_atomic(
       ids.staff_a,
-      '2026-05-18 10:10 Europe/Istanbul',
-      '2026-05-18 10:20 Europe/Istanbul',
+      ((ids.base_date::text || ' 10:10')::timestamp at time zone 'Europe/Istanbul'),
+      ((ids.base_date::text || ' 10:20')::timestamp at time zone 'Europe/Istanbul'),
       'personal',
       'app'
     );
@@ -352,56 +384,56 @@ begin
   end;
 
   select count(*) into v_count
-  from public.get_occupied_ranges(ids.staff_a, '2026-05-18')
-  where starts_at = '2026-05-18 12:00 Europe/Istanbul'
-    and ends_at = '2026-05-18 12:30 Europe/Istanbul';
+  from public.get_occupied_ranges(ids.staff_a, ids.base_date)
+  where starts_at = ((ids.base_date::text || ' 12:00')::timestamp at time zone 'Europe/Istanbul')
+    and ends_at = ((ids.base_date::text || ' 12:30')::timestamp at time zone 'Europe/Istanbul');
   if v_count <> 1 then
     raise exception 'break range was not exposed by get_occupied_ranges';
   end if;
 
   select count(*) into v_count
-  from public.get_occupied_ranges(ids.staff_closed, '2026-05-18')
-  where starts_at = '2026-05-18 00:00 Europe/Istanbul'
-    and ends_at = '2026-05-19 00:00 Europe/Istanbul';
+  from public.get_occupied_ranges(ids.staff_closed, ids.base_date)
+  where starts_at = ((ids.base_date::text || ' 00:00')::timestamp at time zone 'Europe/Istanbul')
+    and ends_at = (((ids.base_date + 1)::text || ' 00:00')::timestamp at time zone 'Europe/Istanbul');
   if v_count <> 1 then
     raise exception 'closed day was not exposed as a full-day occupied range';
   end if;
 
   select * into v_bounds
-  from public.schedule_day_bounds('2026-05-18', 'Europe/Istanbul');
-  if v_bounds.starts_at <> '2026-05-17 21:00:00+00'::timestamptz
-     or v_bounds.ends_at <> '2026-05-18 21:00:00+00'::timestamptz then
+  from public.schedule_day_bounds(ids.base_date, 'Europe/Istanbul');
+  if v_bounds.starts_at <> (((ids.base_date - 1)::text || ' 21:00:00')::timestamp at time zone 'UTC')::timestamptz
+     or v_bounds.ends_at <> ((ids.base_date::text || ' 21:00:00')::timestamp at time zone 'UTC')::timestamptz then
     raise exception 'Europe/Istanbul day bounds converted unexpectedly';
   end if;
 
   if public.staff_is_inside_work_window(
     ids.staff_a,
-    '2026-05-18 20:45:00+00',
-    '2026-05-18 21:15:00+00'
+    ((ids.base_date::text || ' 20:45:00')::timestamp at time zone 'UTC'),
+    ((ids.base_date::text || ' 21:15:00')::timestamp at time zone 'UTC')
   ) then
     raise exception 'slot crossing local midnight was incorrectly accepted';
   end if;
 
   if not public.staff_is_inside_work_window(
     ids.staff_a,
-    '2026-05-18 07:00:00+00',
-    '2026-05-18 07:30:00+00'
+    ((ids.base_date::text || ' 07:00:00')::timestamp at time zone 'UTC'),
+    ((ids.base_date::text || ' 07:30:00')::timestamp at time zone 'UTC')
   ) then
     raise exception 'UTC/local conversion rejected a valid Istanbul local slot';
   end if;
 
   if not public.staff_is_inside_work_window(
     ids.dst_staff,
-    '2026-11-01 00:30 America/New_York',
-    '2026-11-01 01:00 America/New_York'
+    ((ids.dst_date::text || ' 00:30')::timestamp at time zone 'America/New_York'),
+    ((ids.dst_date::text || ' 01:00')::timestamp at time zone 'America/New_York')
   ) then
     raise exception 'DST staff window rejected a valid local slot';
   end if;
 
   select count(*) into v_count
-  from public.get_occupied_ranges(ids.dst_staff, '2026-11-01')
-  where starts_at = '2026-11-01 01:30 America/New_York'
-    and ends_at = '2026-11-01 02:00 America/New_York';
+  from public.get_occupied_ranges(ids.dst_staff, ids.dst_date)
+  where starts_at = ((ids.dst_date::text || ' 01:30')::timestamp at time zone 'America/New_York')
+    and ends_at = ((ids.dst_date::text || ' 02:00')::timestamp at time zone 'America/New_York');
   if v_count <> 1 then
     raise exception 'DST break range was not converted through shop timezone';
   end if;
@@ -422,13 +454,13 @@ begin
   update public.appointments
      set status = 'cancelled'
    where staff_id = ids.staff_a
-     and starts_at = '2026-05-18 10:00 Europe/Istanbul';
+     and starts_at = ((ids.base_date::text || ' 10:00')::timestamp at time zone 'Europe/Istanbul');
   if exists (
     select 1
     from public.appointment_slots aps
     join public.appointments a on a.id = aps.appointment_id
     where a.staff_id = ids.staff_a
-      and a.starts_at = '2026-05-18 10:00 Europe/Istanbul'
+      and a.starts_at = ((ids.base_date::text || ' 10:00')::timestamp at time zone 'Europe/Istanbul')
   ) then
     raise exception 'appointment_slots retained cancelled appointment';
   end if;
@@ -443,7 +475,7 @@ begin
     ),
     ids.staff_a,
     ids.service_30,
-    '2026-05-18 11:15 Europe/Istanbul',
+    ((ids.base_date::text || ' 11:15')::timestamp at time zone 'Europe/Istanbul'),
     'Proof Rebook Updated',
     null,
     null
@@ -456,7 +488,7 @@ begin
       null,
       ids.service_30,
       ids.staff_a,
-      '2026-05-18 15:00 Europe/Istanbul',
+      ((ids.base_date::text || ' 15:00')::timestamp at time zone 'Europe/Istanbul'),
       'Anon Mutator',
       null,
       null,
@@ -469,8 +501,8 @@ begin
   begin
     perform public.create_block_atomic(
       ids.staff_a,
-      '2026-05-18 16:00 Europe/Istanbul',
-      '2026-05-18 16:30 Europe/Istanbul',
+      ((ids.base_date::text || ' 16:00')::timestamp at time zone 'Europe/Istanbul'),
+      ((ids.base_date::text || ' 16:30')::timestamp at time zone 'Europe/Istanbul'),
       'personal',
       'app'
     );
@@ -482,19 +514,32 @@ begin
   if v_anon_staff_count <> 3 then
     raise exception 'anon public staff read broke availability prerequisites';
   end if;
-  perform public.get_staff_day_hours(ids.staff_a, '2026-05-18');
-  perform public.get_occupied_ranges(ids.staff_a, '2026-05-18');
-  execute 'reset role';
+  -- get_staff_day_hours / get_occupied_ranges were revoked from anon+authenticated
+  -- in 20260518130000; availability now flows through edge functions running as
+  -- service_role. The proof asserts the lockdown actually holds.
+  begin
+    perform public.get_staff_day_hours(ids.staff_a, ids.base_date);
+    raise exception 'anon get_staff_day_hours unexpectedly succeeded';
+  exception
+    when insufficient_privilege then null;
+  end;
+  begin
+    perform public.get_occupied_ranges(ids.staff_a, ids.base_date);
+    raise exception 'anon get_occupied_ranges unexpectedly succeeded';
+  exception
+    when insufficient_privilege then null;
+  end;
+  execute 'set local role service_role';
 
   perform set_config('request.jwt.claim.sub', ids.customer_id::text, true);
   execute 'set local role authenticated';
   select count(*) into v_customer_visible from public.appointments where customer_user_id = ids.customer_id;
-  execute 'reset role';
+  execute 'set local role service_role';
 
   perform set_config('request.jwt.claim.sub', ids.other_customer_id::text, true);
   execute 'set local role authenticated';
   select count(*) into v_other_visible from public.appointments where customer_user_id = ids.customer_id;
-  execute 'reset role';
+  execute 'set local role service_role';
 
   if v_customer_visible = 0 then
     raise exception 'customer could not read own appointments';
@@ -517,8 +562,8 @@ begin
       ids.staff_a,
       ids.service_30,
       'Direct Insert',
-      '2026-05-18 16:00 Europe/Istanbul',
-      '2026-05-18 16:30 Europe/Istanbul',
+      ((ids.base_date::text || ' 16:00')::timestamp at time zone 'Europe/Istanbul'),
+      ((ids.base_date::text || ' 16:30')::timestamp at time zone 'Europe/Istanbul'),
       'confirmed'
     );
     raise exception 'direct authenticated appointment insert unexpectedly succeeded';
@@ -527,8 +572,8 @@ begin
   end;
   begin
     update public.appointments
-       set starts_at = '2026-05-18 16:00 Europe/Istanbul',
-           ends_at = '2026-05-18 16:30 Europe/Istanbul'
+       set starts_at = ((ids.base_date::text || ' 16:00')::timestamp at time zone 'Europe/Istanbul'),
+           ends_at = ((ids.base_date::text || ' 16:30')::timestamp at time zone 'Europe/Istanbul')
      where staff_id = ids.staff_a
        and customer_name = 'Proof Rebook Updated';
     get diagnostics v_affected = row_count;
@@ -549,17 +594,26 @@ begin
   exception
     when insufficient_privilege then null;
   end;
-  update public.appointments
-     set status = 'cancelled'
-   where staff_id = ids.staff_a
-     and customer_name = 'Proof Back To Back';
-  if not found then
-    raise exception 'owner status-only appointment cancellation was unexpectedly blocked';
-  end if;
-  execute 'reset role';
+  -- Owner cancels via the controlled RPC (direct UPDATE is blocked by
+  -- prevent_direct_appointment_scheduling_writes for non-service roles since
+  -- the commission_snapshot_integrity migration).
+  declare
+    v_owner_cancel_id uuid;
+  begin
+    select id into v_owner_cancel_id
+      from public.appointments
+     where staff_id = ids.staff_a
+       and customer_name = 'Proof Back To Back'
+     limit 1;
+    if v_owner_cancel_id is null then
+      raise exception 'owner cancel target appointment not found';
+    end if;
+    perform public.cancel_appointment_atomic(v_owner_cancel_id);
+  end;
+  execute 'set local role service_role';
 
   begin
-    perform public.get_commission_report(ids.shop_id, '2026-05-01', '2026-05-31', null);
+    perform public.get_commission_report(ids.shop_id, (ids.base_date - 30), (ids.base_date + 30), null);
     raise exception 'customer unexpectedly accessed commission report';
   exception
     when sqlstate '42501' then null;
@@ -570,8 +624,8 @@ begin
   update public.shops
      set commission_enabled = true
    where id = ids.shop_id;
-  select public.get_commission_report(ids.shop_id, '2026-05-01', '2026-05-31', null) into v_report;
-  execute 'reset role';
+  select public.get_commission_report(ids.shop_id, (ids.base_date - 30), (ids.base_date + 30), null) into v_report;
+  execute 'set local role service_role';
   if (v_report ? 'staff') is not true then
     raise exception 'commission report did not return expected payload to owner';
   end if;
