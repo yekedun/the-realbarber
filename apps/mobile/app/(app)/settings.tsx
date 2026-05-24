@@ -208,9 +208,9 @@ const styles = StyleSheet.create({
   linkCard: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: colors.brand[50] ?? colors.slate[50],
+    backgroundColor: colors.brand[100],
     borderWidth: 1,
-    borderColor: colors.brand[200] ?? colors.brand[600],
+    borderColor: colors.brand[600],
     borderRadius: 12,
     paddingHorizontal: 14,
     paddingVertical: 12,
