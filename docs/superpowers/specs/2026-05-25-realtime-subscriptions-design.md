@@ -21,22 +21,22 @@ Yeni veri modeli yok, edge function değişmiyor. Subscription yalnızca "veri d
 
 ## 1. BookingClient.tsx (Web)
 
-### Subscribe edilen tablo
-`appointments` — filtre: `shop_id=eq.<shopId>`
+### Neden postgres_changes değil
 
-### Tetiklenen olaylar
-`INSERT`, `UPDATE` → `fetchSlots()` yeniden çağrılır
+`appointments` tablosunda `REVOKE SELECT FROM anon` var (bkz. `20260518120000_commission_hardening.sql`). `BookingClient` anon key ile çalıştığı için postgres_changes subscription RLS tarafından bloke edilir — hiçbir event ulaşmaz.
 
-### Kanal yaşam döngüsü
-- Component mount'ta `shopId` hazır olunca kanal kurulur
-- Component unmount'ta `supabase.removeChannel(channel)` çağrılır
-- `selDate` / `selService` / `selStaff` değişince kanal yeniden kurulmaz — filtre shop-level, slot hesabı `fetchSlots` içinde
+### Çözüm: Polling (30s interval)
+
+```
+setInterval(() => fetchSlots(), 30_000)
+```
+
+- Component mount'ta interval başlar, unmount'ta `clearInterval`
+- Kullanıcı sekmeyi değiştirince `document.visibilitychange` ile interval duraklatılır — gereksiz ağ trafiği önlenir
+- `selDate` / `selService` / `selStaff` değişince zaten `fetchSlots` çalışıyor; interval ek güvence
 
 ### Debounce
-Aynı saniyede birden fazla event gelirse `fetchSlots` spam'ini önlemek için 200ms `useRef` timeout.
-
-### RLS notu
-`appointments` tablosunda anon `SELECT` policy mevcut (`widget-get-availability` aynı erişimi kullanıyor). Ek policy gerekmez.
+`fetchSlots` içinde zaten `slotsLoad` flag'i var — çakışan çağrılar early-return yapar. Ek debounce gerekmez.
 
 ---
 
@@ -74,16 +74,16 @@ Aynı saniyede birden fazla event gelirse `fetchSlots` spam'ini önlemek için 2
 
 | Dosya | Değişiklik |
 |-------|-----------|
-| `apps/web/src/app/[slug]/BookingClient.tsx` | `useEffect` + `supabase` import + channel kurulum/cleanup + debounce ref |
+| `apps/web/src/app/[slug]/BookingClient.tsx` | `useEffect` + 30s polling interval + visibilitychange pause + cleanup |
 | `apps/mobile/app/(owner)/agenda.tsx` | İki `useEffect` (appointments + blocks kanalları) + debounce ref |
 
-Toplam tahmini ek satır: ~50 (web ~20, mobil ~30)
+Toplam tahmini ek satır: ~45 (web ~15, mobil ~30)
 
 ---
 
 ## 5. Test Stratejisi
 
-1. **Web:** İki sekme aç → birinde randevu al → diğerinde slot grid'inin güncellenmesini izle
+1. **Web:** İki sekme aç → birinde randevu al → 30s içinde diğerinde slot grid'inin güncellenmesini izle
 2. **Mobil:** Başka bir cihazdan/web'den randevu ekle → agenda'nın yenilenmesini izle
 3. **Cleanup:** Sayfadan ayrıl / ekrandan çık → Supabase dashboard'da açık realtime bağlantı kalmamalı
 4. **Debounce:** Hızlı art arda 3 randevu ekle → `loadAgenda` 1-2 kez çağrılmalı, 3 kez değil
