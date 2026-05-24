@@ -37,7 +37,7 @@
  *   (screens.jsx uses size="lg" right:20 shadow:'0 12px 24px -10px rgba(30,58,138,0.4)')
  *   → use size="lg" right:20 per screens.jsx (the primary reference)
  */
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { createDebounce } from '../../lib/debounce';
 import {
   View,
@@ -151,41 +151,7 @@ export default function AgendaScreen() {
     if (showAdd) loadShopAndChildren();
   }, [showAdd]);
 
-  useEffect(() => {
-    if (barberList.length) loadAgenda();
-  }, [selectedDate, barberList]);
-
-  useEffect(() => {
-    if (!barberList.length) return;
-
-    const staffIds = barberList.map(b => b.id).join(',');
-    const debounced = createDebounce(() => loadAgenda(), 200);
-
-    const apptCh = supabase
-      .channel(`agenda-appt-${selectedDate.toISOString().split('T')[0]}`)
-      .on(
-        'postgres_changes' as const,
-        { event: '*', schema: 'public', table: 'appointments', filter: `staff_id=in.(${staffIds})` },
-        () => debounced(),
-      )
-      .subscribe();
-
-    const blockCh = supabase
-      .channel(`agenda-block-${selectedDate.toISOString().split('T')[0]}`)
-      .on(
-        'postgres_changes' as const,
-        { event: '*', schema: 'public', table: 'blocks', filter: `staff_id=in.(${staffIds})` },
-        () => debounced(),
-      )
-      .subscribe();
-
-    return () => {
-      supabase.removeChannel(apptCh);
-      supabase.removeChannel(blockCh);
-    };
-  }, [barberList, selectedDate]);
-
-  async function loadAgenda() {
+  const loadAgenda = useCallback(async () => {
     const barbers = barberList;
     if (!barbers.length) { setCols([]); return; }
 
@@ -194,7 +160,6 @@ export default function AgendaScreen() {
 
     // barbers already loaded — skip the redundant shop/barber fetch
     const _ = shopId; // referenced to avoid unused-var warning
-    if (!barbers?.length) { setCols([]); return; }
 
     const [{ data: appts, error: apptsErr }, { data: blocks, error: blocksErr }] = await Promise.all([
       supabase.from('appointments').select('id, staff_id, customer_name, starts_at, ends_at, status, services(name, duration_min)')
@@ -233,7 +198,43 @@ export default function AgendaScreen() {
     });
 
     setCols(newCols);
-  }
+  }, [barberList, selectedDate, shopId]);
+
+  useEffect(() => {
+    if (barberList.length) loadAgenda();
+  }, [selectedDate, barberList, loadAgenda]);
+
+  useEffect(() => {
+    if (!barberList.length) return;
+
+    const staffIds = barberList.map(b => b.id).join(',');
+    const debounced = createDebounce(loadAgenda, 200);
+    const dateStr = selectedDate.toISOString().split('T')[0];
+    const idHash = staffIds.slice(0, 8);
+
+    const apptCh = supabase
+      .channel(`agenda-appt-${dateStr}-${idHash}`)
+      .on(
+        'postgres_changes' as const,
+        { event: '*', schema: 'public', table: 'appointments', filter: `staff_id=in.(${staffIds})` },
+        debounced,
+      )
+      .subscribe();
+
+    const blockCh = supabase
+      .channel(`agenda-block-${dateStr}-${idHash}`)
+      .on(
+        'postgres_changes' as const,
+        { event: '*', schema: 'public', table: 'blocks', filter: `staff_id=in.(${staffIds})` },
+        debounced,
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(apptCh);
+      supabase.removeChannel(blockCh);
+    };
+  }, [barberList, selectedDate, loadAgenda]);
 
   function handleAddAppointment() {
     setShowAdd(true);
