@@ -246,9 +246,16 @@ serve(async (req) => {
     }
   }
 
+  // Tüm personel o gün kapalıysa → closed: true döndür
+  // (slotMap boş olur ama "Fully booked" yerine "Closed today" gösterilmeli)
+  const allClosed = perStaff.every((p) => p.closed);
+  if (allClosed) {
+    return json({ staff_id: "any", closed: true, slots: [] });
+  }
+
   const slots = Array.from(slotMap.entries())
     .sort(([a], [b]) => a.localeCompare(b))
     .map(([starts_at, { ends_at, available }]) => ({ starts_at, ends_at, available }));
 
-  return json({ staff_id: "any", slots });
+  return json({ staff_id: "any", closed: false, slots });
 });

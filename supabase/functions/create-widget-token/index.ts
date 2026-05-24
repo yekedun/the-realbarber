@@ -25,12 +25,12 @@ serve(async (req) => {
 
   const supabase = createAdminClient();
 
-  // Dükkan sahibi mi?
+  // Dükkan sahibi mi? (owner_id legacy fallback dahil)
   const { data: shop } = await supabase
     .from("shops")
     .select("id")
-    .eq("owner_user_id", user.id)
-    .single();
+    .or(`owner_user_id.eq.${user.id},owner_id.eq.${user.id}`)
+    .maybeSingle();
 
   if (!shop) return error("Dükkan profili bulunamadı", 404);
 
