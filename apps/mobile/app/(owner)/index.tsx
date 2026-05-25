@@ -233,6 +233,9 @@ export default function OzetScreen() {
   const [kpiCompleted, setKpiCompleted] = useState('—');
   const [kpiRevenue,   setKpiRevenue]   = useState('—');
   const [staffList, setStaffList] = useState<{id:string;name:string}[]>([{id:'all',name:'Tüm Ekip'}]);
+  const [topService, setTopService] = useState<{name:string;pct:string} | null>(null);
+  const [busiestDay, setBusiestDay] = useState<{name:string;count:string} | null>(null);
+  const [staffStats, setStaffStats] = useState<{id:string;name:string;count:number}[]>([]);
 
   useEffect(() => {
     loadSummary();
@@ -276,6 +279,56 @@ export default function OzetScreen() {
       setKpiTotal(String(total));
       setKpiCompleted(String(completed));
       setKpiRevenue(revenue === 0 ? '—' : (revenue / 100).toLocaleString('tr-TR', { maximumFractionDigits: 0 }));
+    }
+
+    // Öngörüler + Usta Bazında — 30-day range, all staff
+    const allIds = (barbers as any[]).map((b: any) => b.id);
+    if (!allIds.length) return;
+    const monthStart = new Date(); monthStart.setDate(monthStart.getDate() - 29); monthStart.setHours(0,0,0,0);
+    const monthEnd = new Date(); monthEnd.setDate(monthEnd.getDate() + 1); monthEnd.setHours(0,0,0,0);
+
+    const { data: monthly } = await supabase.rpc('get_shop_appointments_revenue', {
+      p_shop_id: shopData.id,
+      p_from: monthStart.toISOString(),
+      p_to: monthEnd.toISOString(),
+      p_staff_ids: allIds,
+    });
+
+    if (monthly && (monthly as any[]).length > 0) {
+      const rows = monthly as any[];
+
+      // En Çok Tercih Edilen hizmet
+      const svcCount = new Map<string, number>();
+      for (const a of rows) {
+        const name = a.service_name ?? 'Bilinmiyor';
+        svcCount.set(name, (svcCount.get(name) ?? 0) + 1);
+      }
+      let topSvc = '—'; let topSvcCnt = 0;
+      svcCount.forEach((cnt, name) => { if (cnt > topSvcCnt) { topSvcCnt = cnt; topSvc = name; } });
+      const topPct = rows.length > 0 ? `%${Math.round((topSvcCnt / rows.length) * 100)}` : '—';
+      setTopService({ name: topSvc, pct: topPct });
+
+      // En Yoğun Gün (haftanın günü)
+      const TR_DAYS = ['Paz', 'Pzt', 'Sal', 'Çar', 'Per', 'Cum', 'Cmt'];
+      const dayCount = new Array(7).fill(0);
+      for (const a of rows) {
+        const d = new Date(a.starts_at ?? a.created_at);
+        dayCount[d.getDay()]++;
+      }
+      const maxDay = dayCount.indexOf(Math.max(...dayCount));
+      setBusiestDay({ name: TR_DAYS[maxDay], count: String(dayCount[maxDay]) });
+
+      // Usta Bazında — randevu sayısı
+      const staffCount = new Map<string, number>();
+      for (const a of rows) { staffCount.set(a.staff_id, (staffCount.get(a.staff_id) ?? 0) + 1); }
+      setStaffStats(
+        (barbers as any[]).map((b: any) => ({ id: b.id, name: b.name, count: staffCount.get(b.id) ?? 0 }))
+          .sort((a, b) => b.count - a.count),
+      );
+    } else {
+      setTopService(null);
+      setBusiestDay(null);
+      setStaffStats((barbers as any[]).map((b: any) => ({ id: b.id, name: b.name, count: 0 })));
     }
   }
 
@@ -330,33 +383,53 @@ export default function OzetScreen() {
         />
       </View>
 
-      {/* Öngörüler section — TODO: connect Supabase */}
       <SectionLabel>Öngörüler (30 gün)</SectionLabel>
       <View style={styles.insightsCard}>
         <View style={[styles.insightRow, styles.insightBorder]}>
           <View>
             <Text style={styles.insightRowLabel}>En Çok Tercih Edilen</Text>
-            <Text style={styles.insightRowValue}>—</Text>
+            <Text style={styles.insightRowValue}>{topService?.name ?? '—'}</Text>
           </View>
-          <Text style={styles.insightRowRight}>—</Text>
+          <Text style={styles.insightRowRight}>{topService?.pct ?? '—'}</Text>
         </View>
         <View style={styles.insightRow}>
           <View>
             <Text style={styles.insightRowLabel}>En Yoğun Gün</Text>
-            <Text style={styles.insightRowValue}>—</Text>
+            <Text style={styles.insightRowValue}>{busiestDay?.name ?? '—'}</Text>
           </View>
-          <Text style={styles.insightRowRight}>—</Text>
+          <Text style={styles.insightRowRight}>{busiestDay ? `${busiestDay.count} randevu` : '—'}</Text>
         </View>
       </View>
 
-      {/* Usta Bazında — TODO: connect Supabase */}
       <SectionLabel>Usta Bazında</SectionLabel>
       <View style={styles.staffList}>
-        <View style={[styles.insightsCard, { marginHorizontal: 0, paddingVertical: 16, alignItems: 'center' }]}>
-          <Text style={{ fontSize: 13, fontFamily: 'Montserrat-Regular', color: colors.slate[400] }}>
-            Henüz veri yok
-          </Text>
-        </View>
+        {staffStats.length === 0 ? (
+          <View style={[styles.insightsCard, { marginHorizontal: 0, paddingVertical: 16, alignItems: 'center' }]}>
+            <Text style={{ fontSize: 13, fontFamily: 'Montserrat-Regular', color: colors.slate[400] }}>
+              Henüz veri yok
+            </Text>
+          </View>
+        ) : (() => {
+          const maxCount = Math.max(...staffStats.map(s => s.count), 1);
+          const avatarColors = [colors.brand[600], '#8B4513', colors.mint[700] ?? '#14B8A6'];
+          return staffStats.map((s, i) => (
+            <View key={s.id} style={styles.staffCard}>
+              <View style={[styles.avatar, { backgroundColor: avatarColors[i % avatarColors.length] }]}>
+                <Text style={styles.avatarText}>{s.name.slice(0, 1).toUpperCase()}</Text>
+              </View>
+              <View style={styles.staffInfo}>
+                <Text style={styles.staffName}>{s.name}</Text>
+                <Text style={styles.staffMeta}>30 günde {s.count} randevu</Text>
+              </View>
+              <View style={styles.miniBarWrap}>
+                <Text style={[styles.miniCount, { color: colors.brand[600] }]}>{s.count}</Text>
+                <View style={styles.miniTrack}>
+                  <View style={[styles.miniFill, { width: `${Math.round((s.count / maxCount) * 100)}%`, backgroundColor: colors.brand[600] }]} />
+                </View>
+              </View>
+            </View>
+          ));
+        })()}
       </View>
     </ScrollView>
   );

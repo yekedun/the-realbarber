@@ -47,7 +47,6 @@ interface StaffMember {
   meta: string;
 }
 
-// TODO: connect Supabase — fetch from staff table for this shop
 const INIT_STAFF: StaffMember[] = [];
 
 const TR_DAYS = ['Paz', 'Pzt', 'Sal', 'Çar', 'Per', 'Cum', 'Cmt'];
@@ -441,7 +440,6 @@ function CommissionSheet({ open, onClose, staffName, onSave }: CommissionSheetPr
       Alert.alert('Geçersiz', '0 ile 100 arasında oran gir.');
       return;
     }
-    // TODO: connect Supabase — update commission_rate for staff
     onSave(val);
     setCommInput('');
   }

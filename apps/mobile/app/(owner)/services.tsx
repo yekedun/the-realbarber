@@ -57,7 +57,6 @@ interface Service {
   active: boolean;
 }
 
-// TODO: connect Supabase — fetch services for this shop on mount
 const INIT_SERVICES: Service[] = [];
 
 /* ─── Toggle ────────────────────────────────────────────────── */

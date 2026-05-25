@@ -262,7 +262,6 @@ function EmptyState({ onCta, dateLabel }: { onCta?: () => void; dateLabel?: stri
   );
 }
 
-// TODO: connect Supabase — fetch appointments + blocks + services for authenticated staff
 type ListItem =
   | { kind: 'section'; label: string; topMargin?: number }
   | { kind: 'appt'; id: string; time: string; duration: number; name: string; service: string; state?: ApptState; isDetail?: boolean }

@@ -58,6 +58,7 @@ import type { AppointmentWorkingHours } from '../../lib/appointment-time';
 import { appointmentRowToAgendaItem } from '../../lib/appointment-mappers';
 import { formatTime, translateReason, AppointmentState as AppState } from '../../lib/utils';
 import { AddAppointmentModal, ServiceOption, StaffOption } from '../../components/AddAppointmentModal';
+import { AppointmentDetailSheet, AppointmentDetail } from '../../components/AppointmentDetailSheet';
 
 
 interface AppItem {
@@ -113,6 +114,8 @@ export default function AgendaScreen() {
   const [barberList, setBarberList] = useState<{ id: string; name: string }[]>([]);
   const [showAdd, setShowAdd] = useState(false);
   const [services, setServices] = useState<ServiceOption[]>([]);
+  const [showDetail, setShowDetail] = useState(false);
+  const [selectedAppt, setSelectedAppt] = useState<AppointmentDetail | null>(null);
 
   async function loadShopAndChildren() {
     const { data: { user } } = await supabase.auth.getUser();
@@ -237,6 +240,23 @@ export default function AgendaScreen() {
     setShowAdd(true);
   }
 
+  async function handleOpenDetail(item: AppItem) {
+    const { data } = await supabase
+      .from('appointments')
+      .select('customer_phone')
+      .eq('id', item.id)
+      .maybeSingle();
+    setSelectedAppt({
+      id: item.id,
+      time: item.time,
+      duration: item.dur,
+      customerName: item.name,
+      customerPhone: (data as any)?.customer_phone ?? null,
+      serviceName: item.svc,
+    });
+    setShowDetail(true);
+  }
+
   return (
     <View style={styles.screen}>
       {/* Header */}
@@ -296,9 +316,7 @@ export default function AgendaScreen() {
                       name={item.name}
                       service={item.svc}
                       state={item.state}
-                      onPress={() => {
-                        // TODO: connect Supabase — open AppointmentDetailSheet
-                      }}
+                      onPress={() => handleOpenDetail(item)}
                     />
                   )
                 )
@@ -320,6 +338,28 @@ export default function AgendaScreen() {
           + Randevu Ekle
         </Button>
       </View>
+
+      <AppointmentDetailSheet
+        visible={showDetail}
+        onClose={() => setShowDetail(false)}
+        appointment={selectedAppt}
+        onEdit={() => setShowDetail(false)}
+        onCancel={(id) => {
+          setCols(prev => prev.map(col => ({
+            ...col,
+            items: col.items.filter(i => i.id !== id),
+            count: col.items.filter(i => i.type === 'appt' && i.id !== id).length,
+          })));
+        }}
+        onComplete={(id) => {
+          setCols(prev => prev.map(col => ({
+            ...col,
+            items: col.items.map(i =>
+              i.type === 'appt' && i.id === id ? { ...i, state: 'done' as AppState } : i,
+            ),
+          })));
+        }}
+      />
 
       <AddAppointmentModal
         visible={showAdd}
