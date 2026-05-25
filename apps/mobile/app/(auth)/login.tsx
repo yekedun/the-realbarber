@@ -35,6 +35,7 @@ import { colors } from '../../lib/theme';
 import { Button } from '../../components/ds/Button';
 import { TextField } from '../../components/ds/TextField';
 import { supabase, determineUserRole } from '../../lib/supabase';
+import { registerForPushNotifications } from '../../lib/notifications';
 
 export default function LoginScreen() {
   const [email,    setEmail]    = useState('');
@@ -56,6 +57,7 @@ export default function LoginScreen() {
       if (authError) { setError(authError.message); return; }
       if (!data.user) return;
       const role = await determineUserRole(data.user.id);
+      registerForPushNotifications().catch(() => {});
       if (role === 'owner') router.replace('/(owner)');
       else if (role === 'staff') router.replace('/(app)');
       else setError('Hesabınıza erişim bulunamadı.');

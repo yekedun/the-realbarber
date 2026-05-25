@@ -38,6 +38,7 @@ import { router } from 'expo-router';
 import { colors } from '../../lib/theme';
 import { supabase } from '../../lib/supabase';
 import { buildOnboardingServiceInsert, slugify } from '../../lib/onboarding-utils';
+import { registerForPushNotifications } from '../../lib/notifications';
 
 /* ─── Constants ──────────────────────────────────────────────── */
 
@@ -478,7 +479,10 @@ function StepDone({ shopName, cityName, svcName, svcDur, svcPrice, onGo, onShare
 
       {/* Panele Git */}
       <TouchableOpacity
-        onPress={onGo}
+        onPress={() => {
+          registerForPushNotifications().catch(() => {});
+          onGo();
+        }}
         style={[styles.primaryBtn, styles.primaryBtnFull]}
         activeOpacity={0.8}
       >
