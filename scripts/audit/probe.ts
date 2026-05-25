@@ -383,6 +383,82 @@ async function checkEnsureOwnerStaff(shopId: string) {
   }
 }
 
+// ── Realtime Probing ──────────────────────────────────────────────────────
+
+export async function probeRealtime(shopId: string, staffId: string) {
+  console.log("\n── Realtime Probing ─────────────────────────────────────");
+
+  // Get a service
+  const { data: svc } = await serviceClient
+    .from("services")
+    .select("id")
+    .limit(1)
+    .maybeSingle();
+
+  if (!svc) {
+    skip("realtime", "appointments INSERT event", "No service found — cannot create test appointment");
+    return;
+  }
+
+  const received: unknown[] = [];
+  const channelName = `probe-appointments-${Date.now()}`;
+
+  // Subscribe to appointments table changes
+  const channel = serviceClient
+    .channel(channelName)
+    .on(
+      "postgres_changes",
+      { event: "INSERT", schema: "public", table: "appointments" },
+      (payload) => {
+        received.push(payload);
+      }
+    )
+    .subscribe();
+
+  // Wait for subscription to be established
+  await new Promise<void>((resolve) => setTimeout(resolve, 2000));
+
+  // Create test appointment to trigger the event
+  const [createRes] = await timed(() =>
+    serviceClient.rpc("create_appointment_atomic", {
+      p_shop_id: shopId,
+      p_staff_id: staffId,
+      p_service_id: svc.id,
+      p_customer_name: "Realtime Test",
+      p_customer_phone: "+905000000002",
+      p_starts_at: "2026-06-01T10:00:00Z",
+    } as never)
+  );
+
+  if (createRes.error) {
+    fail("realtime", "appointments INSERT event", `Cannot create test appointment: ${createRes.error.message}`);
+    await serviceClient.removeChannel(channel);
+    return;
+  }
+
+  const apptData = createRes.data as { appointment_id: string } | string;
+  const apptId = typeof apptData === "string" ? apptData : apptData.appointment_id;
+
+  // Wait up to 4 seconds for the realtime event
+  await new Promise<void>((resolve) => setTimeout(resolve, 4000));
+  await serviceClient.removeChannel(channel);
+
+  if (received.length > 0) {
+    pass("realtime", "appointments INSERT event", `${received.length} event(s) received`);
+  } else {
+    fail(
+      "realtime",
+      "appointments INSERT event",
+      "No event received in 4s — check replica identity and realtime publication"
+    );
+  }
+
+  // Cleanup
+  if (apptId) {
+    await serviceClient.from("appointments").delete().eq("id", apptId);
+  }
+}
+
 // ── Main ──────────────────────────────────────────────────────────────────
 
 async function main() {
@@ -404,6 +480,7 @@ async function main() {
   await probeEdgeFns();
   await probeRls();
   await probeTriggers(shopId, staffId);
+  await probeRealtime(shopId, staffId);
 
   const failed = results.filter((r) => r.status === "FAIL").length;
   const passed = results.filter((r) => r.status === "PASS").length;
