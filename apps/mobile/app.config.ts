@@ -17,6 +17,10 @@ const baseConfig = ({ config }: ConfigContext): ExpoConfig => ({
   ios: {
     supportsTablet: false,
     bundleIdentifier: 'com.siradaki.app',
+    infoPlist: {
+      NSUserNotificationUsageDescription:
+        'Yeni randevu ve hatırlatma bildirimleri almak için izin gerekiyor.',
+    },
   },
   android: {
     adaptiveIcon: {
@@ -36,6 +40,15 @@ const baseConfig = ({ config }: ConfigContext): ExpoConfig => ({
           './assets/fonts/Montserrat-SemiBold.otf',
           './assets/fonts/Montserrat-Bold.otf',
         ],
+      },
+    ],
+    [
+      'expo-notifications',
+      {
+        icon: './assets/notification-icon.png',
+        color: '#1E3A8A',
+        defaultChannel: 'default',
+        sounds: [],
       },
     ],
   ],
