@@ -1,7 +1,48 @@
 import { serve } from "https://deno.land/std@0.208.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { createAdminClient } from "../_shared/supabase-admin.ts";
 import { corsOptions, error, json } from "../_shared/cors.ts";
 import { MIN_CANCEL_NOTICE_MINUTES } from "@berber/shared/constants";
+
+async function sendCancelNotification(
+  appointmentId: string,
+  serviceUrl: string,
+  serviceKey: string,
+): Promise<void> {
+  const supabase = createAdminClient();
+
+  const { data: appt } = await supabase
+    .from("appointments")
+    .select("customer_name, starts_at, staff:staff_id(push_token)")
+    .eq("id", appointmentId)
+    .maybeSingle();
+
+  if (!appt) return;
+  const staffMember = appt.staff as any;
+  if (!staffMember?.push_token) return;
+
+  const timeStr = new Date(appt.starts_at).toLocaleTimeString("tr-TR", {
+    hour: "2-digit",
+    minute: "2-digit",
+    timeZone: "Europe/Istanbul",
+  });
+
+  await fetch(`${serviceUrl}/functions/v1/send-push`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${serviceKey}`,
+    },
+    body: JSON.stringify({
+      messages: [{
+        to: staffMember.push_token,
+        title: "Randevu İptal Edildi",
+        body: `${appt.customer_name} — ${timeStr} randevusunu iptal etti`,
+        data: { appointmentId },
+      }],
+    }),
+  }).catch((e) => console.error("[cancel] Push failed:", e));
+}
 
 serve(async (req) => {
   if (req.method === "OPTIONS") return corsOptions();
@@ -67,6 +108,13 @@ serve(async (req) => {
     console.error("cancel_appointment_atomic failed:", rpcError);
     return error("İptal işlemi başarısız", 500);
   }
+
+  // Fire-and-forget: notify staff member
+  const svcUrl = Deno.env.get("SUPABASE_URL")!;
+  const svcKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+  sendCancelNotification(appointment_id, svcUrl, svcKey).catch(
+    (e) => console.error("[cancel] Notification dispatch error:", e)
+  );
 
   return json({ success: true });
 });
