@@ -277,6 +277,112 @@ export async function probeRls() {
   }
 }
 
+// ── Trigger + Critical Flow Probing ──────────────────────────────────────
+
+export async function probeTriggers(shopId: string, staffId: string) {
+  console.log("\n── Trigger + Critical Flow Probing ─────────────────────");
+
+  // Get a service to use for test appointments
+  const { data: svc, error: svcErr } = await serviceClient
+    .from("services")
+    .select("id")
+    .limit(1)
+    .maybeSingle();
+
+  if (!svc) {
+    skip("trigger", "create_appointment_atomic", `No service found: ${svcErr?.message ?? "empty table"}`);
+    skip("trigger", "appointments_sync_slots", "Skipped — no service");
+    skip("trigger", "prevent_direct_scheduling_writes", "Skipped — no service");
+    skip("trigger", "shops_ensure_owner_staff", "Separate check below");
+    await checkEnsureOwnerStaff(shopId);
+    return;
+  }
+
+  // Test 1: create_appointment_atomic RPC works
+  const [createRes, createMs] = await timed(() =>
+    serviceClient.rpc("create_appointment_atomic", {
+      p_shop_id: shopId,
+      p_staff_id: staffId,
+      p_service_id: svc.id,
+      p_customer_name: "Audit Test",
+      p_customer_phone: "+905000000000",
+      p_starts_at: "2027-01-15T10:00:00Z",
+    } as never)
+  );
+
+  if (createRes.error) {
+    fail("trigger", "create_appointment_atomic", `RPC error: ${createRes.error.message}`, createMs);
+    skip("trigger", "appointments_sync_slots", "Skipped — appointment creation failed");
+    skip("trigger", "prevent_direct_scheduling_writes", "Skipped — no appointment");
+    await checkEnsureOwnerStaff(shopId);
+    return;
+  }
+
+  const apptData = createRes.data as { appointment_id?: string } | null;
+  const apptIdStr = apptData?.appointment_id ?? String(apptData);
+  pass("trigger", "create_appointment_atomic", `appointment created: ${apptIdStr}`, createMs);
+
+  // Test 2: appointments_sync_slots trigger → appointment_slots created
+  const [slotRes, slotMs] = await timed(() =>
+    serviceClient
+      .from("appointment_slots")
+      .select("*")
+      .eq("appointment_id", apptIdStr)
+  );
+
+  if (slotRes.error || (slotRes.data?.length ?? 0) === 0) {
+    fail(
+      "trigger",
+      "appointments_sync_slots",
+      `Trigger did not fire — appointment_slots empty: ${slotRes.error?.message ?? "0 rows"}`,
+      slotMs
+    );
+  } else {
+    pass("trigger", "appointments_sync_slots", `${slotRes.data!.length} slot(s) created`, slotMs);
+  }
+
+  // Test 3: prevent_direct_appointment_scheduling_writes — direct INSERT must fail
+  const [directRes] = await timed(() =>
+    serviceClient.from("appointments").insert({
+      shop_id: shopId,
+      staff_id: staffId,
+      service_id: svc.id,
+      customer_name: "Direct Test",
+      customer_phone: "+905000000001",
+      starts_at: "2026-06-16T10:00:00Z",
+      ends_at: "2026-06-16T10:30:00Z",
+    })
+  );
+
+  if (directRes.error) {
+    pass("trigger", "prevent_direct_scheduling_writes", `Blocked: ${directRes.error.message}`);
+  } else {
+    fail("trigger", "prevent_direct_scheduling_writes", "Direct INSERT succeeded — trigger not working!");
+  }
+
+  // Cleanup test appointment
+  await serviceClient.from("appointments").delete().eq("id", apptIdStr);
+
+  // Test 4: shops_ensure_owner_staff
+  await checkEnsureOwnerStaff(shopId);
+}
+
+async function checkEnsureOwnerStaff(shopId: string) {
+  const { data: ownerStaff, error } = await serviceClient
+    .from("staff")
+    .select("id")
+    .eq("shop_id", shopId)
+    .limit(1);
+
+  if (error) {
+    fail("trigger", "shops_ensure_owner_staff", `Error: ${error.message}`);
+  } else if (ownerStaff && ownerStaff.length > 0) {
+    pass("trigger", "shops_ensure_owner_staff", "Owner staff record exists");
+  } else {
+    fail("trigger", "shops_ensure_owner_staff", "No staff record for shop owner");
+  }
+}
+
 // ── Main ──────────────────────────────────────────────────────────────────
 
 async function main() {
@@ -297,6 +403,7 @@ async function main() {
   await probeRpcs(shopId, staffId);
   await probeEdgeFns();
   await probeRls();
+  await probeTriggers(shopId, staffId);
 
   const failed = results.filter((r) => r.status === "FAIL").length;
   const passed = results.filter((r) => r.status === "PASS").length;
