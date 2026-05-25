@@ -37,7 +37,7 @@ import {
 import { router } from 'expo-router';
 import { colors } from '../../lib/theme';
 import { supabase } from '../../lib/supabase';
-import { buildOnboardingServiceInsert } from '../../lib/onboarding-utils';
+import { buildOnboardingServiceInsert, slugify } from '../../lib/onboarding-utils';
 
 /* ─── Constants ──────────────────────────────────────────────── */
 
@@ -195,10 +195,7 @@ interface Step1Props {
 }
 
 function Step1({ onNext, shopName, setShopName, city, setCity }: Step1Props) {
-  const slug = shopName
-    .toLowerCase()
-    .replace(/\s+/g, '-')
-    .replace(/[^a-z0-9-]/g, '');
+  const slug = slugify(shopName);
 
   return (
     <OnboardingShell
@@ -439,10 +436,7 @@ interface StepDoneProps {
 }
 
 function StepDone({ shopName, cityName, svcName, svcDur, svcPrice, onGo, onShare }: StepDoneProps) {
-  const slug = shopName
-    .toLowerCase()
-    .replace(/\s+/g, '-')
-    .replace(/[^a-z0-9-]/g, '');
+  const slug = slugify(shopName);
 
   const summaryRows = [
     { label: 'Dükkan',      value: `${shopName || 'Keskin Berber'} · ${cityName || 'Beşiktaş'}` },
@@ -545,8 +539,7 @@ export default function OnboardingScreen() {
   }
 
   async function handleShare() {
-    const slug = shopName.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '');
-    try { await Share.share({ message: `siradaki.app/${slug}` }); } catch {}
+    try { await Share.share({ message: `siradaki.app/${slugify(shopName)}` }); } catch {}
   }
 
   // Step 1 → 2: update shop name + city
@@ -576,19 +569,17 @@ export default function OnboardingScreen() {
   async function handleNext3() {
     if (shopId && staffName.trim().length >= 2) {
       setLoading(true);
-      const slug = staffName.trim()
-        .toLowerCase()
-        .replace(/\s+/g, '-')
-        .replace(/[^a-z0-9-]/g, '')
-        .slice(0, 40);
-      await supabase.from('staff').insert({
-        shop_id:   shopId,
-        name:      staffName.trim(),
-        is_active: true,
-        role:      'barber',
-        slug,
-      });
-      setLoading(false);
+      try {
+        await supabase.from('staff').insert({
+          shop_id:   shopId,
+          name:      staffName.trim(),
+          is_active: true,
+          role:      'barber',
+          slug:      slugify(staffName.trim()),
+        });
+      } finally {
+        setLoading(false);
+      }
     }
     setStep(4);
   }

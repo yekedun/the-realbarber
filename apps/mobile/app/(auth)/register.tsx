@@ -50,7 +50,7 @@ import { router } from 'expo-router';
 import { colors } from '../../lib/theme';
 import { Button } from '../../components/ds/Button';
 import { supabase } from '../../lib/supabase';
-import { DEFAULT_WORKING_HOURS } from '../../lib/onboarding-utils';
+import { DEFAULT_WORKING_HOURS, slugify } from '../../lib/onboarding-utils';
 
 /* ── PasswordStrength ─────────────────────────────────────────── */
 function PasswordStrength({ value }: { value: string }) {
@@ -210,33 +210,35 @@ export default function RegisterScreen() {
     if (!canRegister || loading) return;
     setLoading(true);
     setError(null);
+    try {
+      const { data: authData, error: signUpError } = await supabase.auth.signUp({
+        email: email.trim(),
+        password: pass,
+        options: { data: { shop_name: shopName.trim() } },
+      });
+      if (signUpError || !authData.user) {
+        setError(signUpError?.message ?? 'Kayıt başarısız.');
+        return;
+      }
 
-    const { data: authData, error: signUpError } = await supabase.auth.signUp({
-      email: email.trim(),
-      password: pass,
-      options: { data: { shop_name: shopName.trim() } },
-    });
-    if (signUpError || !authData.user) {
-      setError(signUpError?.message ?? 'Kayıt başarısız.');
+      // Create shop record
+      const trimmedName = shopName.trim();
+      const { error: shopError } = await supabase.from('shops').insert({
+        owner_user_id: authData.user.id,
+        name:          trimmedName,
+        display_name:  trimmedName,
+        slug:          slugify(trimmedName),
+        working_hours: DEFAULT_WORKING_HOURS,
+      });
+      if (shopError) {
+        setError('Dükkan oluşturulamadı: ' + shopError.message);
+        return;
+      }
+
+      router.replace('/(owner)/onboarding');
+    } finally {
       setLoading(false);
-      return;
     }
-
-    // Create shop record
-    const { error: shopError } = await supabase.from('shops').insert({
-      owner_user_id: authData.user.id,
-      name: shopName.trim(),
-      slug: shopName.trim().toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, ''),
-      working_hours: DEFAULT_WORKING_HOURS,
-    });
-    if (shopError) {
-      setError('Dükkan oluşturulamadı: ' + shopError.message);
-      setLoading(false);
-      return;
-    }
-
-    setLoading(false);
-    router.replace('/(owner)/onboarding');
   }
 
   return (

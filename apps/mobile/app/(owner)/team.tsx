@@ -145,16 +145,19 @@ function StaffScheduleModal({ open, onClose, staffId, staffName, onSaved }: Staf
       return;
     }
     setSaving(true);
-    const { error } = await supabase
-      .from('staff_schedules')
-      .upsert(staffScheduleToRows(staffId, schedule) as any, { onConflict: 'staff_id,day_of_week' });
-    setSaving(false);
-    if (error) {
-      Alert.alert('Hata', 'Çalışma saatleri kaydedilemedi.');
-      return;
+    try {
+      const { error } = await supabase
+        .from('staff_schedules')
+        .upsert(staffScheduleToRows(staffId, schedule) as any, { onConflict: 'staff_id,day_of_week' });
+      if (error) {
+        Alert.alert('Hata', 'Çalışma saatleri kaydedilemedi.');
+        return;
+      }
+      onSaved?.();
+      onClose();
+    } finally {
+      setSaving(false);
     }
-    onSaved?.();
-    onClose();
   }
 
   return (

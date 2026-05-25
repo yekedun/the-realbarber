@@ -305,17 +305,18 @@ export default function BlockScreen() {
             }
 
             setSaving(true);
-            const { error } = await supabase.functions.invoke('create-manual-block', {
-              body: { staff_id: staffId, duration_min: dur, reason: REASON_MAP[reason] },
-            });
-            setSaving(false);
-
-            if (error) {
-              Alert.alert('Hata', `Blok eklenemedi: ${error.message}`);
-              return;
+            try {
+              const { error } = await supabase.functions.invoke('create-manual-block', {
+                body: { staff_id: staffId, duration_min: dur, reason: REASON_MAP[reason] },
+              });
+              if (error) {
+                Alert.alert('Hata', `Blok eklenemedi: ${error.message}`);
+                return;
+              }
+              setBlocked(true);
+            } finally {
+              setSaving(false);
             }
-
-            setBlocked(true);
           }}>
             <Text style={styles.primaryBtnText}>{saving ? 'Kaydediliyor...' : 'Kapat'}</Text>
           </TouchableOpacity>

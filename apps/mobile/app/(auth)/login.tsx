@@ -48,17 +48,20 @@ export default function LoginScreen() {
     if (!canSubmit || loading) return;
     setLoading(true);
     setError(null);
-    const { data, error: authError } = await supabase.auth.signInWithPassword({
-      email: email.trim(),
-      password,
-    });
-    if (authError) { setError(authError.message); setLoading(false); return; }
-    if (!data.user) { setLoading(false); return; }
-    const role = await determineUserRole(data.user.id);
-    setLoading(false);
-    if (role === 'owner') router.replace('/(owner)');
-    else if (role === 'staff') router.replace('/(app)');
-    else setError('Hesabınıza erişim bulunamadı.');
+    try {
+      const { data, error: authError } = await supabase.auth.signInWithPassword({
+        email: email.trim(),
+        password,
+      });
+      if (authError) { setError(authError.message); return; }
+      if (!data.user) return;
+      const role = await determineUserRole(data.user.id);
+      if (role === 'owner') router.replace('/(owner)');
+      else if (role === 'staff') router.replace('/(app)');
+      else setError('Hesabınıza erişim bulunamadı.');
+    } finally {
+      setLoading(false);
+    }
   }
 
   return (
