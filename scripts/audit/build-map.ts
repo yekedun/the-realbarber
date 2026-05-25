@@ -94,6 +94,194 @@ export function scanDirectory(dir: string): SourceCallSite[] {
   return results;
 }
 
+// ── Integration map ───────────────────────────────────────────────────────
+
+export interface IntegrationMap {
+  objects: IntegrationObject[];
+  gaps: GapEntry[];
+  sourceSites: SourceCallSite[];
+}
+
+const TRIGGER_FN_NAMES = new Set([
+  "update_updated_at",
+  "sync_appointment_slots",
+  "sync_block_slots",
+  "ensure_owner_staff",
+  "prevent_direct_appointment_scheduling_writes",
+]);
+
+export function buildIntegrationMap(): IntegrationMap {
+  // 1. Collect objects from migrations
+  const sqlFiles = fs.readdirSync(MIGRATIONS_DIR)
+    .filter((f) => f.endsWith(".sql"))
+    .sort();
+
+  const activeTables = new Set<string>();
+  const droppedTables = new Set<string>();
+  const functions = new Map<string, string>(); // name → migration filename
+  const triggers = new Map<string, string>(); // name → migration filename
+
+  for (const f of sqlFiles) {
+    const sql = fs.readFileSync(path.join(MIGRATIONS_DIR, f), "utf8");
+    for (const t of parseTablesFromSql(sql)) activeTables.add(t);
+    for (const t of parseDroppedTablesFromSql(sql)) {
+      activeTables.delete(t);
+      droppedTables.add(t);
+    }
+    for (const fn of parseFunctionsFromSql(sql)) functions.set(fn, f);
+    for (const tr of parseTriggersFromSql(sql)) triggers.set(tr, f);
+  }
+
+  // 2. Scan source code for Supabase calls
+  const sourceSites: SourceCallSite[] = [
+    ...scanDirectory(path.join(ROOT, "apps/mobile/app")),
+    ...scanDirectory(path.join(ROOT, "apps/mobile/components")),
+    ...scanDirectory(path.join(ROOT, "apps/web/src")),
+    ...scanDirectory(path.join(ROOT, "supabase/functions")),
+  ];
+
+  // 3. Edge functions
+  const edgeFnDir = path.join(ROOT, "supabase/functions");
+  const edgeFns = fs.readdirSync(edgeFnDir)
+    .filter((f) => !f.startsWith("_") && fs.statSync(path.join(edgeFnDir, f)).isDirectory());
+
+  // 4. Build consumer map
+  function consumersOf(callPattern: string): string[] {
+    return sourceSites
+      .filter((s) => s.calls.includes(callPattern))
+      .map((s) => s.file);
+  }
+
+  const objects: IntegrationObject[] = [];
+
+  for (const t of activeTables) {
+    objects.push({
+      kind: "table",
+      name: t,
+      consumers: consumersOf(`from:${t}`),
+    });
+  }
+
+  for (const [fn, file] of functions) {
+    const kind: ObjectKind = TRIGGER_FN_NAMES.has(fn) ? "trigger_fn" : "rpc";
+    objects.push({
+      kind,
+      name: fn,
+      definedIn: `supabase/migrations/${file}`,
+      consumers: consumersOf(`rpc:${fn}`),
+    });
+  }
+
+  for (const [tr, file] of triggers) {
+    objects.push({
+      kind: "trigger",
+      name: tr,
+      definedIn: `supabase/migrations/${file}`,
+      consumers: [],
+    });
+  }
+
+  for (const fn of edgeFns) {
+    objects.push({
+      kind: "edge_fn",
+      name: fn,
+      definedIn: `supabase/functions/${fn}/index.ts`,
+      consumers: consumersOf(`invoke:${fn}`),
+    });
+  }
+
+  // 5. Gap detection
+  const gaps: GapEntry[] = [];
+
+  const allFromCalls = new Set(
+    sourceSites.flatMap((s) =>
+      s.calls.filter((c) => c.startsWith("from:")).map((c) => c.slice(5))
+    )
+  );
+  const allRpcCalls = new Set(
+    sourceSites.flatMap((s) =>
+      s.calls.filter((c) => c.startsWith("rpc:")).map((c) => c.slice(4))
+    )
+  );
+  const allInvokeCalls = new Set(
+    sourceSites.flatMap((s) =>
+      s.calls.filter((c) => c.startsWith("invoke:")).map((c) => c.slice(7))
+    )
+  );
+
+  // CRITICAL: called but not defined
+  for (const t of allFromCalls) {
+    if (!activeTables.has(t) && !droppedTables.has(t)) {
+      gaps.push({
+        severity: "CRITICAL",
+        object: t,
+        kind: "table",
+        message: `Table '${t}' is called but not found in migrations`,
+      });
+    }
+    if (droppedTables.has(t)) {
+      gaps.push({
+        severity: "CRITICAL",
+        object: t,
+        kind: "table",
+        message: `Table '${t}' was DROPped but is still referenced in source code`,
+      });
+    }
+  }
+
+  for (const fn of allRpcCalls) {
+    if (!functions.has(fn)) {
+      gaps.push({
+        severity: "CRITICAL",
+        object: fn,
+        kind: "rpc",
+        message: `RPC '${fn}' is called but not defined in migrations`,
+      });
+    }
+  }
+
+  for (const fn of allInvokeCalls) {
+    if (!edgeFns.includes(fn)) {
+      gaps.push({
+        severity: "CRITICAL",
+        object: fn,
+        kind: "edge_fn",
+        message: `Edge fn '${fn}' is invoked but not found in supabase/functions/`,
+      });
+    }
+  }
+
+  // WARNING: defined but no consumer
+  for (const obj of objects) {
+    if ((obj.kind === "rpc" || obj.kind === "edge_fn") && obj.consumers.length === 0) {
+      gaps.push({
+        severity: "WARNING",
+        object: obj.name,
+        kind: obj.kind,
+        message: `Defined but no consumer found — dead code or missing wiring`,
+      });
+    }
+  }
+
+  // WARNING: stale database.types.ts (dropped tables still present)
+  const dbTypesPath = path.join(ROOT, "supabase/functions/_shared/database.types.ts");
+  if (fs.existsSync(dbTypesPath)) {
+    const dbTypes = fs.readFileSync(dbTypesPath, "utf8");
+    for (const t of droppedTables) {
+      if (new RegExp(`\\b${t}:\\s*\\{`).test(dbTypes)) {
+        gaps.push({
+          severity: "WARNING",
+          object: t,
+          kind: "table",
+          message: `Table '${t}' was DROPped but still present in database.types.ts — run pnpm db:sync`,
+        });
+      }
+    }
+  }
+
+  return { objects, gaps, sourceSites };
+}
+
 // ── Self-test ──────────────────────────────────────────────────────────────
 
 function assert(cond: boolean, msg: string) {
@@ -150,16 +338,23 @@ async function main() {
     process.exit(0);
   }
 
-  const sites = [
-    ...scanDirectory(path.join(ROOT, "apps/mobile/app")),
-    ...scanDirectory(path.join(ROOT, "apps/mobile/components")),
-    ...scanDirectory(path.join(ROOT, "apps/web/src")),
-    ...scanDirectory(path.join(ROOT, "supabase/functions")),
-  ];
-  console.log(`Scanned ${sites.length} files with Supabase calls:`);
-  for (const s of sites) {
-    console.log(`  ${s.file}: ${s.calls.join(", ")}`);
+  console.log("🔍 Building integration map...");
+  const map = buildIntegrationMap();
+  console.log(`  Objects: ${map.objects.length}`);
+  console.log(`  Gaps: ${map.gaps.length}`);
+  console.log(`  Source files: ${map.sourceSites.length}`);
+
+  const critical = map.gaps.filter((g) => g.severity === "CRITICAL");
+  const warnings = map.gaps.filter((g) => g.severity === "WARNING");
+  if (critical.length > 0) {
+    console.error(`\n🔴 CRITICAL (${critical.length}):`);
+    for (const g of critical) console.error(`   [${g.kind}] ${g.object}: ${g.message}`);
   }
+  if (warnings.length > 0) {
+    console.log(`\n🟡 WARNING (${warnings.length}):`);
+    for (const g of warnings) console.log(`   [${g.kind}] ${g.object}: ${g.message}`);
+  }
+  // output files written in Task 5
 }
 
 main().catch((e) => { console.error(e); process.exit(1); });
