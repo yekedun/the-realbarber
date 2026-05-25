@@ -62,7 +62,7 @@ export default function EarningsScreen() {
   const [periodCiro,     setPeriodCiro]     = useState('—');
   const [periodKomisyon, setPeriodKomisyon] = useState('—');
   const [periodDukkan,   setPeriodDukkan]   = useState('—');
-  const [staffDist, setStaffDist] = useState<{ name: string; appts: number; ciro: string; pay: string }[]>([]);
+  const [staffDist, setStaffDist] = useState<{ id: string; name: string; appts: number; ciro: string; pay: string }[]>([]);
 
   const data = {
     label: period === 'day' ? 'Bugün' : period === '7' ? '7 gün' : '30 gün',
@@ -128,6 +128,7 @@ export default function EarningsScreen() {
         const { data: barbers } = await supabase.from('staff').select('id, name').in('id', Object.keys(byBarber));
         if (barbers) {
           setStaffDist(barbers.map((b: any) => ({
+            id: b.id,
             name: b.name,
             appts: byBarber[b.id]?.appts ?? 0,
             ciro: formatCents(byBarber[b.id]?.ciro ?? 0) + ' TL',
@@ -208,7 +209,7 @@ export default function EarningsScreen() {
 
           return (
             <View
-              key={p.name}
+              key={p.id}
               style={[styles.staffCard, i < staffDist.length - 1 && { marginBottom: 8 }]}
             >
               {/* Avatar */}
