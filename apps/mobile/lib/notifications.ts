@@ -43,13 +43,19 @@ export async function registerForPushNotifications(): Promise<void> {
   });
 
   const token = buildExpoPushToken(tokenData.data);
-  if (!token) return;
+  if (!token) {
+    console.error('[notifications] Invalid Expo push token format:', tokenData.data);
+    return;
+  }
 
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return;
 
-  await supabase
+  const { error: updateError } = await supabase
     .from('staff')
     .update({ push_token: token })
     .eq('user_id', user.id);
+  if (updateError) {
+    console.error('[notifications] Failed to save push token:', updateError);
+  }
 }
