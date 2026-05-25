@@ -213,7 +213,7 @@ function ModalSuccess({ summary, onClose }: { summary: string; onClose: () => vo
             display: 'flex', alignItems: 'center', justifyContent: 'center',
           }}
         >
-          Randevu Detayları →
+          Tamam
         </button>
       </div>
     </div>
