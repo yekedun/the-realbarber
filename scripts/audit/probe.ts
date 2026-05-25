@@ -247,7 +247,7 @@ export async function probeRls() {
   // Anon should NOT see rows in protected tables (0 rows or explicit error)
   for (const t of PROTECTED_TABLES) {
     const [res, ms] = await timed(() =>
-      anonClient.from(t).select("id").limit(5)
+      anonClient.from(t).select("*").limit(5)
     );
     if (res.error) {
       pass("rls", `${t} anon-blocked`, `RLS blocked: ${res.error.code}`, ms);
@@ -266,7 +266,7 @@ export async function probeRls() {
   // Service role should read all tables without error
   for (const t of [...PUBLIC_READ_TABLES, ...PROTECTED_TABLES]) {
     const [res, ms] = await timed(() =>
-      serviceClient.from(t).select("id").limit(1)
+      serviceClient.from(t).select("*").limit(1)
     );
     // PGRST116 = no rows found, that's fine
     if (res.error && res.error.code !== "PGRST116") {
