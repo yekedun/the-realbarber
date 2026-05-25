@@ -10,30 +10,18 @@ async function sendBookingNotifications(
 ): Promise<void> {
   const supabase = createAdminClient();
 
+  // Step 1: Fetch appointment + assigned staff (flat, no nested joins)
   const { data: appt } = await supabase
     .from("appointments")
-    .select(`
-      id,
-      customer_name,
-      starts_at,
-      services(name),
-      staff:staff_id(
-        push_token,
-        user_id,
-        shop:shop_id(
-          owner_user_id,
-          staff(push_token, user_id)
-        )
-      )
-    `)
+    .select("customer_name, starts_at, staff_id, services(name), staff:staff_id(push_token, shop_id)")
     .eq("id", appointmentId)
     .maybeSingle();
 
   if (!appt) return;
 
   const staffMember = appt.staff as any;
-  const shop = staffMember?.shop as any;
   const service = appt.services as any;
+  const shopId: string | null = staffMember?.shop_id ?? null;
 
   const timeStr = new Date(appt.starts_at).toLocaleTimeString("tr-TR", {
     hour: "2-digit",
@@ -47,11 +35,24 @@ async function sendBookingNotifications(
   const tokens = new Set<string>();
   if (staffMember?.push_token) tokens.add(staffMember.push_token);
 
-  // Owner token — only if different staff member
-  if (shop?.staff) {
-    for (const s of shop.staff as any[]) {
-      if (s.user_id === shop.owner_user_id && s.push_token && s.push_token !== staffMember?.push_token) {
-        tokens.add(s.push_token);
+  // Step 2: If shop exists, fetch owner's push_token (separate query, no ambiguous nesting)
+  if (shopId) {
+    const { data: shop } = await supabase
+      .from("shops")
+      .select("owner_user_id")
+      .eq("id", shopId)
+      .maybeSingle();
+
+    if (shop?.owner_user_id) {
+      const { data: ownerStaff } = await supabase
+        .from("staff")
+        .select("push_token")
+        .eq("shop_id", shopId)
+        .eq("user_id", shop.owner_user_id)
+        .maybeSingle();
+
+      if (ownerStaff?.push_token && ownerStaff.push_token !== staffMember?.push_token) {
+        tokens.add(ownerStaff.push_token);
       }
     }
   }

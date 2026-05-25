@@ -10,7 +10,10 @@ serve(async (req) => {
   const authHeader = req.headers.get("Authorization") ?? "";
   if (!authHeader.startsWith("Bearer ")) return error("Yetkisiz", 403);
   try {
-    const payload = JSON.parse(atob(authHeader.slice(7).split(".")[1]!));
+    const b64 = authHeader.slice(7).split(".")[1]!
+      .replace(/-/g, "+").replace(/_/g, "/");
+    const padded = b64 + "=".repeat((4 - b64.length % 4) % 4);
+    const payload = JSON.parse(atob(padded));
     if (payload.role !== "service_role") return error("Yetkisiz", 403);
   } catch {
     return error("Yetkisiz", 403);

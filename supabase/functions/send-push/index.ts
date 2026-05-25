@@ -19,15 +19,14 @@ serve(async (req) => {
   // Only internal edge function callers (service role JWT).
   // Deployed with --no-verify-jwt; we verify the role claim manually.
   const authHeader = req.headers.get("Authorization") ?? "";
-  if (!authHeader.startsWith("Bearer ")) {
-    return error("Yetkisiz", 403);
-  }
-  // Decode JWT payload (base64url middle segment) to check role
+  if (!authHeader.startsWith("Bearer ")) return error("Yetkisiz", 403);
   try {
-    const payload = JSON.parse(atob(authHeader.slice(7).split(".")[1]!));
-    if (payload.role !== "service_role") {
-      return error("Yetkisiz", 403);
-    }
+    // JWT uses base64url: replace - → + and _ → /, then pad to multiple of 4
+    const b64 = authHeader.slice(7).split(".")[1]!
+      .replace(/-/g, "+").replace(/_/g, "/");
+    const padded = b64 + "=".repeat((4 - b64.length % 4) % 4);
+    const payload = JSON.parse(atob(padded));
+    if (payload.role !== "service_role") return error("Yetkisiz", 403);
   } catch {
     return error("Yetkisiz", 403);
   }
