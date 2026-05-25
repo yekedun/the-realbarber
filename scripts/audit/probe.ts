@@ -2,6 +2,7 @@ import { createClient } from "@supabase/supabase-js";
 import * as fs from "fs";
 import * as path from "path";
 import type { ProbeResult } from "./types.js";
+import { RPC_PROBES, EDGE_FN_PROBES } from "./probe-config.js";
 
 function fileURLToPath(url: string): string {
   // Handle Windows paths: file:///C:/... → C:\...
@@ -91,25 +92,155 @@ export async function getTestStaff(shopId: string): Promise<string> {
   return data.id;
 }
 
-// ── Main placeholder (completed in Task 12) ───────────────────────────────
+// ── RPC Probing ───────────────────────────────────────────────────────────
+
+export async function probeRpcs(shopId: string, staffId: string) {
+  console.log("\n── RPC Probing ──────────────────────────────────────────");
+
+  // Runtime args for RPCs that need shopId/staffId
+  const runtimeArgs: Record<string, Record<string, unknown>> = {
+    get_occupied_ranges: { p_staff_id: staffId, p_date: "2026-06-01" },
+    get_shop_occupied_ranges: { p_shop_id: shopId, p_date: "2026-06-01" },
+    get_staff_day_hours: { p_staff_id: staffId, p_date: "2026-06-01" },
+    get_shop_dashboard_stats: { p_shop_id: shopId },
+    get_commission_report: { p_shop_id: shopId },
+    get_staff_commission_configs: { p_shop_id: shopId },
+    staff_is_inside_work_window: {
+      p_staff_id: staffId,
+      p_starts_at: "2026-06-01T10:00:00Z",
+      p_ends_at: "2026-06-01T10:30:00Z",
+    },
+    schedule_has_conflict: {
+      p_staff_id: staffId,
+      p_starts_at: "2026-06-01T10:00:00Z",
+      p_ends_at: "2026-06-01T10:30:00Z",
+    },
+  };
+
+  for (const cfg of RPC_PROBES) {
+    const args = cfg.args ?? runtimeArgs[cfg.name] ?? null;
+
+    if (args === null) {
+      skip("rpc", cfg.name, cfg.skipReason ?? "no args available");
+      continue;
+    }
+
+    const [res, ms] = await timed(() =>
+      serviceClient.rpc(cfg.name as never, args as never)
+    );
+
+    if (res.error) {
+      // PGRST202 = function not found = FAIL
+      if (res.error.code === "PGRST202") {
+        fail("rpc", cfg.name, `RPC not found: ${res.error.message}`, ms);
+      } else {
+        // Any other error = function exists but returned a business logic error = OK
+        pass(
+          "rpc",
+          cfg.name,
+          `called (business error is OK: ${res.error.message.slice(0, 80)})`,
+          ms
+        );
+      }
+    } else {
+      pass("rpc", cfg.name, `OK — ${JSON.stringify(res.data).slice(0, 80)}`, ms);
+    }
+  }
+}
+
+// ── Edge Function Probing ─────────────────────────────────────────────────
+
+export async function probeEdgeFns() {
+  console.log("\n── Edge Function Probing ────────────────────────────────");
+
+  for (const cfg of EDGE_FN_PROBES) {
+    const url = `${SUPABASE_URL}/functions/v1/${cfg.name}`;
+
+    // Anon probe
+    const [anonRes, anonMs] = await timed(() =>
+      fetch(url, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${ANON_KEY}`,
+        },
+        body: JSON.stringify(cfg.body),
+      })
+    );
+
+    if (anonRes.status === cfg.expectedAnonStatus) {
+      pass("edge_fn", `${cfg.name} (anon)`, `HTTP ${anonRes.status}`, anonMs);
+    } else if (anonRes.status >= 500) {
+      fail(
+        "edge_fn",
+        `${cfg.name} (anon)`,
+        `HTTP ${anonRes.status} — server error`,
+        anonMs
+      );
+    } else {
+      // Non-5xx unexpected status — fn is alive, just different behavior
+      pass(
+        "edge_fn",
+        `${cfg.name} (anon)`,
+        `HTTP ${anonRes.status} (expected ${cfg.expectedAnonStatus}, fn is alive)`,
+        anonMs
+      );
+    }
+
+    // Service role probe
+    const [svcRes, svcMs] = await timed(() =>
+      fetch(url, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${SERVICE_ROLE_KEY}`,
+        },
+        body: JSON.stringify(cfg.body),
+      })
+    );
+
+    if (svcRes.status >= 500) {
+      fail(
+        "edge_fn",
+        `${cfg.name} (service)`,
+        `HTTP ${svcRes.status} — server error`,
+        svcMs
+      );
+    } else {
+      pass(
+        "edge_fn",
+        `${cfg.name} (service)`,
+        `HTTP ${svcRes.status} (fn is alive)`,
+        svcMs
+      );
+    }
+  }
+}
+
+// ── Main ──────────────────────────────────────────────────────────────────
 
 async function main() {
   console.log("🔬 Probe infrastructure ready.");
   console.log(`   Supabase URL: ${SUPABASE_URL}`);
 
-  // Connectivity check
   const { error } = await serviceClient.from("shops").select("id").limit(1);
   if (error && error.code !== "PGRST116") {
     console.error(`\n❌ Cannot connect to Supabase: ${error.message}`);
-    console.error("   Make sure local Supabase is running: npx supabase start");
     process.exit(1);
   }
-
   console.log("   ✅ Supabase connectivity OK");
-  console.log("   (Full probe implemented in Task 12)");
+
+  const shopId = await getTestShop();
+  const staffId = await getTestStaff(shopId);
+  console.log(`   Shop: ${shopId}, Staff: ${staffId}`);
+
+  await probeRpcs(shopId, staffId);
+  await probeEdgeFns();
+
+  const failed = results.filter((r) => r.status === "FAIL").length;
+  const passed = results.filter((r) => r.status === "PASS").length;
+  const skipped = results.filter((r) => r.status === "SKIP").length;
+  console.log(`\n📊 ${passed} PASS, ${failed} FAIL, ${skipped} SKIP`);
 }
 
-main().catch((e) => {
-  console.error(e);
-  process.exit(1);
-});
+main().catch((e) => { console.error(e); process.exit(1); });
