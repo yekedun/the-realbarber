@@ -53,7 +53,11 @@ import {
 import Svg, { Path } from 'react-native-svg';
 import { colors } from '../../lib/theme';
 import { supabase } from '../../lib/supabase';
-import { buildBlockInsert } from '../../lib/block-actions';
+const REASON_MAP: Record<'anlik' | 'mola' | 'kisisel', string> = {
+  anlik: 'walkin',
+  mola: 'break',
+  kisisel: 'personal',
+};
 
 function nowTime(): string {
   const d = new Date();
@@ -295,14 +299,15 @@ export default function BlockScreen() {
         {/* Button variant="primary" size="lg" full "Kapat" */}
         <View style={styles.btnWrap}>
           <TouchableOpacity style={styles.primaryBtn} disabled={saving} onPress={async () => {
-            const block = buildBlockInsert({ staffId, startTime, durationMin: dur, reason });
-            if (!block.ok) {
-              Alert.alert('Hata', block.message);
+            if (!staffId) {
+              Alert.alert('Hata', 'Hesap bilgileri yüklenemedi. Lütfen tekrar deneyin.');
               return;
             }
 
             setSaving(true);
-            const { error } = await supabase.from('blocks').insert(block.payload);
+            const { error } = await supabase.functions.invoke('create-manual-block', {
+              body: { staff_id: staffId, duration_min: dur, reason: REASON_MAP[reason] },
+            });
             setSaving(false);
 
             if (error) {
