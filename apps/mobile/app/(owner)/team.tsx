@@ -727,16 +727,21 @@ export default function TeamScreen() {
     setInviteLoading(true);
     try {
       const session = (await supabase.auth.getSession()).data.session;
+      if (!session) {
+        Alert.alert('Hata', 'Oturum süresi doldu, tekrar giriş yap.');
+        return;
+      }
       const res = await fetch(`${FN_BASE}/invite-barber`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${session?.access_token}`,
+          'Authorization': `Bearer ${session.access_token}`,
         },
         body: JSON.stringify({}),
       });
       if (!res.ok) { Alert.alert('Hata', 'Davet linki oluşturulamadı'); return; }
       const { invite_link } = await res.json();
+      if (!invite_link) { Alert.alert('Hata', 'Davet linki alınamadı'); return; }
 
       const msg = encodeURIComponent(
         `Sıradaki randevu uygulamasına berber olarak katılman için davet linki:\n${invite_link}`
@@ -749,6 +754,8 @@ export default function TeamScreen() {
         await Clipboard.setStringAsync(invite_link);
         Alert.alert('Link Kopyalandı', 'Davet linki panoya kopyalandı.');
       }
+    } catch (e) {
+      Alert.alert('Hata', 'Beklenmeyen bir hata oluştu.');
     } finally {
       setInviteLoading(false);
     }
