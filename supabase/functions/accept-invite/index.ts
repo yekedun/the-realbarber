@@ -44,16 +44,16 @@ serve(async (req) => {
   if (inviteRow.used_at) return error("Token zaten kullanılmış", 409);
   if (new Date(inviteRow.expires_at) < new Date()) return error("Token süresi dolmuş", 410);
 
-  await admin.from("invite_tokens")
-    .update({ used_at: new Date().toISOString(), used_by: user.id })
-    .eq("id", inviteRow.id);
-
   const { data: existing } = await admin.from("staff")
     .select("id").eq("user_id", user.id).eq("shop_id", inviteRow.shop_id).maybeSingle();
   if (existing) return json({ staff: existing }, 200);
 
+  await admin.from("invite_tokens")
+    .update({ used_at: new Date().toISOString(), used_by: user.id })
+    .eq("id", inviteRow.id);
+
   const name = user.user_metadata?.full_name ?? user.email?.split("@")[0] ?? "berber";
-  const baseSlug = toSlug(name);
+  const baseSlug = toSlug(name) || user.id.slice(0, 8);
   let slug = baseSlug; let suffix = 2;
   while (true) {
     const { data: s } = await admin.from("staff").select("id")

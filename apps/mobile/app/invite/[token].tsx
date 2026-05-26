@@ -78,6 +78,13 @@ export default function InviteScreen() {
     </View>
   );
 
+  if (state === 'signing') return (
+    <View style={styles.center}>
+      <ActivityIndicator size="large" color={colors.brand[600]} />
+      <Text style={styles.sub}>Giriş yapılıyor…</Text>
+    </View>
+  );
+
   return (
     <View style={styles.center}>
       <View style={styles.mark}><Text style={styles.markLetter}>S</Text></View>
@@ -86,9 +93,8 @@ export default function InviteScreen() {
         Sıradaki'ye berber olarak eklendiniz. Devam etmek için Google hesabınızla giriş yapın.
       </Text>
       <Button variant="primary" size="lg" full
-        disabled={state === 'signing'}
         onPress={handleGoogleSignIn}>
-        {state === 'signing' ? 'Giriş yapılıyor…' : 'Google ile Devam Et'}
+        Google ile Devam Et
       </Button>
     </View>
   );
