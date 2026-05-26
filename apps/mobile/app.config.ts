@@ -31,6 +31,7 @@ const baseConfig = ({ config }: ConfigContext): ExpoConfig => ({
   },
   plugins: [
     'expo-router',
+    'expo-secure-store',
     [
       'expo-font',
       {
