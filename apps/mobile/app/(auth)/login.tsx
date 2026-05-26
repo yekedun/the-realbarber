@@ -61,9 +61,14 @@ export default function LoginScreen() {
       if (!data.user) return;
       const role = await determineUserRole(data.user.id);
       registerForPushNotifications().catch(() => {});
-      if (role === 'owner') router.replace('/(owner)');
-      else if (role === 'staff') router.replace('/(app)');
-      else setError('Hesabınıza erişim bulunamadı.');
+      if (role === 'owner')          router.replace('/(owner)');
+      else if (role === 'staff')     router.replace('/(app)');
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      else if (role === 'pending')   router.replace('/(auth)/pending' as any);
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      else if (role === 'rejected')  router.replace('/(auth)/pending' as any);
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      else                           router.replace('/(auth)/google-onboarding' as any);
     } finally {
       setLoading(false);
     }

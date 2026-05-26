@@ -50,9 +50,14 @@ export default function RootLayout() {
     routedRef.current = true;
 
     determineUserRole(session.user.id).then(role => {
-      if (role === 'owner') router.replace('/(owner)');
-      else if (role === 'staff') router.replace('/(app)');
-      else router.replace('/(auth)/login');
+      if (role === 'owner')          router.replace('/(owner)');
+      else if (role === 'staff')     router.replace('/(app)');
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      else if (role === 'pending')   router.replace('/(auth)/pending' as any);
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      else if (role === 'rejected')  router.replace('/(auth)/pending' as any);
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      else                           router.replace('/(auth)/google-onboarding' as any);
     });
   }, [loaded, session]); // segments intentionally excluded — use routedRef guard instead
 
