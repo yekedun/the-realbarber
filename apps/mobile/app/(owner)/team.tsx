@@ -34,6 +34,7 @@ import {
 import * as Clipboard from 'expo-clipboard';
 import { colors } from '../../lib/theme';
 import { supabase } from '../../lib/supabase';
+import { buildOwnerRoleFilter, isMissingColumnError } from '../../lib/supabase-role';
 import { StaffEditSheet, type StaffMember as EditableStaffMember } from '../../components/StaffEditSheet';
 
 const FN_BASE = process.env.EXPO_PUBLIC_SUPABASE_URL + '/functions/v1';
@@ -333,12 +334,11 @@ function StaffScheduleModal({ open, onClose, staffId, staffName, onSaved }: Staf
 interface AddStaffSheetProps {
   open: boolean;
   onClose: () => void;
-  onAdd: (name: string, email: string, commissionRate: number | null) => void;
+  onAdd: (name: string, commissionRate: number | null) => void;
 }
 
 function AddStaffSheet({ open, onClose, onAdd }: AddStaffSheetProps) {
   const [name,  setName]  = useState('');
-  const [email, setEmail] = useState('');
   const [commInput, setCommInput] = useState('');
 
   function handleAdd() {
@@ -351,8 +351,8 @@ function AddStaffSheet({ open, onClose, onAdd }: AddStaffSheetProps) {
       Alert.alert('Geçersiz', 'Komisyon 0-100 arasında olmalı.');
       return;
     }
-    onAdd(name.trim(), email.trim(), rate);
-    setName(''); setEmail(''); setCommInput('');
+    onAdd(name.trim(), rate);
+    setName(''); setCommInput('');
   }
 
   return (
@@ -385,20 +385,6 @@ function AddStaffSheet({ open, onClose, onAdd }: AddStaffSheetProps) {
                 placeholderTextColor={colors.slate[300]}
                 autoCorrect={false}
                 spellCheck={false}
-                style={styles.textInput}
-              />
-            </View>
-
-            {/* E-posta */}
-            <View>
-              <Text style={styles.fieldLabel}>E-posta</Text>
-              <TextInput
-                value={email}
-                onChangeText={setEmail}
-                placeholder="personel@dukkan.com"
-                placeholderTextColor={colors.slate[300]}
-                keyboardType="email-address"
-                autoCapitalize="none"
                 style={styles.textInput}
               />
             </View>
@@ -575,14 +561,14 @@ export default function TeamScreen() {
     const { data: shopData, error: shopErr } = await supabase
       .from('shops')
       .select('id')
-      .or(`owner_user_id.eq.${user.id},owner_id.eq.${user.id}`)
+      .or(buildOwnerRoleFilter(user.id))
       .maybeSingle();
     if (shopErr) { console.warn('[team] shops error:', shopErr); Alert.alert('Hata', `Dükkan yüklenemedi: ${shopErr.message}`); return; }
     if (!shopData) { console.warn('[team] no shop for user', user.id); return; }
     setShopId(shopData.id);
     // Commission columns are not directly SELECTable (see migration 20260518120000);
     // owners must read them via the get_staff_commission_configs RPC.
-    const [{ data, error: staffErr }, { data: commData, error: commErr }] = await Promise.all([
+    const [staffResult, { data: commData, error: commErr }] = await Promise.all([
       supabase
         .from('staff')
         .select('id, name, is_active, phone, role')
@@ -590,6 +576,17 @@ export default function TeamScreen() {
         .order('created_at'),
       supabase.rpc('get_staff_commission_configs', { p_shop_id: shopData.id }),
     ]);
+    let data: any[] | null = staffResult.data as any[] | null;
+    let staffErr = staffResult.error;
+    if (isMissingColumnError(staffErr, 'staff.phone')) {
+      const fallback = await supabase
+        .from('staff')
+        .select('id, name, is_active, role')
+        .eq('shop_id', shopData.id)
+        .order('created_at');
+      data = fallback.data;
+      staffErr = fallback.error;
+    }
     if (staffErr) { console.warn('[team] staff error:', staffErr); Alert.alert('Hata', `Personel listesi yüklenemedi: ${staffErr.message}`); return; }
     if (commErr) console.warn('[team] commission RPC error:', commErr);
     const commByStaff = new Map<string, { type: string | null; bps: number | null }>();
@@ -610,8 +607,8 @@ export default function TeamScreen() {
       };
     });
     const sorted = mapped.sort((a, b) => {
-      if (a._role === 'owner') return -1;
-      if (b._role === 'owner') return 1;
+      if (a._role === 'admin') return -1;
+      if (b._role === 'admin') return 1;
       return (a.name ?? '').localeCompare(b.name ?? '', 'tr');
     });
     setStaff(sorted);
@@ -642,44 +639,22 @@ export default function TeamScreen() {
     );
   }
 
-  async function handleAddStaff(name: string, email: string, commissionRate: number | null) {
+  async function handleAddStaff(name: string, commissionRate: number | null) {
     if (!shopId) {
       Alert.alert('Hata', 'Dükkan bilgisi yüklenemedi. Lütfen tekrar deneyin.');
       return;
     }
 
-    const emailValue = email.trim();
-
-    let data: any = null;
-    let insertErr: any = null;
-
-    if (emailValue) {
-      const { data: inviteData, error: inviteErr } = await supabase.functions.invoke('invite-barber', {
-        body: { email: emailValue, display_name: name.trim() },
-      });
-      insertErr = inviteErr;
-      data = inviteData?.staff ?? null;
-      if (!insertErr && data?.id) {
-        const { error: updateErr } = await supabase
-          .from('staff')
-          .update({ email: emailValue } as any)
-          .eq('id', data.id);
-        insertErr = updateErr;
-      }
-    } else {
-      const result = await supabase
-        .from('staff')
-        .insert({
-          shop_id: shopId,
-          name: name.trim(),
-          role: 'staff',
-          is_active: true,
-        } as any)
-        .select('id, name, is_active')
-        .single();
-      data = result.data;
-      insertErr = result.error;
-    }
+    const { data, error: insertErr } = await supabase
+      .from('staff')
+      .insert({
+        shop_id: shopId,
+        name: name.trim(),
+        role: 'staff',
+        is_active: true,
+      } as any)
+      .select('id, name, is_active')
+      .single();
 
     if (insertErr || !data) {
       console.warn('[team] add-staff failed:', insertErr);
@@ -702,14 +677,13 @@ export default function TeamScreen() {
       }
     }
 
-    const rate = (data as any).commission_rate_bps;
     setStaff((prev) => [
       ...prev,
       {
         id: (data as any).id,
         name: (data as any).name,
         status: 'Aktif',
-        meta: rate ? `%${Math.round(rate / 100)} komisyon` : 'Komisyon yok',
+        meta: commissionRate !== null ? `%${commissionRate} komisyon` : 'Komisyon yok',
       },
     ]);
     setAddOpen(false);
@@ -752,9 +726,16 @@ export default function TeamScreen() {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${session.access_token}`,
         },
-        body: JSON.stringify({}),
+        body: JSON.stringify({
+          email: '',
+          display_name: 'Davetli Berber',
+        }),
       });
-      if (!res.ok) { Alert.alert('Hata', 'Davet linki oluşturulamadı'); return; }
+      if (!res.ok) {
+        const d = await res.json().catch(() => ({}));
+        Alert.alert('Hata', d.error ?? 'Davet linki oluşturulamadı');
+        return;
+      }
       const { invite_link } = await res.json();
       if (!invite_link) { Alert.alert('Hata', 'Davet linki alınamadı'); return; }
 

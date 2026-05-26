@@ -3,6 +3,7 @@ import { Modal, View, Text, TextInput, StyleSheet, TouchableOpacity, ScrollView,
 import { colors } from '../lib/theme';
 import { Button } from './ds/Button';
 import { supabase } from '../lib/supabase';
+import { isMissingColumnError } from '../lib/supabase-role';
 
 export interface StaffMember {
   id: string;
@@ -40,10 +41,17 @@ export function StaffEditSheet({ staff, visible, onClose, onSaved }: Props) {
     setLoading(true);
     setError(null);
     try {
-      const { error: err } = await supabase
+      let { error: err } = await supabase
         .from('staff')
         .update({ name: name.trim(), phone: phone.trim() || null, is_active: isActive })
         .eq('id', staff.id);
+      if (isMissingColumnError(err, 'staff.phone')) {
+        const fallback = await supabase
+          .from('staff')
+          .update({ name: name.trim(), is_active: isActive })
+          .eq('id', staff.id);
+        err = fallback.error;
+      }
       if (err) { setError(err.message); return; }
       onClose();
       onSaved();

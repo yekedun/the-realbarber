@@ -20,30 +20,32 @@ serve(async (req) => {
 
   const anonClient = createClient(
     Deno.env.get("SUPABASE_URL")!,
-    Deno.env.get("SUPABASE_ANON_KEY")!
+    Deno.env.get("SUPABASE_ANON_KEY")!,
   );
   const { data: { user }, error: authErr } = await anonClient.auth.getUser(
-    authHeader.replace("Bearer ", "")
+    authHeader.replace("Bearer ", ""),
   );
   if (authErr || !user) return error("Kimlik doğrulama başarısız", 401);
 
   const admin = createAdminClient();
 
-  // Zaten bir dükkanı varsa engelle
   const { data: existing } = await admin.from("shops")
     .select("id").or(`owner_user_id.eq.${user.id},owner_id.eq.${user.id}`)
     .maybeSingle();
   if (existing) return error("Bu hesaba zaten dükkan bağlı", 409);
 
   let body: { shop_name: string; phone: string };
-  try { body = await req.json(); } catch { return error("Geçersiz JSON"); }
+  try {
+    body = await req.json();
+  } catch {
+    return error("Geçersiz JSON");
+  }
 
   const { shop_name, phone } = body;
   if (!shop_name?.trim()) return error("Dükkan adı zorunlu");
   if (!phone?.trim()) return error("Telefon zorunlu");
 
-  // Slug çakışmasız üret
-  const baseSlug = toSlug(shop_name.trim());
+  const baseSlug = toSlug(shop_name.trim()) || user.id.slice(0, 8);
   let slug = baseSlug;
   let suffix = 2;
   while (true) {
@@ -52,28 +54,63 @@ serve(async (req) => {
     slug = `${baseSlug}-${suffix++}`;
   }
 
-  const { data: shop, error: insertErr } = await admin.from("shops").insert({
-    name: shop_name.trim(),
-    slug,
-    owner_user_id: user.id,
-    status: "pending",
-  }).select("id, slug, status").single();
+  let shop: { id: string; slug: string; status: string } | null = null;
+  let insertErr: { code?: string; message: string } | null = null;
+  for (let attempt = 0; attempt < 5; attempt++) {
+    const result = await admin.from("shops").insert({
+      name: shop_name.trim(),
+      slug,
+      owner_user_id: user.id,
+      status: "pending",
+    }).select("id, slug, status").single();
+    shop = result.data;
+    insertErr = result.error;
+    if (!insertErr) break;
+    if (insertErr.code !== "23505") break;
+    slug = `${baseSlug}-${suffix++}`;
+  }
 
-  if (insertErr) return error("Dükkan oluşturulamadı: " + insertErr.message, 500);
+  if (insertErr || !shop) {
+    return error("Dükkan oluşturulamadı: " + (insertErr?.message ?? "bilinmeyen hata"), 500);
+  }
 
-  // Sahibi staff tablosuna da ekle (kendisi de berber)
-  const ownerSlug = toSlug(user.user_metadata?.full_name ?? shop_name.trim());
-  await admin.from("staff").insert({
-    shop_id: shop.id,
-    user_id: user.id,
-    name: user.user_metadata?.full_name ?? shop_name.trim(),
-    phone: phone.trim(),
-    role: "owner",
-    is_active: true,
-    slug: ownerSlug || null,
-  });
+  const ownerName = user.user_metadata?.full_name ?? shop_name.trim();
+  const ownerSlug = toSlug(ownerName);
+  const { data: ownerStaff, error: updateStaffErr } = await admin
+    .from("staff")
+    .update({
+      name: ownerName,
+      phone: phone.trim(),
+      role: "admin",
+      is_active: true,
+      slug: ownerSlug || null,
+    })
+    .eq("shop_id", shop.id)
+    .eq("user_id", user.id)
+    .select("id")
+    .maybeSingle();
 
-  // Admin push bildirimi (token Supabase secret'ta)
+  if (updateStaffErr) {
+    await admin.from("shops").delete().eq("id", shop.id);
+    return error("Dükkan sahibi personel kaydı güncellenemedi: " + updateStaffErr.message, 500);
+  }
+
+  const { error: staffErr } = ownerStaff
+    ? { error: null }
+    : await admin.from("staff").insert({
+      shop_id: shop.id,
+      user_id: user.id,
+      name: ownerName,
+      phone: phone.trim(),
+      role: "admin",
+      is_active: true,
+      slug: ownerSlug || null,
+    });
+  if (staffErr) {
+    await admin.from("shops").delete().eq("id", shop.id);
+    return error("Dükkan sahibi personel kaydı oluşturulamadı: " + staffErr.message, 500);
+  }
+
   const adminToken = Deno.env.get("ADMIN_EXPO_PUSH_TOKEN");
   if (adminToken) {
     await fetch("https://exp.host/--/api/v2/push/send", {
@@ -82,14 +119,15 @@ serve(async (req) => {
       body: JSON.stringify({
         to: adminToken,
         title: "Yeni Dükkan Başvurusu",
-        body: `${shop_name.trim()} — onay bekliyor`,
+        body: `${shop_name.trim()} - onay bekliyor`,
         data: { type: "new_shop", shopId: shop.id },
       }),
     }).catch(() => {});
   }
 
-  // Admin email (Resend — opsiyonel)
   const resendKey = Deno.env.get("RESEND_API_KEY");
+  const adminEmail = Deno.env.get("ADMIN_EMAIL") ?? "emreyek29@gmail.com";
+  const fromEmail = Deno.env.get("SYSTEM_FROM_EMAIL") ?? "sistem@siradaki.app";
   if (resendKey) {
     await fetch("https://api.resend.com/emails", {
       method: "POST",
@@ -98,10 +136,10 @@ serve(async (req) => {
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        from: "sistem@siradaki.app",
-        to: "emreyek29@gmail.com",
+        from: fromEmail,
+        to: adminEmail,
         subject: `Yeni başvuru: ${shop_name.trim()}`,
-        html: `<p><b>${shop_name.trim()}</b> dükkanı onay bekliyor.</p><p>Telefon: ${phone}</p><p>Slug: ${slug}</p><p><a href="https://siradaki.app/admin">Admin panelini aç →</a></p>`,
+        html: `<p><b>${shop_name.trim()}</b> dükkanı onay bekliyor.</p><p>Telefon: ${phone}</p><p>Slug: ${shop.slug}</p><p><a href="https://siradaki.app/admin">Admin panelini aç</a></p>`,
       }),
     }).catch(() => {});
   }

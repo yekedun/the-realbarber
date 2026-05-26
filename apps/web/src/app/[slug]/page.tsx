@@ -17,6 +17,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     .from('shops')
     .select('name, display_name, address')
     .eq('slug', params.slug)
+    .eq('status', 'active')
     .maybeSingle();
   if (!shop) return { title: 'Dükkan Bulunamadı' };
   const name = shop.name || shop.display_name;
@@ -35,6 +36,7 @@ export default async function ShopPage({ params }: Props) {
     .from('shops')
     .select('id, name, display_name, address, slug')
     .eq('slug', slug)
+    .eq('status', 'active')
     .maybeSingle();
 
   if (!shop) notFound();

@@ -12,6 +12,11 @@ CREATE TABLE IF NOT EXISTS invite_tokens (
 
 CREATE INDEX idx_invite_tokens_token ON invite_tokens(token);
 CREATE INDEX idx_invite_tokens_shop  ON invite_tokens(shop_id);
+CREATE INDEX idx_invite_tokens_expires_at ON invite_tokens(expires_at);
+
+CREATE UNIQUE INDEX IF NOT EXISTS staff_shop_user_unique_idx
+  ON public.staff(shop_id, user_id)
+  WHERE user_id IS NOT NULL;
 
 ALTER TABLE invite_tokens ENABLE ROW LEVEL SECURITY;
 
@@ -24,6 +29,13 @@ CREATE POLICY "owner_select_own_tokens" ON invite_tokens
         AND (shops.owner_user_id = auth.uid() OR shops.owner_id = auth.uid())
     )
   );
+
+-- Invite links contain unguessable UUID tokens. Allow invitees to pre-validate
+-- unused, unexpired links from the mobile app before they authenticate.
+CREATE POLICY "anyone_select_unused_tokens" ON invite_tokens
+  FOR SELECT
+  TO anon, authenticated
+  USING (used_at IS NULL AND expires_at > NOW());
 
 -- Shop owner can create tokens for their shop
 CREATE POLICY "owner_insert_tokens" ON invite_tokens

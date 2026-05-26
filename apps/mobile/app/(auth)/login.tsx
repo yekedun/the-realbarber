@@ -20,7 +20,7 @@
  *   Button variant="primary" size="lg" full disabled={!email||!pass} "Giriş Yap"
  *   footer: "Hesabın yok mu? " + "Kayıt ol" (brand-600 semiBold)
  */
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   View,
   Text,
@@ -37,6 +37,7 @@ import { TextField } from '../../components/ds/TextField';
 import { supabase, determineUserRole } from '../../lib/supabase';
 import { registerForPushNotifications } from '../../lib/notifications';
 import { configureGoogleSignIn, signInWithGoogle } from '../../lib/google-auth';
+import { routeForRole } from '../../lib/router-guard';
 
 export default function LoginScreen() {
   const [email,    setEmail]    = useState('');
@@ -44,7 +45,9 @@ export default function LoginScreen() {
   const [loading,  setLoading]  = useState(false);
   const [error,    setError]    = useState<string | null>(null);
 
-  configureGoogleSignIn();
+  useEffect(() => {
+    configureGoogleSignIn();
+  }, []);
 
   const canSubmit = email.trim().length > 0 && password.length > 0;
 
@@ -61,14 +64,7 @@ export default function LoginScreen() {
       if (!data.user) return;
       const role = await determineUserRole(data.user.id);
       registerForPushNotifications().catch(() => {});
-      if (role === 'owner')          router.replace('/(owner)');
-      else if (role === 'staff')     router.replace('/(app)');
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      else if (role === 'pending')   router.replace('/(auth)/pending' as any);
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      else if (role === 'rejected')  router.replace('/(auth)/pending' as any);
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      else                           router.replace('/(auth)/google-onboarding' as any);
+      router.replace(routeForRole(role) as any);
     } finally {
       setLoading(false);
     }

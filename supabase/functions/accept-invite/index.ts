@@ -19,38 +19,75 @@ serve(async (req) => {
 
   const anonClient = createClient(
     Deno.env.get("SUPABASE_URL")!,
-    Deno.env.get("SUPABASE_ANON_KEY")!
+    Deno.env.get("SUPABASE_ANON_KEY")!,
   );
   const { data: { user }, error: authErr } = await anonClient.auth.getUser(
-    authHeader.replace("Bearer ", "")
+    authHeader.replace("Bearer ", ""),
   );
   if (authErr || !user) return error("Kimlik doğrulama başarısız", 401);
 
   const admin = createAdminClient();
 
   let body: { token: string };
-  try { body = await req.json(); } catch { return error("Geçersiz JSON"); }
+  try {
+    body = await req.json();
+  } catch {
+    return error("Geçersiz JSON");
+  }
 
   const { token } = body;
   if (!token) return error("Token zorunlu");
 
-  const { data: inviteRow } = await admin
+  const { data: inviteRow, error: inviteErr } = await admin
     .from("invite_tokens")
     .select("id, shop_id, used_at, expires_at")
     .eq("token", token)
     .maybeSingle();
 
+  if (inviteErr) return error("Token okunamadı: " + inviteErr.message, 500);
   if (!inviteRow) return error("Geçersiz token", 404);
   if (inviteRow.used_at) return error("Token zaten kullanılmış", 409);
   if (new Date(inviteRow.expires_at) < new Date()) return error("Token süresi dolmuş", 410);
 
-  const { data: existing } = await admin.from("staff")
-    .select("id").eq("user_id", user.id).eq("shop_id", inviteRow.shop_id).maybeSingle();
-  if (existing) return json({ staff: existing }, 200);
+  const { data: shop, error: shopErr } = await admin
+    .from("shops")
+    .select("id, status")
+    .eq("id", inviteRow.shop_id)
+    .maybeSingle();
+  if (shopErr) return error("Dükkan okunamadı: " + shopErr.message, 500);
+  if (!shop || shop.status !== "active") return error("Davet edilen dükkan aktif değil", 403);
+
+  const usedAt = new Date().toISOString();
+  const { data: existing, error: existingErr } = await admin
+    .from("staff")
+    .select("id, name")
+    .eq("user_id", user.id)
+    .eq("shop_id", inviteRow.shop_id)
+    .maybeSingle();
+  if (existingErr) return error("Personel kaydı kontrol edilemedi: " + existingErr.message, 500);
+  if (existing) {
+    await admin
+      .from("invite_tokens")
+      .update({ used_at: usedAt, used_by: user.id })
+      .eq("id", inviteRow.id)
+      .is("used_at", null);
+    return json({ staff: existing }, 200);
+  }
+
+  const { data: claimed, error: claimErr } = await admin
+    .from("invite_tokens")
+    .update({ used_at: usedAt, used_by: user.id })
+    .eq("id", inviteRow.id)
+    .is("used_at", null)
+    .select("id")
+    .maybeSingle();
+  if (claimErr) return error("Token kullanılamadı: " + claimErr.message, 500);
+  if (!claimed) return error("Token zaten kullanılmış", 409);
 
   const name = user.user_metadata?.full_name ?? user.email?.split("@")[0] ?? "berber";
   const baseSlug = toSlug(name) || user.id.slice(0, 8);
-  let slug = baseSlug; let suffix = 2;
+  let slug = baseSlug;
+  let suffix = 2;
   while (true) {
     const { data: s } = await admin.from("staff").select("id")
       .eq("shop_id", inviteRow.shop_id).eq("slug", slug).maybeSingle();
@@ -67,11 +104,24 @@ serve(async (req) => {
     slug: slug || null,
   }).select("id, name").single();
 
-  if (insertErr) return error("Staff kaydı oluşturulamadı: " + insertErr.message, 500);
+  if (insertErr) {
+    if (insertErr.code === "23505") {
+      const { data: racedExisting } = await admin
+        .from("staff")
+        .select("id, name")
+        .eq("user_id", user.id)
+        .eq("shop_id", inviteRow.shop_id)
+        .maybeSingle();
+      if (racedExisting) return json({ staff: racedExisting }, 200);
+    }
 
-  await admin.from("invite_tokens")
-    .update({ used_at: new Date().toISOString(), used_by: user.id })
-    .eq("id", inviteRow.id);
+    await admin
+      .from("invite_tokens")
+      .update({ used_at: null, used_by: null })
+      .eq("id", inviteRow.id)
+      .eq("used_by", user.id);
+    return error("Staff kaydı oluşturulamadı: " + insertErr.message, 500);
+  }
 
   return json({ staff: staffMember }, 201);
 });

@@ -13,7 +13,9 @@ export default function InviteScreen() {
   const [state,   setState]   = useState<'checking' | 'ready' | 'signing' | 'error'>('checking');
   const [message, setMessage] = useState('');
 
-  configureGoogleSignIn();
+  useEffect(() => {
+    configureGoogleSignIn();
+  }, []);
 
   useEffect(() => {
     validateToken();
