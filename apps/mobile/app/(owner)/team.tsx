@@ -34,6 +34,7 @@ import {
 import * as Clipboard from 'expo-clipboard';
 import { colors } from '../../lib/theme';
 import { supabase } from '../../lib/supabase';
+import { StaffEditSheet, type StaffMember as EditableStaffMember } from '../../components/StaffEditSheet';
 
 const FN_BASE = process.env.EXPO_PUBLIC_SUPABASE_URL + '/functions/v1';
 import {
@@ -49,6 +50,9 @@ interface StaffMember {
   name: string;
   status: 'Aktif' | 'Pasif';
   meta: string;
+  _role?: string | null;
+  _phone?: string | null;
+  _is_active?: boolean;
 }
 
 const INIT_STAFF: StaffMember[] = [];
@@ -555,6 +559,8 @@ export default function TeamScreen() {
   const [selectedId,     setSelectedId]     = useState<string | null>(null);
   const [shopId,         setShopId]         = useState<string | null>(null);
   const [inviteLoading,  setInviteLoading]  = useState(false);
+  const [editStaff,      setEditStaff]      = useState<EditableStaffMember | null>(null);
+  const [editVisible,    setEditVisible]    = useState(false);
 
   const selected = staff.find((s) => s.id === selectedId);
 
@@ -579,7 +585,7 @@ export default function TeamScreen() {
     const [{ data, error: staffErr }, { data: commData, error: commErr }] = await Promise.all([
       supabase
         .from('staff')
-        .select('id, name, is_active')
+        .select('id, name, is_active, phone, role')
         .eq('shop_id', shopData.id)
         .order('created_at'),
       supabase.rpc('get_staff_commission_configs', { p_shop_id: shopData.id }),
@@ -589,17 +595,26 @@ export default function TeamScreen() {
     const commByStaff = new Map<string, { type: string | null; bps: number | null }>();
     (commData ?? []).forEach((c: any) => commByStaff.set(c.staff_id, { type: c.commission_type, bps: c.commission_rate_bps }));
     console.log('[team] loaded', (data ?? []).length, 'staff for shop', shopData.id);
-    setStaff((data ?? []).map((s: any) => {
+    const mapped = (data ?? []).map((s: any) => {
       const c = commByStaff.get(s.id);
       return {
         id: s.id,
         name: s.name,
-        status: s.is_active ? 'Aktif' : 'Pasif',
+        status: (s.is_active ? 'Aktif' : 'Pasif') as 'Aktif' | 'Pasif',
         meta: c?.type === 'percentage' && c.bps
           ? `%${Math.round(c.bps / 100)} komisyon`
           : 'Komisyon yok',
+        _role: s.role as string | null,
+        _phone: s.phone as string | null,
+        _is_active: s.is_active as boolean,
       };
-    }));
+    });
+    const sorted = mapped.sort((a, b) => {
+      if (a._role === 'owner') return -1;
+      if (b._role === 'owner') return 1;
+      return (a.name ?? '').localeCompare(b.name ?? '', 'tr');
+    });
+    setStaff(sorted);
   }
 
   function handleToggleStatus(s: StaffMember) {
@@ -792,7 +807,16 @@ export default function TeamScreen() {
               <StaffRowItem
                 key={s.id}
                 member={s}
-                onRowPress={() => handleToggleStatus(s)}
+                onRowPress={() => {
+                  setEditStaff({
+                    id: s.id,
+                    name: s.name,
+                    phone: s._phone ?? undefined,
+                    is_active: s._is_active ?? s.status === 'Aktif',
+                    role: s._role ?? undefined,
+                  });
+                  setEditVisible(true);
+                }}
                 onChevronPress={() => {
                   setSelectedId(s.id);
                   setScheduleOpen(true);
@@ -837,6 +861,14 @@ export default function TeamScreen() {
         onClose={() => setScheduleOpen(false)}
         staffId={selected?.id ?? null}
         staffName={selected?.name ?? ''}
+        onSaved={loadStaff}
+      />
+
+      {/* Edit staff sheet */}
+      <StaffEditSheet
+        staff={editStaff}
+        visible={editVisible}
+        onClose={() => setEditVisible(false)}
         onSaved={loadStaff}
       />
     </View>
