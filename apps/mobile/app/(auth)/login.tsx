@@ -36,12 +36,15 @@ import { Button } from '../../components/ds/Button';
 import { TextField } from '../../components/ds/TextField';
 import { supabase, determineUserRole } from '../../lib/supabase';
 import { registerForPushNotifications } from '../../lib/notifications';
+import { configureGoogleSignIn, signInWithGoogle } from '../../lib/google-auth';
 
 export default function LoginScreen() {
   const [email,    setEmail]    = useState('');
   const [password, setPassword] = useState('');
   const [loading,  setLoading]  = useState(false);
   const [error,    setError]    = useState<string | null>(null);
+
+  configureGoogleSignIn();
 
   const canSubmit = email.trim().length > 0 && password.length > 0;
 
@@ -61,6 +64,18 @@ export default function LoginScreen() {
       if (role === 'owner') router.replace('/(owner)');
       else if (role === 'staff') router.replace('/(app)');
       else setError('Hesabınıza erişim bulunamadı.');
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  async function handleGoogleLogin() {
+    setLoading(true);
+    setError(null);
+    try {
+      const result = await signInWithGoogle();
+      if (result.error) { setError(result.error); return; }
+      // _layout.tsx auth state change'i yakalar, routing oradan yapılır
     } finally {
       setLoading(false);
     }
@@ -122,6 +137,22 @@ export default function LoginScreen() {
           {error ? (
             <Text style={styles.errorText}>{error}</Text>
           ) : null}
+          <Button
+            variant="primary"
+            size="lg"
+            full
+            disabled={loading}
+            onPress={handleGoogleLogin}
+          >
+            {loading ? 'Giriş yapılıyor…' : 'Google ile Giriş Yap'}
+          </Button>
+
+          <View style={styles.divider}>
+            <View style={styles.dividerLine} />
+            <Text style={styles.dividerText}>veya</Text>
+            <View style={styles.dividerLine} />
+          </View>
+
           <Button
             variant="primary"
             size="lg"
@@ -247,5 +278,23 @@ const styles = StyleSheet.create({
     fontFamily: 'Montserrat-Regular',
     color: colors.coral[600],
     textAlign: 'center',
+  },
+
+  /* Divider — "veya" separator */
+  divider: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginVertical: 4,
+  },
+  dividerLine: {
+    flex: 1,
+    height: 1,
+    backgroundColor: colors.slate[200],
+  },
+  dividerText: {
+    fontSize: 12,
+    fontFamily: 'Montserrat-Regular',
+    color: colors.slate[400],
   },
 });
