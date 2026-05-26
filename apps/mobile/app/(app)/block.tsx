@@ -72,6 +72,12 @@ function addMins(time: string, mins: number): string {
   return `${String(Math.floor(t / 60)).padStart(2, '0')}:${String(t % 60).padStart(2, '0')}`;
 }
 
+function formatDur(mins: number): string {
+  if (mins === 24 * 60) return 'Tüm Gün';
+  if (mins >= 60 && mins % 60 === 0) return `${mins / 60} sa`;
+  return `${mins} dk`;
+}
+
 /* Duration options — exact from BlokScreen source */
 const DURATIONS = [15, 30, 45, 60, 90, 120] as const;
 
@@ -153,7 +159,7 @@ export default function BlockScreen() {
   }, []);
 
   const curReason = REASONS.find(r => r.id === reason)!;
-  const endTime = addMins(startTime, effectiveDur);
+  const endTime = allDay ? '23:59' : addMins(startTime, effectiveDur);
 
   /* ── Success / blocked state ────────────────────────────────── */
   if (blocked) {
@@ -181,7 +187,7 @@ export default function BlockScreen() {
               {/* overline "Takvim Kapatıldı" 11px SemiBold 0.16em uppercase slate-500 marginBottom 8 */}
               <Text style={styles.successOverline}>Takvim Kapatıldı</Text>
               {/* duration: 24px Bold -0.02em */}
-              <Text style={styles.successDur}>{dur} dakika</Text>
+              <Text style={styles.successDur}>{formatDur(effectiveDur)}</Text>
               {/* sub: 14px Regular fg-3 marginTop 6 */}
               <Text style={styles.successSub}>
                 {startTime} – {endTime} · {curReason.title}
@@ -191,7 +197,7 @@ export default function BlockScreen() {
             {/* Block preview card (stripe pattern) */}
             <View style={styles.previewCard}>
               <Text style={styles.previewText}>
-                BLOKE · {curReason.title.toUpperCase()} · {dur}DK
+                BLOKE · {curReason.title.toUpperCase()} · {formatDur(effectiveDur)}
               </Text>
             </View>
 
@@ -204,7 +210,7 @@ export default function BlockScreen() {
           {/* Button variant="secondary" size="lg" full "Yeni Blok Ekle" */}
           <TouchableOpacity
             style={styles.secondaryBtn}
-            onPress={() => { setBlocked(false); setDur(30); setReason('mola'); }}
+            onPress={() => { setBlocked(false); setDur(30); setReason('mola'); setAllDay(false); setShowCustom(false); setCustomInput(''); }}
           >
             <Text style={styles.secondaryBtnText}>Yeni Blok Ekle</Text>
           </TouchableOpacity>
@@ -279,7 +285,7 @@ export default function BlockScreen() {
                 );
               })}
               <TouchableOpacity
-                style={[styles.durChip, dur === 'custom' && styles.durChipActive]}
+                style={[styles.durChip, dur === 'custom' ? styles.durChipActive : styles.durChipInactive]}
                 onPress={() => { setDur('custom'); setShowCustom(true); }}
                 activeOpacity={0.8}
               >
@@ -354,6 +360,11 @@ export default function BlockScreen() {
           <TouchableOpacity style={styles.primaryBtn} disabled={saving} onPress={async () => {
             if (!staffId) {
               Alert.alert('Hata', 'Hesap bilgileri yüklenemedi. Lütfen tekrar deneyin.');
+              return;
+            }
+
+            if (!allDay && dur === 'custom' && effectiveDur === 0) {
+              Alert.alert('Hata', 'Lütfen geçerli bir süre girin.');
               return;
             }
 
