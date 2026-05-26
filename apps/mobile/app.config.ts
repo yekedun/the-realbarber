@@ -52,6 +52,12 @@ const baseConfig = ({ config }: ConfigContext): ExpoConfig => ({
         sounds: [],
       },
     ],
+    [
+      '@react-native-google-signin/google-signin',
+      {
+        iosUrlScheme: 'com.googleusercontent.apps.PLACEHOLDER_IOS_CLIENT_ID',
+      },
+    ],
   ],
   scheme: 'siradaki',
   experiments: {
