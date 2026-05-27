@@ -3,7 +3,7 @@
 // W2 · Booking Client — interactive booking flow
 // Service selector → staff selector → date picker → slot grid → modal confirm
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { ServiceSelector, type Service } from '../../components/ServiceSelector';
 import { SlotGrid } from '../../components/SlotGrid';
 import { BookingModal } from '../../components/BookingModal';
@@ -41,6 +41,8 @@ const FN_BASE = process.env.NEXT_PUBLIC_SUPABASE_URL + '/functions/v1';
 export default function BookingClient({ shop, services, staff, preselectedStaffId }: Props) {
   const days = buildDays(14);
 
+  const abortRef = useRef<AbortController | null>(null);
+
   const [selService, setSelService] = useState<string | null>(services[0]?.id ?? null);
   const [selStaff,   setSelStaff]   = useState<string | null>(preselectedStaffId ?? null);
   const [selDate,    setSelDate]    = useState<Date>(() => { const d=new Date(); d.setHours(0,0,0,0); return d; });
@@ -55,6 +57,10 @@ export default function BookingClient({ shop, services, staff, preselectedStaffI
   /* Fetch available slots */
   const fetchSlots = useCallback(async () => {
     if (!selService) return;
+    abortRef.current?.abort();
+    const controller = new AbortController();
+    abortRef.current = controller;
+
     setSlotsLoad(true); setSlotsErr(null); setSelSlot(null); setIsClosed(false); setRawSlots([]);
     try {
       const qs = new URLSearchParams({
@@ -63,7 +69,9 @@ export default function BookingClient({ shop, services, staff, preselectedStaffI
         service_id: selService,
         staff_id:   selStaff ?? 'any',
       });
-      const res = await fetch(`${FN_BASE}/widget-get-availability?${qs}`);
+      const res = await fetch(`${FN_BASE}/widget-get-availability?${qs}`, {
+        signal: controller.signal,
+      });
       if (!res.ok) { setSlotsErr('Müsaitlik bilgisi alınamadı.'); return; }
       const data = await res.json();
       if (data.closed) {
@@ -71,7 +79,8 @@ export default function BookingClient({ shop, services, staff, preselectedStaffI
       } else {
         setRawSlots(data.slots ?? []);
       }
-    } catch {
+    } catch (err) {
+      if (err instanceof Error && err.name === 'AbortError') return;
       setSlotsErr('Bağlantı hatası. Tekrar deneyin.');
     } finally {
       setSlotsLoad(false);
@@ -80,17 +89,14 @@ export default function BookingClient({ shop, services, staff, preselectedStaffI
 
   useEffect(() => { fetchSlots(); }, [fetchSlots]);
 
-  /* 30s polling — anon key appointments SELECT'e erişemediği için
-     postgres_changes yerine polling kullanıyoruz */
   useEffect(() => {
-    const tick = () => {
+    const onVisible = () => {
       if (document.visibilityState === 'visible') fetchSlots();
     };
-    const id = setInterval(tick, 30_000);
-    document.addEventListener('visibilitychange', tick);
+    document.addEventListener('visibilitychange', onVisible);
     return () => {
-      clearInterval(id);
-      document.removeEventListener('visibilitychange', tick);
+      document.removeEventListener('visibilitychange', onVisible);
+      abortRef.current?.abort();
     };
   }, [fetchSlots]);
 
