@@ -8,7 +8,7 @@ import {
 } from 'react-native';
 import { colors, radius } from '../../lib/theme';
 
-type Variant = 'primary' | 'accent' | 'secondary' | 'ghost' | 'danger';
+type Variant = 'primary' | 'accent' | 'secondary' | 'ghost' | 'danger' | 'google';
 type Size = 'sm' | 'md' | 'lg';
 
 interface ButtonProps {
@@ -118,6 +118,10 @@ const styles = StyleSheet.create({
     backgroundColor: 'transparent',
     borderColor: colors.coral[600],
   },
+  variant_google: {
+    backgroundColor: colors.slate[0],
+    borderColor: colors.slate[200],
+  },
 
   // Label shared
   label: {
@@ -136,4 +140,5 @@ const styles = StyleSheet.create({
   labelColor_secondary: { color: colors.ink[900] },
   labelColor_ghost:     { color: colors.ink[900] },
   labelColor_danger:    { color: colors.coral[600] },
+  labelColor_google:    { color: colors.ink[900] },
 });
