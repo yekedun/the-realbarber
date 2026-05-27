@@ -50,7 +50,7 @@ import {
   StyleSheet,
   RefreshControl,
 } from 'react-native';
-import { colors } from '../../lib/theme';
+import { colors, shadows } from '../../lib/theme';
 import { OverlineHeader } from '../../components/ds/OverlineHeader';
 import { SectionLabel } from '../../components/ds/SectionLabel';
 import { Chip } from '../../components/ds/Chip';
@@ -59,11 +59,11 @@ import { estimatedAppointmentRevenueCents } from '../../lib/revenue-mappers';
 import { useShop } from '../../lib/ShopContext';
 
 /* ── Sparkline (bar-chart approximation in RN) ──────────────── */
-function Sparkline({ data, dark }: { data: number[]; dark: boolean }) {
+function Sparkline({ data }: { data: number[] }) {
   const max = Math.max(...data);
   const min = Math.min(...data);
   const rng = max - min || 1;
-  const barColor = dark ? 'rgba(255,255,255,0.55)' : colors.brand[500];
+  const barColor = colors.brand[500];
   const W = 54;
   const H = 28;
   const n = data.length;
@@ -92,10 +92,10 @@ function Sparkline({ data, dark }: { data: number[]; dark: boolean }) {
 }
 
 /* ── RingProgress ────────────────────────────────────────────── */
-function RingProgress({ value, max, dark }: { value: number; max: number; dark: boolean }) {
-  const pct   = value / max;
-  const ringFg = dark ? '#ffffff' : colors.brand[600];
-  const ringBg = dark ? 'rgba(255,255,255,0.12)' : colors.slate[100];
+function RingProgress({ value, max }: { value: number; max: number }) {
+  const pct    = value / max;
+  const ringFg = colors.brand[600];
+  const ringBg = colors.slate[100];
   return (
     <View style={{ width: 30, height: 30, flexShrink: 0 }}>
       {/* Background ring */}
@@ -146,11 +146,10 @@ function KpiPolished({
   progress,
   max,
 }: KpiPolishedProps) {
-  const dark = accent;
-  const bg     = dark ? colors.ink[900]              : colors.slate[0];
-  const fg     = dark ? '#ffffff'                    : colors.ink[900];
-  const sub    = dark ? 'rgba(255,255,255,0.5)'      : colors.slate[500];
-  const borCol = dark ? colors.ink[700]              : colors.slate[200];
+  const bg     = accent ? colors.ink[900]              : colors.slate[0];
+  const fg     = accent ? '#ffffff'                    : colors.ink[900];
+  const sub    = accent ? 'rgba(255,255,255,0.5)'      : colors.slate[500];
+  const borCol = accent ? colors.ink[700]              : colors.slate[200];
 
   return (
     <View style={[kpi.card, { backgroundColor: bg, borderColor: borCol }]}>
@@ -173,9 +172,9 @@ function KpiPolished({
           </View>
         </View>
         {/* Sparkline or Ring — right side */}
-        {spark && <Sparkline data={spark} dark={dark} />}
+        {spark && <Sparkline data={spark} />}
         {progress !== undefined ? (
-          <RingProgress value={progress} max={max ?? 1} dark={dark} />
+          <RingProgress value={progress} max={max ?? 1} />
         ) : null}
       </View>
     </View>
@@ -191,11 +190,7 @@ const kpi = StyleSheet.create({
     paddingTop: 13,
     paddingHorizontal: 13,
     paddingBottom: 11,
-    shadowColor: colors.ink[900],
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.12,
-    shadowRadius: 12,
-    elevation: 3,
+    ...shadows.sm,
   },
   label: {
     fontSize: 9,
