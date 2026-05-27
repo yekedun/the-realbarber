@@ -41,21 +41,21 @@ export default async function ShopPage({ params }: Props) {
 
   if (!shop) notFound();
 
-  // Active services
-  const { data: services } = await supabase
-    .from('services')
-    .select('id, name, duration_min, price_cents')
-    .eq('shop_id', shop.id)
-    .eq('is_active', true)
-    .order('name');
-
-  // Active staff
-  const { data: staff } = await supabase
-    .from('staff')
-    .select('id, name, phone, role')
-    .eq('shop_id', shop.id)
-    .eq('is_active', true)
-    .order('name');
+  // Fetch services + staff in parallel — both depend on shop.id
+  const [{ data: services }, { data: staff }] = await Promise.all([
+    supabase
+      .from('services')
+      .select('id, name, duration_min, price_cents')
+      .eq('shop_id', shop.id)
+      .eq('is_active', true)
+      .order('name'),
+    supabase
+      .from('staff')
+      .select('id, name, phone, role')
+      .eq('shop_id', shop.id)
+      .eq('is_active', true)
+      .order('name'),
+  ]);
 
   // Owner always first, then alphabetical by name
   const sortedStaff = (staff ?? []).sort((a, b) => {
