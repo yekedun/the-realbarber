@@ -65,8 +65,9 @@ Yükseltilmiş kart (Sheet, Modal): `shadows.sm`
 
 ### 1.2 SectionLabel
 **Değişiklikler:**
-- marginBottom sabitlenir: 6px (şu an tutarsız)
-- fontSize 11, slate[400], SemiBold uppercase — zaten doğru, minor consistency fix
+- marginBottom: 10px korunur (zaten tutarlı; bazı ekranlar `style` prop ile override eder — bu davranış değişmez)
+- color: `slate[500]` → `slate[400]` (bilinçli değişiklik — section etiketler daha de-emphasized, içerik öne çıkar)
+- Diğer değerler değişmez: fontSize 11, SemiBold, uppercase, marginTop 24
 
 ### 1.3 KpiCard (owner/index'teki inline komponent)
 **Değişiklikler:**
@@ -84,14 +85,14 @@ Yükseltilmiş kart (Sheet, Modal): `shadows.sm`
 ### 1.5 Button — Yeni `google` Variant
 **Değişiklikler:**
 - Yeni `variant='google'` eklenir: slate[0] bg, slate[200] border, ink[900] text
-- Google logosu için `leftIcon` prop eklenir (opsiyonel ReactNode)
+- Google logosu için `leftIcon` prop eklenir (opsiyonel ReactNode) — bu sprint'te text-only kabul edilebilir, icon sonraya bırakılabilir
 - Bu variant login ve register'daki Google butonunu standartlaştırır
 
 ### 1.6 Sheet
 **Değişiklikler:**
 - borderTopLeftRadius ve borderTopRightRadius: `radius.lg` (18px) → `radius.xl` (24px)
 - paddingTop: 20px (drag handle dahil)
-- Drag handle: 4×36px, slate[200] bg, borderRadius pill, marginBottom 16px
+- Drag handle: 40×4px (width 40, height 4), slate[200] bg, borderRadius 4, marginBottom 14px — değişmez; sadece radius.xl geçişi
 
 ---
 
