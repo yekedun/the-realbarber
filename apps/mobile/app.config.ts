@@ -60,6 +60,12 @@ const baseConfig = ({ config }: ConfigContext): ExpoConfig => ({
     ],
   ],
   scheme: 'siradaki',
+  updates: {
+    url: 'https://u.expo.dev/d1da3258-795a-4a62-b8ad-96c48e79a635',
+  },
+  runtimeVersion: {
+    policy: 'appVersion',
+  },
   experiments: {
     typedRoutes: true,
   },

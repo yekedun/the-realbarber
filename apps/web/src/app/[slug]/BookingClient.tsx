@@ -1,26 +1,20 @@
 'use client';
 
-// W2 · Booking Client — interactive booking flow
-// Service selector → staff selector → date picker → slot grid → modal confirm
-
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { ServiceSelector, type Service } from '../../components/ServiceSelector';
 import { SlotGrid } from '../../components/SlotGrid';
 import { BookingModal } from '../../components/BookingModal';
 import { nextBookingSuccessState } from './booking-flow-state';
 
-/* ── Types ────────────────────────────────────────────────────── */
 interface StaffMember { id: string; name: string; phone: string | null; }
 interface Shop { id: string; name: string; address: string | null; slug: string; }
 interface Props { shop: Shop; services: Service[]; staff: StaffMember[]; preselectedStaffId?: string | null; }
 interface RawSlot { starts_at: string; available: boolean; }
 
-/* ── Helpers ──────────────────────────────────────────────────── */
-const TR_DAYS  = ['Paz','Pzt','Sal','Çar','Per','Cum','Cmt'];
-const TR_MON   = ['Oca','Şub','Mar','Nis','May','Haz','Tem','Ağu','Eyl','Eki','Kas','Ara'];
+const TR_DAYS = ['Paz','Pzt','Sal','Çar','Per','Cum','Cmt'];
+const TR_MON  = ['Oca','Şub','Mar','Nis','May','Haz','Tem','Ağu','Eyl','Eki','Kas','Ara'];
 
 function toDateStr(d: Date) {
-  // YYYY-MM-DD in local clock
   return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
 }
 function toTimeLabel(iso: string) {
@@ -37,24 +31,20 @@ function buildDays(n: number): Date[] {
 
 const FN_BASE = process.env.NEXT_PUBLIC_SUPABASE_URL + '/functions/v1';
 
-/* ── Component ────────────────────────────────────────────────── */
 export default function BookingClient({ shop, services, staff, preselectedStaffId }: Props) {
   const days = buildDays(14);
-
   const abortRef = useRef<AbortController | null>(null);
 
   const [selService, setSelService] = useState<string | null>(services[0]?.id ?? null);
   const [selStaff,   setSelStaff]   = useState<string | null>(preselectedStaffId ?? null);
   const [selDate,    setSelDate]    = useState<Date>(() => { const d=new Date(); d.setHours(0,0,0,0); return d; });
-  const [selSlot,    setSelSlot]    = useState<string | null>(null); // HH:MM label
-
+  const [selSlot,    setSelSlot]    = useState<string | null>(null);
   const [rawSlots,   setRawSlots]   = useState<RawSlot[]>([]);
   const [slotsLoad,  setSlotsLoad]  = useState(false);
   const [slotsErr,   setSlotsErr]   = useState<string | null>(null);
   const [isClosed,   setIsClosed]   = useState(false);
   const [modalOpen,  setModalOpen]  = useState(false);
 
-  /* Fetch available slots */
   const fetchSlots = useCallback(async () => {
     if (!selService) return;
     abortRef.current?.abort();
@@ -69,16 +59,11 @@ export default function BookingClient({ shop, services, staff, preselectedStaffI
         service_id: selService,
         staff_id:   selStaff ?? 'any',
       });
-      const res = await fetch(`${FN_BASE}/widget-get-availability?${qs}`, {
-        signal: controller.signal,
-      });
+      const res = await fetch(`${FN_BASE}/widget-get-availability?${qs}`, { signal: controller.signal });
       if (!res.ok) { setSlotsErr('Müsaitlik bilgisi alınamadı.'); return; }
       const data = await res.json();
-      if (data.closed) {
-        setIsClosed(true);
-      } else {
-        setRawSlots(data.slots ?? []);
-      }
+      if (data.closed) setIsClosed(true);
+      else setRawSlots(data.slots ?? []);
     } catch (err) {
       if (err instanceof Error && err.name === 'AbortError') return;
       setSlotsErr('Bağlantı hatası. Tekrar deneyin.');
@@ -90,9 +75,7 @@ export default function BookingClient({ shop, services, staff, preselectedStaffI
   useEffect(() => { fetchSlots(); }, [fetchSlots]);
 
   useEffect(() => {
-    const onVisible = () => {
-      if (document.visibilityState === 'visible') fetchSlots();
-    };
+    const onVisible = () => { if (document.visibilityState === 'visible') fetchSlots(); };
     document.addEventListener('visibilitychange', onVisible);
     return () => {
       document.removeEventListener('visibilitychange', onVisible);
@@ -100,56 +83,45 @@ export default function BookingClient({ shop, services, staff, preselectedStaffI
     };
   }, [fetchSlots]);
 
-  /* Map rawSlots → SlotGrid format */
   const slotItems = rawSlots.map(s => ({ time: toTimeLabel(s.starts_at), available: s.available }));
   const isAllFull = !isClosed && !slotsLoad && rawSlots.length > 0 && rawSlots.every(s => !s.available);
-
-  /* Find ISO timestamp for the selected slot label */
   const selRaw    = rawSlots.find(s => toTimeLabel(s.starts_at) === selSlot);
   const selISO    = selRaw?.starts_at ?? '';
-
-  /* Booking summary */
-  const svc          = services.find(s => s.id === selService);
+  const svc       = services.find(s => s.id === selService);
   const selectedStaff = staff.find(s => s.id === selStaff) ?? null;
-  const staffName    = selectedStaff?.name;
+  const staffName = selectedStaff?.name;
   const summary   = svc
     ? `${svc.name} · ${svc.duration_min} dk · ${toDateStr(selDate).split('-').reverse().join('.')} ${selSlot ?? ''}${staffName ? ' · '+staffName : ''}`
     : '';
 
-  /* Barber badge: shown when pre-selected, disappears when user picks someone else */
   const preselectedName = preselectedStaffId ? staff.find(s => s.id === preselectedStaffId)?.name : null;
   const showBarberBadge = preselectedName !== null && preselectedName !== undefined && selStaff === preselectedStaffId;
 
   return (
-    <div style={{ minHeight: '100vh', background: 'var(--bg)', fontFamily: 'var(--font-sans)' }}>
+    <div className="min-h-screen bg-slate-50 font-sans">
 
-      {/* ── Header ──────────────────────────────────────────── */}
-      <header style={{ background: 'var(--bg-elevated)', borderBottom: '1px solid var(--divider)', padding: '20px 20px 16px' }}>
-        <div style={{ maxWidth: 480, margin: '0 auto' }}>
-          <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: '0.22em', textTransform: 'uppercase', color: 'var(--fg-4)' }}>
+      {/* Header */}
+      <header className="bg-slate-0 shadow-xs border-b border-slate-100">
+        <div className="max-w-[480px] mx-auto px-5 py-7">
+          <div className="text-2xs font-semibold tracking-widest text-slate-400 uppercase">
             Online Randevu · Sıradaki
           </div>
-          <h1 style={{ fontSize: 28, fontWeight: 700, letterSpacing: '-0.02em', color: 'var(--fg-1)', marginTop: 8, marginBottom: 0 }}>
+          <h1 className="text-3xl font-bold tracking-tight text-ink-900 mt-2">
             {shop.name}
           </h1>
           {shop.address && (
-            <div style={{ fontSize: 13, color: 'var(--fg-3)', marginTop: 5 }}>{shop.address}</div>
+            <div className="text-sm text-slate-500 mt-1.5">{shop.address}</div>
           )}
           {showBarberBadge && (
-            <div style={{
-              display: 'inline-flex', alignItems: 'center', gap: 6,
-              marginTop: 10, padding: '4px 10px', borderRadius: 999,
-              background: 'var(--brand-50, #EEF2FF)', border: '1px solid var(--brand-200, #A5B4FC)',
-              fontSize: 12, fontWeight: 600, color: 'var(--brand-700, #3730A3)',
-            }}>
+            <div className="inline-flex items-center gap-1.5 mt-3 bg-brand-100 border border-[#A5B4FC] text-brand-700 text-xs font-semibold rounded-pill px-3 py-1">
               ✂ {preselectedName}&apos;in linkindesin
             </div>
           )}
         </div>
       </header>
 
-      {/* ── Body ────────────────────────────────────────────── */}
-      <div style={{ maxWidth: 480, margin: '0 auto', padding: '24px 20px 100px' }}>
+      {/* Body */}
+      <div className="max-w-[480px] mx-auto px-5 pt-6 pb-28">
 
         {/* 1 — Service */}
         <Section label="Hizmet Seç">
@@ -163,7 +135,7 @@ export default function BookingClient({ shop, services, staff, preselectedStaffI
         {/* 2 — Staff (only if >1 member) */}
         {staff.length > 1 && (
           <Section label="Usta Seç">
-            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+            <div className="flex flex-wrap gap-2">
               <StaffChip label="Herhangi" selected={selStaff === null} onClick={() => { setSelStaff(null); setSelSlot(null); }} />
               {staff.map(s => (
                 <StaffChip key={s.id} label={s.name} selected={selStaff === s.id} onClick={() => { setSelStaff(s.id); setSelSlot(null); }} />
@@ -172,7 +144,7 @@ export default function BookingClient({ shop, services, staff, preselectedStaffI
           </Section>
         )}
 
-        {/* 3 — Date */}
+        {/* 3 — Date (unchanged — user-confirmed design, inline styles preserved) */}
         <Section label="Tarih Seç">
           <div style={{ display: 'flex', gap: 8, overflowX: 'auto', paddingBottom: 4 }}>
             {days.map(d => {
@@ -220,24 +192,16 @@ export default function BookingClient({ shop, services, staff, preselectedStaffI
 
       </div>
 
-      {/* ── Sticky CTA ──────────────────────────────────────── */}
+      {/* Sticky CTA */}
       {selSlot && (
-        <div style={{
-          position: 'fixed', bottom: 0, left: 0, right: 0,
-          padding: '12px 20px 20px',
-          background: 'var(--bg-elevated)',
-          borderTop: '1px solid var(--divider)',
-          animation: 'slideUp 180ms ease',
-        }}>
-          <div style={{ maxWidth: 480, margin: '0 auto' }}>
+        <div
+          className="fixed bottom-0 left-0 right-0 px-5 py-3 pb-5 backdrop-blur-md bg-white/80 border-t border-slate-200/60"
+          style={{ animation: 'slideUp 180ms ease' }}
+        >
+          <div className="max-w-[480px] mx-auto">
             <button
               onClick={() => setModalOpen(true)}
-              style={{
-                width: '100%', height: 52, borderRadius: 14, border: 0,
-                background: 'var(--brand-600)', color: '#fff',
-                fontFamily: 'inherit', fontWeight: 700, fontSize: 15,
-                cursor: 'pointer', letterSpacing: '-0.01em',
-              }}
+              className="w-full h-14 rounded-md bg-brand-600 text-white font-bold text-[15px] tracking-tight cursor-pointer border-0 font-sans hover:bg-brand-700 transition-colors duration-150"
             >
               Randevu Al — {selSlot}
             </button>
@@ -245,13 +209,10 @@ export default function BookingClient({ shop, services, staff, preselectedStaffI
         </div>
       )}
 
-      {/* ── Booking Modal ────────────────────────────────────── */}
+      {/* Booking Modal */}
       <BookingModal
         open={modalOpen}
-        onClose={() => {
-          setModalOpen(false);
-          setSelSlot(null);
-        }}
+        onClose={() => { setModalOpen(false); setSelSlot(null); }}
         summary={summary}
         shopId={shop.id}
         shopSlug={shop.slug}
@@ -270,11 +231,10 @@ export default function BookingClient({ shop, services, staff, preselectedStaffI
   );
 }
 
-/* ── Sub-components ───────────────────────────────────────────── */
 function Section({ label, children }: { label: string; children: React.ReactNode }) {
   return (
-    <section style={{ marginBottom: 28 }}>
-      <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: '0.22em', textTransform: 'uppercase', color: 'var(--fg-4)', marginBottom: 10 }}>
+    <section className="mb-8">
+      <div className="text-2xs font-semibold tracking-widest text-slate-400 uppercase mb-2.5">
         {label}
       </div>
       {children}
@@ -286,14 +246,13 @@ function StaffChip({ label, selected, onClick }: { label: string; selected: bool
   return (
     <button
       onClick={onClick}
-      style={{
-        padding: '8px 18px', borderRadius: 999, fontSize: 13, fontWeight: 600,
-        cursor: 'pointer', fontFamily: 'inherit',
-        border: `1.5px solid ${selected ? 'var(--ink-900)' : 'var(--border)'}`,
-        background: selected ? 'var(--ink-900)' : 'var(--bg-elevated)',
-        color: selected ? '#fff' : 'var(--fg-2)',
-        transition: 'background 120ms, border-color 120ms',
-      }}
+      className={[
+        'px-4 py-3 rounded-pill text-sm font-semibold cursor-pointer font-sans border',
+        'transition-all duration-150 motion-safe:active:scale-[0.97]',
+        selected
+          ? 'bg-ink-900 border-ink-900 text-white'
+          : 'bg-slate-0 border-slate-200 text-slate-700 shadow-xs hover:border-slate-300',
+      ].join(' ')}
     >
       {label}
     </button>

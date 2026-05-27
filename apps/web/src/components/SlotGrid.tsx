@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 
 // SlotGrid — from index.html slot section
-// 5-col grid on ≥480px, 4-col on <480px
+// 5-col grid on ≥400px, 4-col on <400px (useColumns drives this dynamically)
 
 function useColumns(): number {
   const [cols, setCols] = useState(5);
@@ -41,44 +41,27 @@ export function SlotGrid({
   isClosed, isAllFull,
 }: SlotGridProps) {
   const cols = useColumns();
+  const gridStyle = { display: 'grid', gridTemplateColumns: `repeat(${cols}, 1fr)`, gap: 8 } as const;
 
-  /* ── Loading skeleton ── */
   if (loading) {
     return (
-      <div style={{ display: 'grid', gridTemplateColumns: `repeat(${cols}, 1fr)`, gap: 8 }}>
+      <div style={gridStyle}>
         {Array.from({ length: 10 }).map((_, i) => (
-          <div
-            key={i}
-            style={{
-              height: 50, borderRadius: 10,
-              background: 'var(--slate-100)',
-              animation: 'pulse 1.4s ease-in-out infinite',
-            }}
-          />
+          <div key={i} className="h-[50px] rounded-md bg-slate-100 animate-pulse" />
         ))}
       </div>
     );
   }
 
-  /* ── Error + retry ── */
   if (error) {
     return (
-      <div style={{ textAlign: 'center', padding: '24px 0' }}>
-        <p style={{ fontSize: 14, fontWeight: 600, color: 'var(--fg-1)' }}>
-          Müsaitlik bilgisi alınamadı.
-        </p>
-        <p style={{ fontSize: 12, color: 'var(--fg-4)', marginTop: 4 }}>
-          Bağlantıyı kontrol edip tekrar deneyin.
-        </p>
+      <div className="text-center py-6">
+        <p className="text-sm font-semibold text-ink-900">Müsaitlik bilgisi alınamadı.</p>
+        <p className="text-xs text-slate-400 mt-1">Bağlantıyı kontrol edip tekrar deneyin.</p>
         {onRetry && (
           <button
             onClick={onRetry}
-            style={{
-              marginTop: 12, fontSize: 13, fontWeight: 600,
-              color: 'var(--brand-600)', background: 'none',
-              border: 0, cursor: 'pointer', textDecoration: 'underline',
-              textUnderlineOffset: 2, fontFamily: 'inherit',
-            }}
+            className="mt-3 text-sm font-semibold text-brand-600 bg-transparent border-0 cursor-pointer underline underline-offset-2 font-sans"
           >
             Tekrar Dene
           </button>
@@ -87,72 +70,42 @@ export function SlotGrid({
     );
   }
 
-  /* ── Closed day ── */
   if (isClosed) {
-    return (
-      <p style={{ fontSize: 14, color: 'var(--fg-4)', padding: '16px 0' }}>
-        Bu gün için çalışma saati tanımlanmamış.
-      </p>
-    );
+    return <p className="text-sm text-slate-400 py-4">Bu gün için çalışma saati tanımlanmamış.</p>;
   }
 
-  /* ── All-full ── */
   if (isAllFull || (slots.length > 0 && slots.every(s => !s.available))) {
-    return (
-      <p style={{ fontSize: 14, color: 'var(--fg-4)', padding: '16px 0' }}>
-        Bu günde müsait saat kalmadı. Başka bir gün seçin.
-      </p>
-    );
+    return <p className="text-sm text-slate-400 py-4">Bu günde müsait saat kalmadı. Başka bir gün seçin.</p>;
   }
 
-  /* ── Grid of slots ── */
   return (
-    <div style={{ display: 'grid', gridTemplateColumns: `repeat(${cols}, 1fr)`, gap: 8 }}>
-      {slots.map(s => (
-        <button
-          key={s.time}
-          disabled={!s.available}
-          onClick={() => s.available && onSelect(s.time)}
-          style={{
-            fontFamily: 'var(--font-sans)',
-            fontSize: 14,
-            fontWeight: (selected === s.time || s.available) ? 600 : 400,
-            fontVariantNumeric: 'tabular-nums',
-            height: 50,
-            borderRadius: 10,
-            cursor: s.available ? 'pointer' : 'not-allowed',
-            pointerEvents: !s.available ? ('none' as const) : undefined,
-            border: `1.5px solid ${
-              selected === s.time ? 'var(--brand-600)'
-              : !s.available ? 'transparent'
-              : s.hot ? 'var(--umber-600)'
-              : 'var(--border)'
-            }`,
-            background:
-              selected === s.time ? 'var(--brand-600)'
-              : !s.available ? 'var(--bg-sunken)'
-              : s.hot ? 'var(--umber-100)'
-              : 'var(--bg-elevated)',
-            color:
-              selected === s.time ? '#fff'
-              : !s.available ? 'var(--fg-4)'
-              : s.hot ? 'var(--umber-700)'
-              : 'var(--fg-1)',
-            transition: 'border-color 120ms, background 120ms, transform 100ms, box-shadow 120ms',
-            display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 1,
-          }}
-        >
-          <span>{s.time}</span>
-          {s.hot && selected !== s.time && s.available && (
-            <span style={{
-              fontSize: 9, fontWeight: 600,
-              color: 'var(--umber-600)', letterSpacing: '0.04em', lineHeight: 1,
-            }}>
-              az yer
-            </span>
-          )}
-        </button>
-      ))}
+    <div style={gridStyle}>
+      {slots.map(s => {
+        const isSel = selected === s.time;
+        return (
+          <button
+            key={s.time}
+            disabled={!s.available}
+            onClick={() => onSelect(s.time)}
+            className={[
+              'h-[50px] rounded-md flex flex-col items-center justify-center gap-0.5',
+              'font-sans text-sm tabular-nums transition-all duration-150',
+              isSel
+                ? 'bg-brand-600 border border-brand-600 text-white font-semibold shadow-sm motion-safe:scale-[1.02]'
+                : s.available
+                  ? s.hot
+                    ? 'bg-umber-100 border border-umber-600 text-umber-700 font-semibold hover:shadow-sm cursor-pointer motion-safe:active:scale-[0.97]'
+                    : 'bg-slate-0 border border-slate-200 text-ink-900 font-semibold shadow-xs hover:border-slate-300 hover:shadow-sm cursor-pointer motion-safe:active:scale-[0.97]'
+                  : 'bg-slate-100 border border-transparent text-slate-400 cursor-not-allowed',
+            ].join(' ')}
+          >
+            <span>{s.time}</span>
+            {s.hot && !isSel && s.available && (
+              <span className="text-[9px] font-semibold text-umber-600 tracking-wide leading-none">az yer</span>
+            )}
+          </button>
+        );
+      })}
     </div>
   );
 }
