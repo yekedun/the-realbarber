@@ -66,6 +66,16 @@ export default function EarningsScreen() {
   const [periodDukkan,   setPeriodDukkan]   = useState('—');
   const [staffDist, setStaffDist] = useState<{ id: string; name: string; appts: number; ciro: string; pay: string }[]>([]);
 
+  interface CommissionStaffRow {
+    staff_id: string;
+    staff_name: string;
+    completed_count: number;
+    gross_revenue_cents: number;
+    commission_cents: number;
+    shop_share_cents: number;
+  }
+  const [commRows, setCommRows] = useState<CommissionStaffRow[]>([]);
+
   const data = {
     label: period === 'day' ? 'Bugün' : period === '7' ? '7 gün' : '30 gün',
     ciro: periodCiro,
@@ -127,6 +137,19 @@ export default function EarningsScreen() {
       } else {
         setStaffDist([]);
       }
+    }
+
+    const fromDate = since.toISOString().split('T')[0];
+    const toDate = until.toISOString().split('T')[0];
+    const { data: commData, error: commErr } = await supabase.rpc('get_commission_report', {
+      p_shop_id: shopId,
+      p_from: fromDate,
+      p_to: toDate,
+    });
+    if (!commErr && commData?.staff) {
+      setCommRows(commData.staff as CommissionStaffRow[]);
+    } else {
+      setCommRows([]);
     }
   }
 
@@ -221,6 +244,38 @@ export default function EarningsScreen() {
           );
         })}
       </View>
+
+      {/* Komisyon Detayı */}
+      {commRows.length > 0 && (
+        <>
+          <Text style={styles.sectionLabel}>Komisyon Detayı</Text>
+          <View style={styles.staffSection}>
+            {commRows.map((row, i) => (
+              <View
+                key={row.staff_id}
+                style={[styles.commCard, i < commRows.length - 1 && { marginBottom: 8 }]}
+              >
+                <Text style={styles.commName}>{row.staff_name}</Text>
+                <Text style={styles.commMeta}>{row.completed_count} tamamlanan randevu</Text>
+                <View style={styles.commAmountRow}>
+                  <View style={styles.commCol}>
+                    <Text style={styles.commColLabel}>Ciro</Text>
+                    <Text style={styles.commColValue}>{formatCents(row.gross_revenue_cents)} TL</Text>
+                  </View>
+                  <View style={styles.commCol}>
+                    <Text style={styles.commColLabel}>Komisyon</Text>
+                    <Text style={[styles.commColValue, { color: colors.umber[100] ?? '#d97706' }]}>{formatCents(row.commission_cents)} TL</Text>
+                  </View>
+                  <View style={styles.commCol}>
+                    <Text style={styles.commColLabel}>Dükkan</Text>
+                    <Text style={styles.commColValue}>{formatCents(row.shop_share_cents)} TL</Text>
+                  </View>
+                </View>
+              </View>
+            ))}
+          </View>
+        </>
+      )}
     </ScrollView>
   );
 }
@@ -427,5 +482,50 @@ const styles = StyleSheet.create({
     fontFamily: 'Montserrat-Regular',
     color: colors.slate[500],
     marginTop: 2,
+  },
+
+  /* Commission detail */
+  commCard: {
+    backgroundColor: colors.slate[0],
+    borderWidth: 1,
+    borderColor: colors.slate[200],
+    borderRadius: 14,
+    paddingHorizontal: 14,
+    paddingVertical: 14,
+  },
+  commName: {
+    fontSize: 15,
+    fontFamily: 'Montserrat-SemiBold',
+    color: colors.ink[900],
+  },
+  commMeta: {
+    fontSize: 12,
+    fontFamily: 'Montserrat-Regular',
+    color: colors.slate[500],
+    marginTop: 2,
+  },
+  commAmountRow: {
+    flexDirection: 'row',
+    gap: 12,
+    marginTop: 12,
+    paddingTop: 12,
+    borderTopWidth: 1,
+    borderTopColor: colors.slate[100],
+  },
+  commCol: {
+    flex: 1,
+  },
+  commColLabel: {
+    fontSize: 10,
+    fontFamily: 'Montserrat-SemiBold',
+    letterSpacing: 1.4,
+    textTransform: 'uppercase',
+    color: colors.slate[500],
+  },
+  commColValue: {
+    fontSize: 13,
+    fontFamily: 'Montserrat-Bold',
+    color: colors.ink[900],
+    marginTop: 4,
   },
 });
