@@ -1,6 +1,7 @@
 'use server';
 
 import { createClient } from '@supabase/supabase-js';
+import { timingSafeEqual } from 'crypto';
 
 function getAdminClient() {
   return createClient(
@@ -10,13 +11,19 @@ function getAdminClient() {
 }
 
 function assertAdmin(adminKey: string) {
-  if (adminKey !== process.env.ADMIN_SECRET_KEY) throw new Error('Yetkisiz');
+  const secret = process.env.ADMIN_SECRET_KEY ?? '';
+  if (!secret) throw new Error('ADMIN_SECRET_KEY env var eksik');
+  if (adminKey.length !== secret.length) throw new Error('Yetkisiz');
+  const a = Buffer.from(adminKey);
+  const b = Buffer.from(secret);
+  if (!timingSafeEqual(a, b)) throw new Error('Yetkisiz');
 }
 
 export async function approveShop(shopId: string, adminKey: string) {
   assertAdmin(adminKey);
   const supabase = getAdminClient();
-  await supabase.from('shops').update({ status: 'active' }).eq('id', shopId);
+  const { error } = await supabase.from('shops').update({ status: 'active' }).eq('id', shopId);
+  if (error) throw new Error('Onay başarısız: ' + error.message);
 
   const { data: shop } = await supabase
     .from('shops').select('owner_user_id').eq('id', shopId).single();
@@ -32,7 +39,7 @@ export async function approveShop(shopId: string, adminKey: string) {
           title: 'Başvurunuz Onaylandı! 🎉',
           body: 'Dükkanınız aktif hale getirildi. Şimdi giriş yapabilirsiniz.',
         }),
-      });
+      }).catch((e) => console.error('[admin] Push notification failed:', e));
     }
   }
 }
@@ -40,17 +47,19 @@ export async function approveShop(shopId: string, adminKey: string) {
 export async function rejectShop(shopId: string, adminKey: string) {
   assertAdmin(adminKey);
   const supabase = getAdminClient();
-  await supabase.from('shops').update({ status: 'rejected' }).eq('id', shopId);
+  const { error } = await supabase.from('shops').update({ status: 'rejected' }).eq('id', shopId);
+  if (error) throw new Error('Red başarısız: ' + error.message);
 }
 
 export async function getPendingShops(adminKey: string) {
   assertAdmin(adminKey);
   const supabase = getAdminClient();
-  const { data } = await supabase
+  const { data, error } = await supabase
     .from('shops')
     .select('id, name, slug, status, created_at, owner_user_id')
     .in('status', ['pending', 'active', 'rejected'])
     .order('created_at', { ascending: false })
     .limit(50);
+  if (error) throw new Error('Shop listesi alınamadı: ' + error.message);
   return data ?? [];
 }
