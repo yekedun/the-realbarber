@@ -30,6 +30,7 @@ import {
   Platform,
   ScrollView,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import { colors } from '../../lib/theme';
 import { Button } from '../../components/ds/Button';
@@ -83,8 +84,9 @@ export default function LoginScreen() {
   }
 
   return (
+    <SafeAreaView style={styles.kav}>
     <KeyboardAvoidingView
-      style={styles.kav}
+      style={{ flex: 1 }}
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
     >
       <ScrollView
@@ -142,10 +144,10 @@ export default function LoginScreen() {
             variant="primary"
             size="lg"
             full
-            disabled={loading}
-            onPress={handleGoogleLogin}
+            disabled={!canSubmit || loading}
+            onPress={handleLogin}
           >
-            {loading ? 'Giriş yapılıyor…' : 'Google ile Giriş Yap'}
+            {loading ? 'Giriş yapılıyor…' : 'Giriş Yap'}
           </Button>
 
           <View style={styles.divider}>
@@ -155,13 +157,13 @@ export default function LoginScreen() {
           </View>
 
           <Button
-            variant="primary"
+            variant="google"
             size="lg"
             full
-            disabled={!canSubmit || loading}
-            onPress={handleLogin}
+            disabled={loading}
+            onPress={handleGoogleLogin}
           >
-            {loading ? 'Giriş yapılıyor…' : 'Giriş Yap'}
+            {loading ? 'Giriş yapılıyor…' : 'Google ile Giriş Yap'}
           </Button>
           <View style={styles.footerRow}>
             <Text style={styles.footerText}>Hesabın yok mu? </Text>
@@ -172,6 +174,7 @@ export default function LoginScreen() {
         </View>
       </ScrollView>
     </KeyboardAvoidingView>
+    </SafeAreaView>
   );
 }
 
@@ -191,9 +194,9 @@ const styles = StyleSheet.create({
     paddingBottom: 28,
   },
 
-  /* Top area — source: marginTop:60 */
+  /* Top area — source: marginTop:60 → 40 */
   topArea: {
-    marginTop: 60,
+    marginTop: 40,
   },
 
   /* Brand mark — 48×48 borderRadius:999 ink-900 bg, "S" letter, marginBottom:28 */
