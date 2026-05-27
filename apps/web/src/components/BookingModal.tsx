@@ -1,8 +1,7 @@
 'use client';
 
-// W3a — Booking modal (index.html Modal*)
+// W3a — Booking modal
 // 4 states: form | loading | success | error
-// Error sub-types: conflict | generic
 
 import { useState, useRef } from 'react';
 
@@ -24,127 +23,96 @@ interface BookingModalProps {
 
 const FN_BASE = process.env.NEXT_PUBLIC_SUPABASE_URL + '/functions/v1';
 
-/* ── Overline ─────────────────────────────────────────────────────── */
-function Overline({ children, color }: { children: React.ReactNode; color?: string }) {
+function Overline({ children, className }: { children: React.ReactNode; className?: string }) {
   return (
-    <div style={{
-      fontSize: 11, fontWeight: 600, letterSpacing: '0.16em',
-      textTransform: 'uppercase', color: color ?? 'var(--fg-3)', lineHeight: 1,
-    }}>
+    <div className={`text-2xs font-semibold tracking-widest uppercase leading-none ${className ?? 'text-slate-400'}`}>
       {children}
     </div>
   );
 }
 
-/* ── Form ─────────────────────────────────────────────────────────── */
 function ModalForm({
   summary, onClose, onConfirm,
 }: {
-  summary: string; onClose: () => void; onConfirm: (name: string, phone: string, note: string) => void;
+  summary: string;
+  onClose: () => void;
+  onConfirm: (name: string, phone: string, note: string) => void;
 }) {
   const [name,  setName]  = useState('');
   const [phone, setPhone] = useState('');
   const [note,  setNote]  = useState('');
+  const [phoneTouched, setPhoneTouched] = useState(false);
   const ok = name.trim().length >= 2 && phone.trim().length >= 10;
 
+  const inputCls = 'bg-slate-50 border border-slate-200 rounded-sm px-3.5 py-3 text-[15px] text-ink-900 font-sans w-full outline-none transition-[border-color,box-shadow] duration-[140ms] focus:border-brand-600 focus:ring-2 focus:ring-brand-100';
+  const labelCls = 'text-2xs font-semibold tracking-widest text-slate-400 uppercase mb-1.5';
+
   return (
-    <div style={{ padding: '28px 28px 24px' }}>
+    <div className="p-7 pb-6">
       <Overline>Onaylama</Overline>
-      <h2 style={{ fontSize: 22, fontWeight: 700, letterSpacing: '-0.018em', marginTop: 10 }}>
+      <h2 className="text-2xl font-bold tracking-tight text-ink-900 mt-2.5">
         Randevuyu Onayla
       </h2>
-      <div style={{ fontSize: 13, color: 'var(--fg-3)', marginTop: 6, lineHeight: 1.55 }}>
+      <div className="text-sm text-slate-500 mt-1.5 leading-relaxed">
         {summary}
       </div>
 
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 14, marginTop: 22 }}>
-        {/* Ad Soyad */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 7 }}>
-          <label style={{ fontSize: 11, fontWeight: 600, letterSpacing: '0.16em', textTransform: 'uppercase', color: 'var(--fg-3)' }}>
-            Ad Soyad
-          </label>
+      <div className="flex flex-col gap-3.5 mt-5">
+        <div className="flex flex-col">
+          <label className={labelCls}>Ad Soyad</label>
           <input
             value={name}
             onChange={e => setName(e.target.value)}
             placeholder="örn. Ahmet Yılmaz"
-            style={{
-              fontFamily: 'var(--font-sans)', fontSize: 15, color: 'var(--fg-1)',
-              background: 'var(--bg)', border: '1px solid var(--border)', borderRadius: 12,
-              padding: '12px 14px', outline: 'none', width: '100%',
-              transition: 'border-color 140ms',
-            }}
+            className={inputCls}
           />
         </div>
 
-        {/* Telefon */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 7 }}>
-          <label style={{ fontSize: 11, fontWeight: 600, letterSpacing: '0.16em', textTransform: 'uppercase', color: 'var(--fg-3)' }}>
-            Telefon
-          </label>
+        <div className="flex flex-col">
+          <label className={labelCls}>Telefon</label>
           <input
             type="tel"
             value={phone}
             onChange={e => setPhone(e.target.value)}
+            onBlur={() => setPhoneTouched(true)}
             placeholder="0(5xx) xxx xx xx"
-            style={{
-              fontFamily: 'var(--font-sans)', fontSize: 15, color: 'var(--fg-1)',
-              background: 'var(--bg)', border: '1px solid var(--border)', borderRadius: 12,
-              padding: '12px 14px', outline: 'none', width: '100%',
-              transition: 'border-color 140ms',
-            }}
+            className={inputCls}
           />
-          {phone.length > 0 && phone.trim().length < 10 && (
-            <div style={{ fontSize: 12, color: 'var(--coral-600)', marginTop: 4 }}>
-              Geçerli bir telefon numarası gir
-            </div>
+          {phoneTouched && phone.length > 0 && phone.trim().length < 10 && (
+            <div className="text-xs text-coral-600 mt-1">Geçerli bir telefon numarası gir</div>
           )}
-          {phone.length === 0 && name.trim().length >= 2 && (
-            <div style={{ fontSize: 12, color: 'var(--fg-4)', marginTop: 4 }}>
-              Randevu onayı için telefon numarası gerekli
-            </div>
+          {!phoneTouched && phone.length === 0 && name.trim().length >= 2 && (
+            <div className="text-xs text-slate-400 mt-1">Randevu onayı için telefon numarası gerekli</div>
           )}
         </div>
 
-        {/* Not */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 7 }}>
-          <label style={{ fontSize: 11, fontWeight: 600, letterSpacing: '0.16em', textTransform: 'uppercase', color: 'var(--fg-3)' }}>
-            Not — opsiyonel
-          </label>
+        <div className="flex flex-col">
+          <label className={labelCls}>Not — opsiyonel</label>
           <textarea
             rows={2}
             value={note}
             onChange={e => setNote(e.target.value)}
             placeholder="Saç uzunluğu, özel istek..."
-            style={{
-              fontFamily: 'var(--font-sans)', fontSize: 15, color: 'var(--fg-1)',
-              background: 'var(--bg)', border: '1px solid var(--border)', borderRadius: 12,
-              padding: '12px 14px', outline: 'none', width: '100%',
-              transition: 'border-color 140ms', resize: 'vertical',
-            }}
+            className={`${inputCls} resize-y`}
           />
         </div>
       </div>
 
-      <div style={{ display: 'flex', gap: 10, marginTop: 22 }}>
+      <div className="flex gap-2.5 mt-5">
         <button
           onClick={onClose}
-          style={{
-            flex: 1, height: 48, borderRadius: 12, border: '1.5px solid var(--border)',
-            background: 'transparent', color: 'var(--fg-2)',
-            fontFamily: 'inherit', fontWeight: 600, fontSize: 14, cursor: 'pointer',
-          }}
+          className="flex-1 h-12 rounded-md border border-slate-200 bg-transparent text-slate-600 font-sans font-semibold text-sm cursor-pointer hover:border-slate-300 transition-colors duration-150"
         >
           Vazgeç
         </button>
         <button
           onClick={() => ok && onConfirm(name, phone, note)}
-          style={{
-            flex: 1.5, height: 48, borderRadius: 12, border: 0,
-            background: ok ? 'var(--brand-600)' : 'var(--slate-300)',
-            color: '#fff', fontFamily: 'inherit', fontWeight: 600, fontSize: 14,
-            cursor: ok ? 'pointer' : 'not-allowed',
-            transition: 'background 140ms',
-          }}
+          className={[
+            'flex-[1.5] h-12 rounded-md border-0 font-sans font-semibold text-sm transition-colors duration-[140ms]',
+            ok
+              ? 'bg-brand-600 text-white cursor-pointer hover:bg-brand-700'
+              : 'bg-slate-200 text-slate-400 cursor-not-allowed',
+          ].join(' ')}
         >
           Onayla
         </button>
@@ -153,70 +121,48 @@ function ModalForm({
   );
 }
 
-/* ── Loading ──────────────────────────────────────────────────────── */
 function ModalLoading() {
   return (
-    <div style={{ padding: '60px 28px', textAlign: 'center' }}>
-      <div style={{
-        width: 36, height: 36, margin: '0 auto',
-        border: '3px solid var(--slate-200)', borderTopColor: 'var(--brand-600)',
-        borderRadius: 9999, animation: 'spin 700ms linear infinite',
-      }} />
-      <div style={{ marginTop: 18, fontSize: 14, color: 'var(--fg-3)' }}>
-        Randevu oluşturuluyor…
-      </div>
+    <div className="px-7 py-16 text-center">
+      <div className="w-9 h-9 mx-auto border-[3px] border-slate-200 border-t-brand-600 rounded-full animate-spin" />
+      <div className="mt-4 text-sm text-slate-500">Randevu oluşturuluyor…</div>
     </div>
   );
 }
 
-/* ── Success ──────────────────────────────────────────────────────── */
 function ModalSuccess({
   summary, onClose, staffPhone,
 }: {
   summary: string; onClose: () => void; staffPhone?: string | null;
 }) {
   return (
-    <div style={{ padding: '28px 28px 24px' }}>
-      <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-        <div style={{
-          width: 28, height: 28, borderRadius: 9999, background: 'var(--mint-600)',
-          color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center',
-          fontWeight: 700, fontSize: 14,
-        }}>✓</div>
-        <Overline color="var(--mint-700)">Onaylandı</Overline>
+    <div className="p-7 pb-6">
+      <div className="flex items-center gap-2.5">
+        <div className="w-7 h-7 rounded-full bg-mint-600 text-white flex items-center justify-center font-bold text-sm flex-shrink-0">
+          ✓
+        </div>
+        <Overline className="text-mint-700">Onaylandı</Overline>
       </div>
-      <h2 style={{ fontSize: 22, fontWeight: 700, letterSpacing: '-0.018em', marginTop: 14 }}>
+      <h2 className="text-2xl font-bold tracking-tight text-ink-900 mt-3.5">
         Randevunuz alındı
       </h2>
-      <div style={{ fontSize: 13, color: 'var(--fg-3)', marginTop: 8, lineHeight: 1.55 }}>
+      <div className="text-sm text-slate-500 mt-2 leading-relaxed">
         {summary}
       </div>
-      <div style={{
-        background: 'var(--bg-sunken)', borderRadius: 10, padding: '12px 14px', marginTop: 18,
-        fontSize: 13, color: 'var(--fg-2)', lineHeight: 1.5,
-      }}>
+      <div className="bg-slate-50 rounded-md px-3.5 py-3 mt-4 text-sm text-slate-600 leading-relaxed">
         Randevunuzu onaylayan bir mesaj telefonunuza iletilecek.
       </div>
 
-      <div style={{ display: 'flex', gap: 10, marginTop: 18 }}>
+      <div className="flex gap-2.5 mt-4">
         <button
           onClick={onClose}
-          style={{
-            flex: 1, height: 48, borderRadius: 12, border: '1.5px solid var(--border)',
-            background: 'transparent', color: 'var(--fg-2)',
-            fontFamily: 'inherit', fontWeight: 600, fontSize: 14, cursor: 'pointer',
-          }}
+          className="flex-1 h-12 rounded-md border border-slate-200 bg-transparent text-slate-600 font-sans font-semibold text-sm cursor-pointer hover:border-slate-300 transition-colors duration-150"
         >
           Yeni Randevu
         </button>
         <button
           onClick={onClose}
-          style={{
-            flex: 1.5, height: 48, borderRadius: 12, border: 0,
-            background: 'var(--brand-600)', color: '#fff',
-            fontFamily: 'inherit', fontWeight: 600, fontSize: 14, cursor: 'pointer',
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-          }}
+          className="flex-[1.5] h-12 rounded-md border-0 bg-brand-600 text-white font-sans font-semibold text-sm cursor-pointer hover:bg-brand-700 transition-colors duration-150 flex items-center justify-center"
         >
           Tamam
         </button>
@@ -226,24 +172,10 @@ function ModalSuccess({
         <button
           onClick={() => {
             const phone = staffPhone.replace(/\D/g, '');
-            const msg = encodeURIComponent(
-              `Merhaba, ${summary} randevusu aldım. Bilginize 🙏`
-            );
+            const msg = encodeURIComponent(`Merhaba, ${summary} randevusu aldım. Bilginize 🙏`);
             window.open(`whatsapp://send?phone=90${phone}&text=${msg}`, '_self');
           }}
-          style={{
-            width: '100%',
-            padding: '12px 20px',
-            marginTop: 8,
-            background: '#25D366',
-            color: '#fff',
-            border: 'none',
-            borderRadius: 10,
-            fontSize: 14,
-            fontWeight: 600,
-            cursor: 'pointer',
-            fontFamily: 'inherit',
-          }}
+          className="w-full px-5 py-3 mt-2 bg-[#25D366] text-white border-none rounded-md text-sm font-semibold cursor-pointer font-sans"
         >
           💬 Berberi WhatsApp ile Bilgilendir
         </button>
@@ -252,34 +184,27 @@ function ModalSuccess({
   );
 }
 
-/* ── Error ────────────────────────────────────────────────────────── */
 function ModalError({ errorType, onClose }: { errorType: ErrorType; onClose: () => void }) {
   const isConflict = errorType === 'conflict';
   return (
-    <div style={{ padding: '28px 28px 24px' }}>
-      <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-        <div style={{
-          width: 28, height: 28, borderRadius: 9999, background: 'var(--coral-600)',
-          color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center',
-          fontWeight: 700, fontSize: 15,
-        }}>!</div>
-        <Overline color="var(--coral-700)">Çakışma</Overline>
+    <div className="p-7 pb-6">
+      <div className="flex items-center gap-2.5">
+        <div className="w-7 h-7 rounded-full bg-coral-600 text-white flex items-center justify-center font-bold text-[15px] flex-shrink-0">
+          !
+        </div>
+        <Overline className="text-coral-700">Çakışma</Overline>
       </div>
-      <h2 style={{ fontSize: 22, fontWeight: 700, letterSpacing: '-0.018em', marginTop: 14 }}>
+      <h2 className="text-2xl font-bold tracking-tight text-ink-900 mt-3.5">
         {isConflict ? 'Bu saat az önce doldu' : 'Randevu oluşturulamadı'}
       </h2>
-      <div style={{ fontSize: 14, color: 'var(--fg-2)', marginTop: 8, lineHeight: 1.55 }}>
+      <div className="text-sm text-slate-600 mt-2 leading-relaxed">
         {isConflict
           ? 'Başka bir saat seçin ve tekrar deneyin.'
           : 'Bir hata oluştu. Lütfen tekrar deneyin.'}
       </div>
       <button
         onClick={onClose}
-        style={{
-          marginTop: 22, width: '100%', height: 48, borderRadius: 12, border: 0,
-          background: 'var(--ink-900)', color: '#fff',
-          fontFamily: 'inherit', fontWeight: 600, fontSize: 14, cursor: 'pointer',
-        }}
+        className="mt-5 w-full h-12 rounded-md border-0 bg-ink-900 text-white font-sans font-semibold text-sm cursor-pointer hover:bg-ink-800 transition-colors duration-150"
       >
         {isConflict ? 'Saat Seç' : 'Kapat'}
       </button>
@@ -287,9 +212,6 @@ function ModalError({ errorType, onClose }: { errorType: ErrorType; onClose: () 
   );
 }
 
-/* ════════════════════════════════════════════════════════════════════
-   BOOKING MODAL (W3a)
-   ════════════════════════════════════════════════════════════════════ */
 export function BookingModal({
   open, onClose, summary,
   shopId, shopSlug, staffId, staffPhone, serviceId, startsAt, onSuccess,
@@ -299,7 +221,7 @@ export function BookingModal({
   const submittingRef = useRef(false);
 
   if (!open) return null;
-  void shopId; // kept in props for future use
+  void shopId;
 
   async function handleConfirm(name: string, phone: string, note: string) {
     if (submittingRef.current) return;
@@ -310,13 +232,13 @@ export function BookingModal({
         method:  'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          shop_slug:       shopSlug,
-          service_id:      serviceId,
-          staff_id:        staffId,
-          starts_at:       startsAt,
-          customer_name:   name.trim(),
-          customer_phone:  phone.trim() || undefined,
-          customer_notes:  note.trim()  || undefined,
+          shop_slug:      shopSlug,
+          service_id:     serviceId,
+          staff_id:       staffId,
+          starts_at:      startsAt,
+          customer_name:  name.trim(),
+          customer_phone: phone.trim() || undefined,
+          customer_notes: note.trim()  || undefined,
         }),
       });
       if (res.status === 409) { setErrorType('conflict'); setState('error'); return; }
@@ -333,37 +255,21 @@ export function BookingModal({
   }
 
   function handleClose() {
-    // Reset state for next use
     setState('form');
     setErrorType('conflict');
     onClose();
   }
 
   return (
-    // Overlay
     <div
       onClick={handleClose}
-      style={{
-        position: 'fixed', inset: 0,
-        background: 'rgba(11,18,32,0.42)',
-        backdropFilter: 'blur(6px)',
-        display: 'flex', alignItems: 'center', justifyContent: 'center',
-        padding: 24, zIndex: 1000,
-        animation: 'fadeIn 180ms ease',
-      }}
+      className="fixed inset-0 bg-ink-900/40 backdrop-blur-sm flex items-center justify-center p-6 z-[1000]"
+      style={{ animation: 'fadeIn 180ms ease' }}
     >
-      {/* Modal card */}
       <div
         onClick={e => e.stopPropagation()}
-        style={{
-          background: 'var(--bg-elevated)',
-          borderRadius: 18,
-          width: '100%', maxWidth: 456,
-          boxShadow: 'var(--shadow-lg)',
-          border: '1px solid var(--border)',
-          overflow: 'hidden',
-          animation: 'slideUp 280ms cubic-bezier(.32,.72,.0,1)',
-        }}
+        className="bg-slate-0 rounded-xl w-full max-w-[456px] shadow-lg border border-slate-200 overflow-hidden"
+        style={{ animation: 'slideUp 280ms cubic-bezier(.32,.72,.0,1)' }}
       >
         {state === 'form'    && <ModalForm    summary={summary} onClose={handleClose} onConfirm={handleConfirm} />}
         {state === 'loading' && <ModalLoading />}
