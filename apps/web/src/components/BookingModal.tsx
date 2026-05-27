@@ -44,7 +44,7 @@ function ModalForm({
   const [phoneTouched, setPhoneTouched] = useState(false);
   const ok = name.trim().length >= 2 && phone.trim().length >= 10;
 
-  const inputCls = 'bg-slate-50 border border-slate-200 rounded-sm px-3.5 py-3 text-[15px] text-ink-900 font-sans w-full outline-none transition-[border-color,box-shadow] duration-[140ms] focus:border-brand-600 focus:ring-2 focus:ring-brand-100';
+  const inputCls = 'bg-slate-50 border border-slate-200 rounded-md px-3.5 py-3 text-[15px] text-ink-900 font-sans w-full outline-none transition-[border-color,box-shadow] duration-[140ms] focus:border-brand-600 focus:ring-2 focus:ring-brand-100';
   const labelCls = 'text-2xs font-semibold tracking-widest text-slate-400 uppercase mb-1.5';
 
   return (
@@ -59,8 +59,9 @@ function ModalForm({
 
       <div className="flex flex-col gap-3.5 mt-5">
         <div className="flex flex-col">
-          <label className={labelCls}>Ad Soyad</label>
+          <label htmlFor="booking-name" className={labelCls}>Ad Soyad</label>
           <input
+            id="booking-name"
             value={name}
             onChange={e => setName(e.target.value)}
             placeholder="örn. Ahmet Yılmaz"
@@ -69,8 +70,9 @@ function ModalForm({
         </div>
 
         <div className="flex flex-col">
-          <label className={labelCls}>Telefon</label>
+          <label htmlFor="booking-phone" className={labelCls}>Telefon</label>
           <input
+            id="booking-phone"
             type="tel"
             value={phone}
             onChange={e => setPhone(e.target.value)}
@@ -87,8 +89,9 @@ function ModalForm({
         </div>
 
         <div className="flex flex-col">
-          <label className={labelCls}>Not — opsiyonel</label>
+          <label htmlFor="booking-note" className={labelCls}>Not — opsiyonel</label>
           <textarea
+            id="booking-note"
             rows={2}
             value={note}
             onChange={e => setNote(e.target.value)}
@@ -107,6 +110,7 @@ function ModalForm({
         </button>
         <button
           onClick={() => ok && onConfirm(name, phone, note)}
+          aria-disabled={!ok}
           className={[
             'flex-[1.5] h-12 rounded-md border-0 font-sans font-semibold text-sm transition-colors duration-[140ms]',
             ok
@@ -268,7 +272,7 @@ export function BookingModal({
     >
       <div
         onClick={e => e.stopPropagation()}
-        className="bg-slate-0 rounded-xl w-full max-w-[456px] shadow-lg border border-slate-200 overflow-hidden"
+        className="bg-white rounded-xl w-full max-w-[456px] shadow-lg border border-slate-200 overflow-hidden"
         style={{ animation: 'slideUp 280ms cubic-bezier(.32,.72,.0,1)' }}
       >
         {state === 'form'    && <ModalForm    summary={summary} onClose={handleClose} onConfirm={handleConfirm} />}
