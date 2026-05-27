@@ -120,7 +120,7 @@ Yükseltilmiş kart (Sheet, Modal): `shadows.sm`
 - Login ile aynı SafeAreaView tedavisi
 - marginTop: 8 → 40 (safe area sonrası)
 - CTA: "Hesap Oluştur" tek buton, altında sadece footer link — Google yok (register farklı akış)
-- Fine print (legal) text: slate[400] → slate[300] (daha az dikkat çeksin, okunabilirlik korunur)
+- Fine print (legal) text: slate[400] korunur (slate[300] beyaz üzerinde WCAG AA'yı kaybeder)
 
 ### 2.3 Pending (`(auth)/pending.tsx`)
 - SafeAreaView tedavisi
@@ -210,8 +210,8 @@ Yükseltilmiş kart (Sheet, Modal): `shadows.sm`
 - TextField + Button spacing canonicalize
 
 ### 4.3 Block (`(app)/block.tsx`)
-- OverlineHeader dark prop kaldırılır (varsa)
-- Form spacing canonicalize
+- OverlineHeader dark prop kaldırılır (mevcut: `eyebrow="Blok Ekle" title="Takvimi Kapat"`)
+- Form spacing canonicalize (duration grid padding 20px, SectionLabel marginTop tutarlı)
 
 ---
 
