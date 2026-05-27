@@ -1,5 +1,6 @@
 import React from 'react';
 import { Alert, View, Text, StyleSheet } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { router, useLocalSearchParams } from 'expo-router';
 import { colors } from '../../lib/theme';
 import { Button } from '../../components/ds/Button';
@@ -31,34 +32,35 @@ export default function PendingScreen() {
   }
 
   return (
-    <View style={styles.screen}>
-      <View style={styles.iconWrap}>
-        <Text style={styles.icon}>{rejected ? '!' : '?'}</Text>
+    <SafeAreaView style={{ flex: 1, backgroundColor: colors.slate[0] }}>
+      <View style={styles.screen}>
+        <View style={styles.iconWrap}>
+          <Text style={styles.icon}>{rejected ? '!' : '?'}</Text>
+        </View>
+        <Text style={styles.title}>
+          {rejected ? 'Başvuru Reddedildi' : unknown ? 'Durum Kontrol Edilemedi' : 'Başvurun Alındı'}
+        </Text>
+        <Text style={styles.body}>
+          {rejected
+            ? 'Dükkan başvurun onaylanmadı. Detay için destek ekibiyle iletişime geçebilirsin.'
+            : unknown
+              ? 'Hesap durumun şu anda okunamadı. Bağlantını kontrol edip tekrar giriş yap.'
+              : 'Dükkanın inceleme sürecinde. Onaylandıktan sonra bildirim alacaksın. Genellikle 24 saat içinde yanıt verilir.'}
+        </Text>
+        <Button variant="primary" size="md" onPress={handleRefresh}>
+          Durumu Yenile
+        </Button>
+        <Button variant="secondary" size="md" onPress={handleLogout}>
+          Çıkış Yap
+        </Button>
       </View>
-      <Text style={styles.title}>
-        {rejected ? 'Başvuru Reddedildi' : unknown ? 'Durum Kontrol Edilemedi' : 'Başvurun Alındı'}
-      </Text>
-      <Text style={styles.body}>
-        {rejected
-          ? 'Dükkan başvurun onaylanmadı. Detay için destek ekibiyle iletişime geçebilirsin.'
-          : unknown
-            ? 'Hesap durumun şu anda okunamadı. Bağlantını kontrol edip tekrar giriş yap.'
-            : 'Dükkanın inceleme sürecinde. Onaylandıktan sonra bildirim alacaksın. Genellikle 24 saat içinde yanıt verilir.'}
-      </Text>
-      <Button variant="primary" size="md" onPress={handleRefresh}>
-        Durumu Yenile
-      </Button>
-      <Button variant="secondary" size="md" onPress={handleLogout}>
-        Çıkış Yap
-      </Button>
-    </View>
+    </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
   screen: {
     flex: 1,
-    backgroundColor: colors.slate[0],
     alignItems: 'center',
     justifyContent: 'center',
     paddingHorizontal: 32,
