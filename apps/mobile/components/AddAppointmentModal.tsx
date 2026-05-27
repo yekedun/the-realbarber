@@ -36,7 +36,7 @@
  *         main "{curSvc.label} · {dateLabel} · {slot}" (14px SemiBold marginTop 6 ink-900)
  *         sub  "Bitiş: {endTime} ({curSvc.dur} dk)"   (12px Regular fg-3 marginTop 4)
  */
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import {
   View,
   Text,
@@ -195,16 +195,31 @@ export function AddAppointmentModal({
   });
 
   /* Build date label for ÖZET card */
-  const TODAY_B = new Date();
-  const days    = Array.from({ length: 7 }, (_, i) => {
-    const d = new Date(TODAY_B);
-    d.setDate(TODAY_B.getDate() - 2 + i);
-    return d;
-  });
-  const selDate   = days[dayIdx];
-  const dateLabel = `${selDate.getDate()} ${TR_MON_S2[selDate.getMonth()]}`;
-  const endTime   = slot && curSvc ? addMins(slot, curSvc.dur) : null;
-  const timeSlots = generateAppointmentTimesForDate(selDate, workingHours, curSvc?.dur ?? 30);
+  const days = useMemo(() => {
+    const today = new Date();
+    return Array.from({ length: 7 }, (_, i) => {
+      const d = new Date(today);
+      d.setDate(today.getDate() - 2 + i);
+      return d;
+    });
+  }, []); // days array is always relative to today at mount — stable within modal session
+
+  const selDate = days[dayIdx];
+
+  const dateLabel = useMemo(
+    () => `${selDate.getDate()} ${TR_MON_S2[selDate.getMonth()]}`,
+    [selDate],
+  );
+
+  const endTime = useMemo(
+    () => (slot && curSvc ? addMins(slot, curSvc.dur) : null),
+    [slot, curSvc],
+  );
+
+  const timeSlots = useMemo(
+    () => generateAppointmentTimesForDate(selDate, workingHours, curSvc?.dur ?? 30),
+    [selDate, workingHours, curSvc],
+  );
 
   function handleSave() {
     if (!canSave) return;
