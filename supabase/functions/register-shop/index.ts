@@ -20,6 +20,11 @@ function escapeHtml(s: string): string {
     .replace(/'/g, "&#x27;");
 }
 
+function isValidPhone(phone: string): boolean {
+  const digits = phone.replace(/[\s\-\(\)]/g, "");
+  return /^(\+90|0)?[5][0-9]{9}$/.test(digits) || /^[0-9]{10,15}$/.test(digits);
+}
+
 serve(async (req) => {
   if (req.method === "OPTIONS") return corsOptions();
   if (req.method !== "POST") return error("Method not allowed", 405);
@@ -53,6 +58,9 @@ serve(async (req) => {
   const { shop_name, phone } = body;
   if (!shop_name?.trim()) return error("Dükkan adı zorunlu");
   if (!phone?.trim()) return error("Telefon zorunlu");
+  if (!isValidPhone(phone.trim())) {
+    return error("Geçersiz telefon numarası. Lütfen geçerli bir numara girin.", 400);
+  }
 
   const baseSlug = toSlug(shop_name.trim()) || user.id.slice(0, 8);
   let slug = baseSlug;

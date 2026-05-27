@@ -102,6 +102,11 @@ function mapRpcErrorStatus(code?: string): number {
   return 500;
 }
 
+function isValidPhone(phone: string): boolean {
+  const digits = phone.replace(/[\s\-\(\)]/g, "");
+  return /^(\+90|0)?[5][0-9]{9}$/.test(digits) || /^[0-9]{10,15}$/.test(digits);
+}
+
 serve(async (req) => {
   if (req.method === "OPTIONS") return corsOptions();
   if (req.method !== "POST") return error("Method not allowed", 405);
@@ -134,6 +139,9 @@ serve(async (req) => {
     return error("shop_slug, service_id, starts_at, customer_name zorunlu");
   }
   if (customer_name.trim().length < 2) return error("Isim en az 2 karakter olmali");
+  if (customer_phone && !isValidPhone(customer_phone.trim())) {
+    return error("Geçersiz müşteri telefon numarası", 400);
+  }
 
   const slotDate = new Date(starts_at);
   if (isNaN(slotDate.getTime())) return error("Gecersiz starts_at");
