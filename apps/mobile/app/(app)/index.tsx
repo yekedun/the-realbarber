@@ -602,12 +602,12 @@ const styles = StyleSheet.create({
   },
 
   scroll: { flex: 1 },
-  /* ScrollView content: padding '20px 20px 100px', gap 8 */
+  /* ScrollView content: padding '20px 20px 100px', gap 10 */
   scrollContent: {
     paddingHorizontal: 20,
     paddingTop: 20,
     paddingBottom: 100,
-    gap: 8,
+    gap: 10,
   },
 
   /* AppointmentCard: borderRadius 12, padding 14, flex row, gap 14, border 1px
