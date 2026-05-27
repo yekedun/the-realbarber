@@ -11,6 +11,15 @@ function toSlug(name: string): string {
     .replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "").slice(0, 60);
 }
 
+function escapeHtml(s: string): string {
+  return s
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#x27;");
+}
+
 serve(async (req) => {
   if (req.method === "OPTIONS") return corsOptions();
   if (req.method !== "POST") return error("Method not allowed", 405);
@@ -48,7 +57,7 @@ serve(async (req) => {
   const baseSlug = toSlug(shop_name.trim()) || user.id.slice(0, 8);
   let slug = baseSlug;
   let suffix = 2;
-  while (true) {
+  for (let i = 0; i < 10; i++) {
     const { data: s } = await admin.from("shops").select("id").eq("slug", slug).maybeSingle();
     if (!s) break;
     slug = `${baseSlug}-${suffix++}`;
@@ -126,9 +135,9 @@ serve(async (req) => {
   }
 
   const resendKey = Deno.env.get("RESEND_API_KEY");
-  const adminEmail = Deno.env.get("ADMIN_EMAIL") ?? "emreyek29@gmail.com";
+  const adminEmail = Deno.env.get("ADMIN_EMAIL");
   const fromEmail = Deno.env.get("SYSTEM_FROM_EMAIL") ?? "sistem@siradaki.app";
-  if (resendKey) {
+  if (resendKey && adminEmail) {
     await fetch("https://api.resend.com/emails", {
       method: "POST",
       headers: {
@@ -138,10 +147,12 @@ serve(async (req) => {
       body: JSON.stringify({
         from: fromEmail,
         to: adminEmail,
-        subject: `Yeni başvuru: ${shop_name.trim()}`,
-        html: `<p><b>${shop_name.trim()}</b> dükkanı onay bekliyor.</p><p>Telefon: ${phone}</p><p>Slug: ${shop.slug}</p><p><a href="https://siradaki.app/admin">Admin panelini aç</a></p>`,
+        subject: `Yeni başvuru: ${escapeHtml(shop_name.trim())}`,
+        html: `<p><b>${escapeHtml(shop_name.trim())}</b> dükkanı onay bekliyor.</p><p>Telefon: ${escapeHtml(phone)}</p><p>Slug: ${escapeHtml(shop.slug)}</p><p><a href="https://siradaki.app/admin">Admin panelini aç</a></p>`,
       }),
-    }).catch(() => {});
+    }).catch((e) => console.error("[register-shop] Admin email send failed:", e));
+  } else if (resendKey && !adminEmail) {
+    console.error("[register-shop] ADMIN_EMAIL env var missing — admin email not sent");
   }
 
   return json({ shop }, 201);
