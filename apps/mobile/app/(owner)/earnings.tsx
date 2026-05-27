@@ -24,6 +24,7 @@ import {
 import { colors } from '../../lib/theme';
 import { supabase } from '../../lib/supabase';
 import { estimatedAppointmentRevenueCents } from '../../lib/revenue-mappers';
+import { useShop } from '../../lib/ShopContext';
 
 /* ─── Types ─────────────────────────────────────────────────── */
 
@@ -56,9 +57,10 @@ function Chip({ selected, onPress, children }: ChipProps) {
 /* ─── Main Screen ───────────────────────────────────────────── */
 
 export default function EarningsScreen() {
+  const { shopId, staffList } = useShop();
+  const barberIds = staffList.map(b => b.id);
+
   const [period, setPeriod] = useState<Period>('30');
-  const [shopId, setShopId] = useState<string | null>(null);
-  const [barberIds, setBarberIds] = useState<string[]>([]);
   const [periodCiro,     setPeriodCiro]     = useState('—');
   const [periodKomisyon, setPeriodKomisyon] = useState('—');
   const [periodDukkan,   setPeriodDukkan]   = useState('—');
@@ -72,23 +74,9 @@ export default function EarningsScreen() {
   };
 
   useEffect(() => {
-    loadShopData();
-  }, []);
-
-  async function loadShopData() {
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return;
-    const { data: shopData } = await supabase.from('shops').select('id').or(`owner_user_id.eq.${user.id},owner_id.eq.${user.id}`).maybeSingle();
-    if (!shopData) return;
-    setShopId(shopData.id);
-    const { data: barbers } = await supabase.from('staff').select('id, name').eq('shop_id', shopData.id).eq('is_active', true);
-    if (barbers) setBarberIds(barbers.map((b: any) => b.id));
-  }
-
-  useEffect(() => {
     if (!shopId || !barberIds.length) return;
     fetchEarnings();
-  }, [period, shopId, barberIds]);
+  }, [period, shopId, barberIds.join(',')]);
 
   async function fetchEarnings() {
     if (!shopId) return;
@@ -123,18 +111,19 @@ export default function EarningsScreen() {
         byBarber[a.staff_id].ciro += estimatedAppointmentRevenueCents(a);
         byBarber[a.staff_id].pay += a.completed_commission_cents ?? 0;
       }
-      // Fetch barber names to label distribution
+      // Use staffList from context to label distribution (no extra query)
       if (Object.keys(byBarber).length > 0) {
-        const { data: barbers } = await supabase.from('staff').select('id, name').in('id', Object.keys(byBarber));
-        if (barbers) {
-          setStaffDist(barbers.map((b: any) => ({
-            id: b.id,
-            name: b.name,
-            appts: byBarber[b.id]?.appts ?? 0,
-            ciro: formatCents(byBarber[b.id]?.ciro ?? 0) + ' TL',
-            pay: formatCents(byBarber[b.id]?.pay ?? 0) + ' TL',
-          })));
-        }
+        setStaffDist(
+          staffList
+            .filter(b => byBarber[b.id])
+            .map(b => ({
+              id: b.id,
+              name: b.name,
+              appts: byBarber[b.id]?.appts ?? 0,
+              ciro: formatCents(byBarber[b.id]?.ciro ?? 0) + ' TL',
+              pay: formatCents(byBarber[b.id]?.pay ?? 0) + ' TL',
+            })),
+        );
       } else {
         setStaffDist([]);
       }

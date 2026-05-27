@@ -59,6 +59,7 @@ import { appointmentRowToAgendaItem } from '../../lib/appointment-mappers';
 import { formatTime, translateReason, AppointmentState as AppState } from '../../lib/utils';
 import { AddAppointmentModal, ServiceOption, StaffOption } from '../../components/AddAppointmentModal';
 import { AppointmentDetailSheet, AppointmentDetail } from '../../components/AppointmentDetailSheet';
+import { useShop } from '../../lib/ShopContext';
 
 
 interface AppItem {
@@ -106,52 +107,18 @@ function getToday(): Date {
 }
 
 export default function AgendaScreen() {
+  const { shopId, shopSlug, workingHours, services, staffList: barberList, reload } = useShop();
+  const shopWorkingHours = workingHours as AppointmentWorkingHours | null;
+
   const [selectedDate, setSelectedDate] = useState<Date>(getToday);
   const [cols, setCols] = useState<StaffCol[]>(INIT_COLS);
-  const [shopId, setShopId] = useState<string | null>(null);
-  const [shopSlug, setShopSlug] = useState<string | null>(null);
-  const [shopWorkingHours, setShopWorkingHours] = useState<AppointmentWorkingHours | null>(null);
-  const [barberList, setBarberList] = useState<{ id: string; name: string }[]>([]);
   const [showAdd, setShowAdd] = useState(false);
-  const [services, setServices] = useState<ServiceOption[]>([]);
   const [showDetail, setShowDetail] = useState(false);
   const [selectedAppt, setSelectedAppt] = useState<AppointmentDetail | null>(null);
 
-  async function loadShopAndChildren() {
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return;
-    const { data: shopData, error: shopErr } = await supabase
-      .from('shops')
-      .select('id, slug, working_hours')
-      .or(`owner_user_id.eq.${user.id},owner_id.eq.${user.id}`)
-      .maybeSingle();
-    if (shopErr) { console.warn('[agenda] shops query error:', shopErr); return; }
-    if (!shopData) return;
-    setShopId(shopData.id);
-    setShopSlug(shopData.slug);
-    setShopWorkingHours((shopData as any).working_hours ?? null);
-    const { data: barbers, error: staffErr } = await supabase.from('staff').select('id, name').eq('shop_id', shopData.id).eq('is_active', true);
-    if (staffErr) console.warn('[agenda] staff query error:', staffErr);
-    setBarberList((barbers ?? []) as { id: string; name: string }[]);
-    const { data: svcs, error: svcErr } = await supabase.from('services')
-      .select('id, name, duration_min, price_cents')
-      .eq('shop_id', shopData.id)
-      .eq('is_active', true);
-    if (svcErr) console.warn('[agenda] services query error:', svcErr);
-    setServices((svcs ?? []).map((s: any) => ({
-      id: s.id,
-      label: s.name,
-      dur: s.duration_min,
-      price: `${Math.round(s.price_cents / 100)}₺`,
-    })));
-  }
-
-  useEffect(() => { loadShopAndChildren(); }, []);
-
-  // Refresh services + staff when the Add modal opens so new entries from
-  // other screens (services, team) appear without restart.
+  // Refresh context (services + staff) when modal opens so newly added entries appear
   useEffect(() => {
-    if (showAdd) loadShopAndChildren();
+    if (showAdd) reload();
   }, [showAdd]);
 
   const loadAgenda = useCallback(async () => {

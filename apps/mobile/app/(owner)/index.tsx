@@ -56,6 +56,7 @@ import { SectionLabel } from '../../components/ds/SectionLabel';
 import { Chip } from '../../components/ds/Chip';
 import { supabase } from '../../lib/supabase';
 import { estimatedAppointmentRevenueCents } from '../../lib/revenue-mappers';
+import { useShop } from '../../lib/ShopContext';
 
 /* ── Sparkline (bar-chart approximation in RN) ──────────────── */
 function Sparkline({ data, dark }: { data: number[]; dark: boolean }) {
@@ -227,45 +228,34 @@ const kpi = StyleSheet.create({
 
 /* ── Main Screen ─────────────────────────────────────────────── */
 export default function OzetScreen() {
+  const { shopId, staffList: contextStaff } = useShop();
   const [filter,     setFilter]     = useState('all');
   const [refreshing, setRefreshing] = useState(false);
   const [kpiTotal,     setKpiTotal]     = useState('—');
   const [kpiCompleted, setKpiCompleted] = useState('—');
   const [kpiRevenue,   setKpiRevenue]   = useState('—');
-  const [staffList, setStaffList] = useState<{id:string;name:string}[]>([{id:'all',name:'Tüm Ekip'}]);
+  const staffList = [{ id: 'all', name: 'Tüm Ekip' }, ...contextStaff];
   const [topService, setTopService] = useState<{name:string;pct:string} | null>(null);
   const [busiestDay, setBusiestDay] = useState<{name:string;count:string} | null>(null);
   const [staffStats, setStaffStats] = useState<{id:string;name:string;count:number}[]>([]);
 
   useEffect(() => {
-    loadSummary();
-  }, [filter]);
+    if (shopId && contextStaff.length) loadSummary();
+  }, [filter, shopId, contextStaff]);
 
   async function loadSummary() {
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return;
-    const { data: shopData, error: shopErr } = await supabase
-      .from('shops')
-      .select('id')
-      .or(`owner_user_id.eq.${user.id},owner_id.eq.${user.id}`)
-      .maybeSingle();
-    if (shopErr) { console.warn('[owner-summary] shops query error:', shopErr); return; }
-    if (!shopData) return;
-
-    const { data: barbers, error: staffErr } = await supabase.from('staff').select('id, name').eq('shop_id', shopData.id).eq('is_active', true);
-    if (staffErr) { console.warn('[owner-summary] staff query error:', staffErr); return; }
-    if (!barbers) return;
-
-    setStaffList([{ id: 'all', name: 'Tüm Ekip' }, ...(barbers as any[]).map((b: any) => ({ id: b.id, name: b.name }))]);
+    if (!shopId) return;
+    const barbers = contextStaff;
+    if (!barbers.length) return;
 
     const dayStart = new Date(); dayStart.setHours(0,0,0,0);
     const dayEnd = new Date(); dayEnd.setDate(dayEnd.getDate()+1); dayEnd.setHours(0,0,0,0);
 
-    const filteredIds = filter === 'all' ? (barbers as any[]).map((b: any) => b.id) : [filter];
+    const filteredIds = filter === 'all' ? barbers.map((b) => b.id) : [filter];
     if (!filteredIds.length) { setKpiTotal('0'); setKpiCompleted('0'); setKpiRevenue('—'); return; }
 
     const { data: appts, error: apptsErr } = await supabase.rpc('get_shop_appointments_revenue', {
-      p_shop_id: shopData.id,
+      p_shop_id: shopId,
       p_from: dayStart.toISOString(),
       p_to: dayEnd.toISOString(),
       p_staff_ids: filteredIds,
@@ -282,13 +272,13 @@ export default function OzetScreen() {
     }
 
     // Öngörüler + Usta Bazında — 30-day range, all staff
-    const allIds = (barbers as any[]).map((b: any) => b.id);
+    const allIds = barbers.map((b) => b.id);
     if (!allIds.length) return;
     const monthStart = new Date(); monthStart.setDate(monthStart.getDate() - 29); monthStart.setHours(0,0,0,0);
     const monthEnd = new Date(); monthEnd.setDate(monthEnd.getDate() + 1); monthEnd.setHours(0,0,0,0);
 
     const { data: monthly } = await supabase.rpc('get_shop_appointments_revenue', {
-      p_shop_id: shopData.id,
+      p_shop_id: shopId,
       p_from: monthStart.toISOString(),
       p_to: monthEnd.toISOString(),
       p_staff_ids: allIds,
@@ -322,13 +312,13 @@ export default function OzetScreen() {
       const staffCount = new Map<string, number>();
       for (const a of rows) { staffCount.set(a.staff_id, (staffCount.get(a.staff_id) ?? 0) + 1); }
       setStaffStats(
-        (barbers as any[]).map((b: any) => ({ id: b.id, name: b.name, count: staffCount.get(b.id) ?? 0 }))
+        barbers.map((b) => ({ id: b.id, name: b.name, count: staffCount.get(b.id) ?? 0 }))
           .sort((a, b) => b.count - a.count),
       );
     } else {
       setTopService(null);
       setBusiestDay(null);
-      setStaffStats((barbers as any[]).map((b: any) => ({ id: b.id, name: b.name, count: 0 })));
+      setStaffStats(barbers.map((b) => ({ id: b.id, name: b.name, count: 0 })));
     }
   }
 

@@ -12,11 +12,13 @@
 import { Tabs } from 'expo-router';
 import { BarChart3, CalendarDays, Wallet, Users, Settings } from 'lucide-react-native';
 import { colors } from '../../lib/theme';
+import { ShopProvider } from '../../lib/ShopContext';
 
 const ICON_SIZE = 20;
 
 export default function OwnerLayout() {
   return (
+    <ShopProvider>
     <Tabs
       screenOptions={{
         headerShown: false,
@@ -75,5 +77,6 @@ export default function OwnerLayout() {
       <Tabs.Screen name="onboarding" options={{ href: null }} />
       <Tabs.Screen name="services"   options={{ href: null }} />
     </Tabs>
+    </ShopProvider>
   );
 }
