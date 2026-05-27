@@ -294,23 +294,26 @@ export default function RandevularScreen() {
   const isEmpty = items.length === 0;
 
   useEffect(() => {
+    let isMounted = true;
     supabase.auth.getUser().then(({ data: { user } }) => {
-      if (!user) return;
+      if (!isMounted || !user) return;
       supabase.from('staff').select('id, shop_id').eq('user_id', user.id).eq('is_active', true).maybeSingle()
         .then(({ data }) => {
-          if (data) {
-            setStaffId((data as any).id);
-            supabase.from('shops').select('slug').eq('id', (data as any).shop_id).maybeSingle()
-              .then(({ data: shopData }) => {
-                if (shopData) setStaffShopSlug((shopData as any).slug);
-              });
-            supabase.from('services').select('id, name, duration_min, price_cents').eq('shop_id', (data as any).shop_id).eq('is_active', true)
-              .then(({ data: svcs }) => {
-                if (svcs) setServices((svcs as any[]).map(s => ({ id: s.id, label: s.name, dur: s.duration_min, price: `${Math.round(s.price_cents/100)}₺` })));
-              });
-          }
+          if (!isMounted || !data) return;
+          setStaffId((data as any).id);
+          supabase.from('shops').select('slug').eq('id', (data as any).shop_id).maybeSingle()
+            .then(({ data: shopData }) => {
+              if (!isMounted) return;
+              if (shopData) setStaffShopSlug((shopData as any).slug);
+            });
+          supabase.from('services').select('id, name, duration_min, price_cents').eq('shop_id', (data as any).shop_id).eq('is_active', true)
+            .then(({ data: svcs }) => {
+              if (!isMounted) return;
+              if (svcs) setServices((svcs as any[]).map(s => ({ id: s.id, label: s.name, dur: s.duration_min, price: `${Math.round(s.price_cents/100)}₺` })));
+            });
         });
     });
+    return () => { isMounted = false; };
   }, []);
 
   useEffect(() => {
