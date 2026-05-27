@@ -340,9 +340,9 @@ export default function RandevularScreen() {
       const timeStr = formatTime(start);
       const state: ApptState = a.status === 'completed' ? 'done'
         : (start <= now && now < end) ? 'active' : 'upcoming';
-      const item: ListItem = { kind: 'appt', id: a.id, time: timeStr, duration: a.duration_min ?? 30, name: a.customer_name, service: a.service_name, state };
+      const item: ListItem = { kind: 'appt', id: a.id, time: timeStr, duration: a.duration_min ?? 30, name: a.customer_name, service: a.service_name, state, isDetail: state !== 'done' };
       if (state === 'done') done.push(item);
-      else if (state === 'active') active.push({ ...item, isDetail: true });
+      else if (state === 'active') active.push(item);
       else upcoming.push({ ...item, _startMs: start.getTime() } as any);
     }
 
@@ -365,6 +365,23 @@ export default function RandevularScreen() {
     }
 
     setItems(result);
+  }
+
+  async function openDetail(item: ListItem & { kind: 'appt' }) {
+    const { data } = await supabase
+      .from('appointments')
+      .select('customer_phone')
+      .eq('id', item.id)
+      .maybeSingle();
+    setSelectedAppt({
+      id: item.id,
+      time: item.time,
+      duration: item.duration,
+      customerName: item.name,
+      customerPhone: (data as any)?.customer_phone ?? null,
+      serviceName: item.service,
+    });
+    setShowDetail(true);
   }
 
   // Derive displayed date for header meta
@@ -418,10 +435,7 @@ export default function RandevularScreen() {
                 name={item.name}
                 service={item.service}
                 state={item.state}
-                onPress={item.isDetail ? () => {
-                  setSelectedAppt({ id: item.id, time: item.time, duration: item.duration, customerName: item.name, customerPhone: null, serviceName: item.service });
-                  setShowDetail(true);
-                } : undefined}
+                onPress={item.isDetail ? () => openDetail(item) : undefined}
               />
             );
           })}
