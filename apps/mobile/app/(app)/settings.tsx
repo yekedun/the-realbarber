@@ -12,8 +12,8 @@ import {
   Pressable,
   StyleSheet,
   Alert,
-  Linking,
 } from 'react-native';
+import * as WebBrowser from 'expo-web-browser';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import * as Clipboard from 'expo-clipboard';
 import { useRouter } from 'expo-router';
@@ -252,19 +252,19 @@ export default function HesabimScreen() {
         {/* Yasal */}
         <View style={styles.legalSection}>
           <TouchableOpacity
-            onPress={() => Linking.openURL('https://siradaki.app/kullanim-kosullari')}
+            onPress={() => WebBrowser.openBrowserAsync('https://siradaki.app/kullanim-kosullari')}
             activeOpacity={0.7}
           >
             <Text style={styles.legalLink}>Kullanım Koşulları</Text>
           </TouchableOpacity>
           <TouchableOpacity
-            onPress={() => Linking.openURL('https://siradaki.app/gizlilik-politikasi')}
+            onPress={() => WebBrowser.openBrowserAsync('https://siradaki.app/gizlilik-politikasi')}
             activeOpacity={0.7}
           >
             <Text style={styles.legalLink}>Gizlilik Politikası</Text>
           </TouchableOpacity>
           <TouchableOpacity
-            onPress={() => Linking.openURL('https://siradaki.app/cerez-politikasi')}
+            onPress={() => WebBrowser.openBrowserAsync('https://siradaki.app/cerez-politikasi')}
             activeOpacity={0.7}
           >
             <Text style={styles.legalLink}>Çerez Politikası</Text>

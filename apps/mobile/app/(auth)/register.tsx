@@ -45,8 +45,8 @@ import {
   KeyboardAvoidingView,
   Platform,
   ScrollView,
-  Linking,
 } from 'react-native';
+import * as WebBrowser from 'expo-web-browser';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import { colors } from '../../lib/theme';
@@ -324,12 +324,12 @@ export default function RegisterScreen() {
           {"Kayıt olarak "}
           <Text
             style={styles.finePrintLink}
-            onPress={() => Linking.openURL("https://siradaki.app/kullanim-kosullari")}
+            onPress={() => WebBrowser.openBrowserAsync("https://siradaki.app/kullanim-kosullari")}
           >{"Kullanım Koşulları"}</Text>
           {"’nı ve "}
           <Text
             style={styles.finePrintLink}
-            onPress={() => Linking.openURL("https://siradaki.app/gizlilik-politikasi")}
+            onPress={() => WebBrowser.openBrowserAsync("https://siradaki.app/gizlilik-politikasi")}
           >{"Gizlilik Politikası"}</Text>
           {"’nı kabul etmiş olursun."}
         </Text>

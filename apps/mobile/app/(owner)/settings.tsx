@@ -49,7 +49,6 @@ import React, { useEffect, useRef, useState } from 'react';
 import {
   Alert,
   Animated,
-  Linking,
   Modal,
   Pressable,
   ScrollView,
@@ -61,6 +60,7 @@ import {
   View,
 } from 'react-native';
 import * as Clipboard from 'expo-clipboard';
+import * as WebBrowser from 'expo-web-browser';
 import { useRouter } from 'expo-router';
 import { colors } from '../../lib/theme';
 import { supabase } from '../../lib/supabase';
@@ -1015,19 +1015,19 @@ export default function SettingsScreen() {
         {/* Yasal */}
         <View style={styles.legalSection}>
           <TouchableOpacity
-            onPress={() => Linking.openURL('https://siradaki.app/kullanim-kosullari')}
+            onPress={() => WebBrowser.openBrowserAsync('https://siradaki.app/kullanim-kosullari')}
             activeOpacity={0.7}
           >
             <Text style={styles.legalLink}>Kullanım Koşulları</Text>
           </TouchableOpacity>
           <TouchableOpacity
-            onPress={() => Linking.openURL('https://siradaki.app/gizlilik-politikasi')}
+            onPress={() => WebBrowser.openBrowserAsync('https://siradaki.app/gizlilik-politikasi')}
             activeOpacity={0.7}
           >
             <Text style={styles.legalLink}>Gizlilik Politikası</Text>
           </TouchableOpacity>
           <TouchableOpacity
-            onPress={() => Linking.openURL('https://siradaki.app/cerez-politikasi')}
+            onPress={() => WebBrowser.openBrowserAsync('https://siradaki.app/cerez-politikasi')}
             activeOpacity={0.7}
           >
             <Text style={styles.legalLink}>Çerez Politikası</Text>
