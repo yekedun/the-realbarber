@@ -6,7 +6,7 @@ export const BOOKING_GRACE_PERIOD_MIN = 5;
 
 export const MIN_BOOKING_NOTICE_MINUTES = 60; // 1 saat
 export const MAX_BOOKING_DAYS = 30; // 30 gün
-export const MIN_CANCEL_NOTICE_MINUTES = 120; // 2 saat
+export const MIN_CANCEL_NOTICE_MINUTES = 30; // 30 dakika
 
 
 

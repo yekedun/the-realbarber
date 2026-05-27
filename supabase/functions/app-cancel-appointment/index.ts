@@ -134,7 +134,7 @@ serve(async (req) => {
   const minCancelMs = MIN_CANCEL_NOTICE_MINUTES * 60_000;
   if (new Date(appointment.starts_at).getTime() - Date.now() < minCancelMs) {
     return error(
-      `Randevuya ${MIN_CANCEL_NOTICE_MINUTES / 60} saatten az kaldığı için iptal edilemez. Lütfen dükkan ile iletişime geçin.`,
+      `Randevuya ${MIN_CANCEL_NOTICE_MINUTES} dakikadan az kaldığı için iptal edilemez. Lütfen dükkan ile iletişime geçin.`,
       409
     );
   }
