@@ -56,6 +56,20 @@ interface StaffMember {
   _is_active?: boolean;
 }
 
+interface StaffRow {
+  id: string;
+  name: string | null;
+  phone?: string | null;
+  role: string | null;
+  is_active: boolean;
+}
+
+interface CommissionRow {
+  staff_id: string;
+  commission_type: string | null;
+  commission_rate_bps: number | null;
+}
+
 const INIT_STAFF: StaffMember[] = [];
 
 const TR_DAYS = ['Paz', 'Pzt', 'Sal', 'Çar', 'Per', 'Cum', 'Cmt'];
@@ -576,7 +590,7 @@ export default function TeamScreen() {
         .order('created_at'),
       supabase.rpc('get_staff_commission_configs', { p_shop_id: shopData.id }),
     ]);
-    let data: any[] | null = staffResult.data as any[] | null;
+    let data: StaffRow[] | null = staffResult.data as StaffRow[] | null;
     let staffErr = staffResult.error;
     if (isMissingColumnError(staffErr, 'staff.phone')) {
       const fallback = await supabase
@@ -584,15 +598,15 @@ export default function TeamScreen() {
         .select('id, name, is_active, role')
         .eq('shop_id', shopData.id)
         .order('created_at');
-      data = fallback.data;
+      data = fallback.data as StaffRow[] | null;
       staffErr = fallback.error;
     }
     if (staffErr) { console.warn('[team] staff error:', staffErr); Alert.alert('Hata', `Personel listesi yüklenemedi: ${staffErr.message}`); return; }
     if (commErr) console.warn('[team] commission RPC error:', commErr);
     const commByStaff = new Map<string, { type: string | null; bps: number | null }>();
-    (commData ?? []).forEach((c: any) => commByStaff.set(c.staff_id, { type: c.commission_type, bps: c.commission_rate_bps }));
+    (commData as CommissionRow[] | null ?? []).forEach((c) => commByStaff.set(c.staff_id, { type: c.commission_type, bps: c.commission_rate_bps }));
     console.log('[team] loaded', (data ?? []).length, 'staff for shop', shopData.id);
-    const mapped = (data ?? []).map((s: any) => {
+    const mapped = (data ?? []).map((s) => {
       const c = commByStaff.get(s.id);
       return {
         id: s.id,
