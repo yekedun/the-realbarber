@@ -37,7 +37,7 @@
  *   (screens.jsx uses size="lg" right:20 shadow:'0 12px 24px -10px rgba(30,58,138,0.4)')
  *   → use size="lg" right:20 per screens.jsx (the primary reference)
  */
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { createDebounce } from '../../lib/debounce';
 import {
   View,
@@ -117,10 +117,17 @@ export default function AgendaScreen() {
   const [showDetail, setShowDetail] = useState(false);
   const [selectedAppt, setSelectedAppt] = useState<AppointmentDetail | null>(null);
 
+  const isMountedRef = useRef(true);
+
   // Refresh context (services + staff) when modal opens so newly added entries appear
   useEffect(() => {
     if (showAdd) reload();
   }, [showAdd]);
+
+  // Cleanup: mark component as unmounted to prevent stale state updates
+  useEffect(() => {
+    return () => { isMountedRef.current = false; };
+  }, []);
 
   const loadAgenda = useCallback(async () => {
     const barbers = barberList;
@@ -165,6 +172,7 @@ export default function AgendaScreen() {
       };
     });
 
+    if (!isMountedRef.current) return;
     setCols(newCols);
   }, [barberList, selectedDate]);
 

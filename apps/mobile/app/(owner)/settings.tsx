@@ -689,7 +689,9 @@ export default function SettingsScreen() {
   const [prefs,              setPrefs]              = useState<NotificationPrefs>(DEFAULT_NOTIFICATION_PREFS);
 
   useEffect(() => {
+    let isMounted = true;
     supabase.auth.getUser().then(({ data: { user }, error: authErr }) => {
+      if (!isMounted) return;
       if (authErr) console.warn('[settings] auth error:', authErr);
       if (!user) { console.warn('[settings] no user — not logged in'); return; }
       supabase
@@ -698,6 +700,7 @@ export default function SettingsScreen() {
         .or(`owner_user_id.eq.${user.id},owner_id.eq.${user.id}`)
         .maybeSingle()
         .then(({ data, error }) => {
+          if (!isMounted) return;
           if (error) { console.warn('[settings] shops query error:', error); Alert.alert('Hata', `Dükkan yüklenemedi: ${error.message}`); return; }
           if (!data) {
             console.warn('[settings] no shop row for user', user.id);
@@ -723,7 +726,8 @@ export default function SettingsScreen() {
             .eq('user_id', user.id)
             .maybeSingle()
             .then(({ data: staffData }) => {
-              const row = staffData as any;
+              if (!isMounted) return;
+              const row = staffData as { id: string; notification_prefs: unknown } | null;
               setOwnerStaffId(row?.id ?? null);
               setPrefs(normalizePrefs(row?.notification_prefs));
             });
@@ -735,6 +739,7 @@ export default function SettingsScreen() {
           // Fetch widget tokens
           supabase.from('widget_tokens').select('id, token_hash, label, last_used_at').eq('shop_id', data.id)
             .then(({ data: tokens }) => {
+              if (!isMounted) return;
               setWidgetLinks((tokens ?? []).map((t: any) => ({
                 id: t.id,
                 shortId: `${t.token_hash.slice(0, 8)}…`,
@@ -743,6 +748,7 @@ export default function SettingsScreen() {
             });
         });
     });
+    return () => { isMounted = false; };
   }, []);
 
   async function updatePref(key: keyof NotificationPrefs, value: boolean) {

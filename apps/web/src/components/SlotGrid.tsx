@@ -1,7 +1,22 @@
 'use client';
 
+import { useEffect, useState } from 'react';
+
 // SlotGrid — from index.html slot section
 // 5-col grid on ≥480px, 4-col on <480px
+
+function useColumns(): number {
+  const [cols, setCols] = useState(5);
+  useEffect(() => {
+    function update() {
+      setCols(window.innerWidth < 400 ? 4 : 5);
+    }
+    update();
+    window.addEventListener('resize', update);
+    return () => window.removeEventListener('resize', update);
+  }, []);
+  return cols;
+}
 
 export interface Slot {
   time: string;
@@ -25,11 +40,12 @@ export function SlotGrid({
   loading, error, onRetry,
   isClosed, isAllFull,
 }: SlotGridProps) {
+  const cols = useColumns();
 
   /* ── Loading skeleton ── */
   if (loading) {
     return (
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: 8 }}>
+      <div style={{ display: 'grid', gridTemplateColumns: `repeat(${cols}, 1fr)`, gap: 8 }}>
         {Array.from({ length: 10 }).map((_, i) => (
           <div
             key={i}
@@ -91,7 +107,7 @@ export function SlotGrid({
 
   /* ── Grid of slots ── */
   return (
-    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: 8 }}>
+    <div style={{ display: 'grid', gridTemplateColumns: `repeat(${cols}, 1fr)`, gap: 8 }}>
       {slots.map(s => (
         <button
           key={s.time}
@@ -105,6 +121,7 @@ export function SlotGrid({
             height: 50,
             borderRadius: 10,
             cursor: s.available ? 'pointer' : 'not-allowed',
+            pointerEvents: !s.available ? ('none' as const) : undefined,
             border: `1.5px solid ${
               selected === s.time ? 'var(--brand-600)'
               : !s.available ? 'transparent'

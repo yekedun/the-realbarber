@@ -89,10 +89,15 @@ export function getDayBoundsUTC(
  * timezone'un yerel saatini Intl ile oku, fark kadar düzelt.
  */
 // F-2J: Intl.DateTimeFormat constructor pahalı (~100-500µs). Module-level cache.
+const MAX_TZ_CACHE = 50;
 const tzFormatterCache = new Map<string, Intl.DateTimeFormat>();
 function getTzFormatter(timezone: string): Intl.DateTimeFormat {
   let f = tzFormatterCache.get(timezone);
   if (!f) {
+    if (tzFormatterCache.size >= MAX_TZ_CACHE) {
+      const firstKey = tzFormatterCache.keys().next().value;
+      if (firstKey !== undefined) tzFormatterCache.delete(firstKey);
+    }
     f = new Intl.DateTimeFormat("en-US", {
       timeZone: timezone,
       year: "numeric",

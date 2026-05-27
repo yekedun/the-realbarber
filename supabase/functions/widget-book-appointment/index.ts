@@ -101,6 +101,26 @@ serve(async (req) => {
   if (slotDate.getTime() < Date.now() - 5 * 60_000) return error("Geçmiş bir saate randevu oluşturulamaz", 400);
 
   const supabase = createAdminClient();
+
+  // Validate staff_id belongs to this shop (defense against cross-shop booking)
+  if (staff_id) {
+    const { data: shopCheck } = await supabase
+      .from("shops")
+      .select("id")
+      .eq("slug", shop_slug)
+      .maybeSingle();
+    if (!shopCheck) return error("Dükkan bulunamadı", 404);
+
+    const { data: staffCheck } = await supabase
+      .from("staff")
+      .select("id")
+      .eq("id", staff_id)
+      .eq("shop_id", shopCheck.id)
+      .eq("is_active", true)
+      .maybeSingle();
+    if (!staffCheck) return error("Geçersiz personel", 403);
+  }
+
   const { data, error: rpcError } = await supabase.rpc("create_appointment_atomic" as never, {
     p_shop_slug: shop_slug,
     p_shop_id: null,

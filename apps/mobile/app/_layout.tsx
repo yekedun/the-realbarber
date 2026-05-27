@@ -44,7 +44,7 @@ export default function RootLayout() {
     routedRef.current = true;
 
     determineUserRole(session.user.id).then(role => {
-      router.replace(routeForRole(role) as any);
+      router.replace(routeForRole(role));
     });
   }, [loaded, session, firstSegment]);
 

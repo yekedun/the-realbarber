@@ -4,7 +4,7 @@
 // 4 states: form | loading | success | error
 // Error sub-types: conflict | generic
 
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 
 type ModalState = 'form' | 'loading' | 'success' | 'error';
 type ErrorType  = 'conflict' | 'generic';
@@ -296,11 +296,14 @@ export function BookingModal({
 }: BookingModalProps) {
   const [state,     setState]     = useState<ModalState>('form');
   const [errorType, setErrorType] = useState<ErrorType>('conflict');
+  const submittingRef = useRef(false);
 
   if (!open) return null;
   void shopId; // kept in props for future use
 
   async function handleConfirm(name: string, phone: string, note: string) {
+    if (submittingRef.current) return;
+    submittingRef.current = true;
     setState('loading');
     try {
       const res = await fetch(`${FN_BASE}/widget-book-appointment`, {
@@ -324,6 +327,8 @@ export function BookingModal({
     } catch {
       setErrorType('generic');
       setState('error');
+    } finally {
+      submittingRef.current = false;
     }
   }
 

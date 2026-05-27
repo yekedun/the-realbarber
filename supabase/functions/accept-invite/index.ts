@@ -88,11 +88,20 @@ serve(async (req) => {
   const baseSlug = toSlug(name) || user.id.slice(0, 8);
   let slug = baseSlug;
   let suffix = 2;
-  while (true) {
-    const { data: s } = await admin.from("staff").select("id")
-      .eq("shop_id", inviteRow.shop_id).eq("slug", slug).maybeSingle();
+  const MAX_SLUG_ATTEMPTS = 20;
+  for (let attempt = 0; attempt < MAX_SLUG_ATTEMPTS; attempt++) {
+    const { data: s } = await admin
+      .from("staff")
+      .select("id")
+      .eq("shop_id", inviteRow.shop_id)
+      .eq("slug", slug)
+      .maybeSingle();
     if (!s) break;
-    slug = `${baseSlug}-${suffix++}`;
+    if (attempt === MAX_SLUG_ATTEMPTS - 1) {
+      slug = `${user.id.slice(0, 8)}-${Date.now().toString(36)}`;
+    } else {
+      slug = `${baseSlug}-${suffix++}`;
+    }
   }
 
   const { data: staffMember, error: insertErr } = await admin.from("staff").insert({

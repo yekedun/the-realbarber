@@ -13,7 +13,7 @@
  *      Ayşe Yılmaz   · 22 tamamlanan randevu · Ciro 21.920 TL · Pay 0 TL
  */
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import {
   ScrollView,
   StyleSheet,
@@ -65,6 +65,7 @@ export default function EarningsScreen() {
   const [periodKomisyon, setPeriodKomisyon] = useState('—');
   const [periodDukkan,   setPeriodDukkan]   = useState('—');
   const [staffDist, setStaffDist] = useState<{ id: string; name: string; appts: number; ciro: string; pay: string }[]>([]);
+  const abortRef = useRef<AbortController | null>(null);
 
   interface CommissionStaffRow {
     staff_id: string;
@@ -86,10 +87,17 @@ export default function EarningsScreen() {
   useEffect(() => {
     if (!shopId || !barberIds.length) return;
     fetchEarnings();
+    return () => { abortRef.current?.abort(); };
   }, [period, shopId, barberIds.join(',')]);
 
   async function fetchEarnings() {
     if (!shopId) return;
+
+    abortRef.current?.abort();
+    const controller = new AbortController();
+    abortRef.current = controller;
+    const isCancelled = () => controller.signal.aborted;
+
     const now = new Date();
     let since: Date;
     if (period === 'day') { since = new Date(now); since.setHours(0,0,0,0); }
@@ -104,6 +112,8 @@ export default function EarningsScreen() {
       p_to: until.toISOString(),
       p_staff_ids: barberIds,
     });
+
+    if (isCancelled()) return;
 
     if (data) {
       const totalCiro = data.reduce((s: number, a: any) => s + estimatedAppointmentRevenueCents(a), 0);
@@ -146,6 +156,9 @@ export default function EarningsScreen() {
       p_from: fromDate,
       p_to: toDate,
     });
+
+    if (isCancelled()) return;
+
     if (!commErr && commData?.staff) {
       setCommRows(commData.staff as CommissionStaffRow[]);
     } else {

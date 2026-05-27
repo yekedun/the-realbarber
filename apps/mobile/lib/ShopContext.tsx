@@ -57,8 +57,8 @@ export function ShopProvider({ children }: { children: ReactNode }) {
       if (!shop || cancelled) { setLoading(false); return; }
 
       setShopId(shop.id);
-      setShopSlug((shop as any).slug);
-      setWorkingHours((shop as any).working_hours ?? null);
+      setShopSlug(shop.slug ?? null);
+      setWorkingHours((shop.working_hours as Record<string, unknown> | null) ?? null);
 
       const [{ data: staff }, { data: svcs }] = await Promise.all([
         supabase.from('staff').select('id, name').eq('shop_id', shop.id).eq('is_active', true),
@@ -66,13 +66,15 @@ export function ShopProvider({ children }: { children: ReactNode }) {
       ]);
 
       if (!cancelled) {
-        setStaffList((staff ?? []) as StaffOption[]);
+        setStaffList(
+          (staff ?? []).map(s => ({ id: s.id, name: s.name ?? '' }))
+        );
         setServices(
-          (svcs ?? []).map((s: any) => ({
+          (svcs ?? []).map((s) => ({
             id: s.id,
-            label: s.name,
-            dur: s.duration_min,
-            price: `${Math.round(s.price_cents / 100)}₺`,
+            label: s.name ?? '',
+            dur: s.duration_min ?? 30,
+            price: `${Math.round((s.price_cents ?? 0) / 100)}₺`,
           })),
         );
         setLoading(false);

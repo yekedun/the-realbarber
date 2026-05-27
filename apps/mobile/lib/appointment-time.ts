@@ -1,6 +1,11 @@
 function toMinutes(time: string): number {
-  const [hour, minute] = time.split(':').map(Number);
-  return hour * 60 + minute;
+  const parts = time.split(':');
+  if (parts.length !== 2) return NaN;
+  const h = Number(parts[0]);
+  const m = Number(parts[1]);
+  if (!Number.isInteger(h) || !Number.isInteger(m)) return NaN;
+  if (h < 0 || h > 23 || m < 0 || m > 59) return NaN;
+  return h * 60 + m;
 }
 
 function fromMinutes(minutes: number): string {
@@ -35,7 +40,12 @@ export function generateAppointmentTimes({
   durationMinutes?: number;
 }): string[] {
   const start = toMinutes(open);
-  const latestStart = toMinutes(close) - durationMinutes;
+  const closeMin = toMinutes(close);
+  if (isNaN(start) || isNaN(closeMin)) {
+    console.warn('[appointment-time] Invalid time string:', { open, close });
+    return [];
+  }
+  const latestStart = closeMin - durationMinutes;
   if (latestStart < start || stepMinutes <= 0) return [];
 
   const slots: string[] = [];
@@ -50,6 +60,10 @@ export function generateAppointmentTimesForDate(
   workingHours: AppointmentWorkingHours | null | undefined,
   durationMinutes = 30,
 ): string[] {
+  if (isNaN(date.getTime())) {
+    console.warn('[appointment-time] Invalid date passed to generateAppointmentTimesForDate');
+    return [];
+  }
   const key = WORKING_HOUR_KEYS[date.getDay()];
   const day = workingHours?.[key];
   if (day?.enabled === false) return [];
