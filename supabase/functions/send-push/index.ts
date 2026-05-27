@@ -16,20 +16,23 @@ serve(async (req) => {
   if (req.method === "OPTIONS") return corsOptions();
   if (req.method !== "POST") return error("Method not allowed", 405);
 
-  // Only internal edge function callers (service role JWT).
-  // Deployed with --no-verify-jwt; we verify the role claim manually.
+  // Only internal edge function callers (service role key).
+  // Timing-safe comparison against SUPABASE_SERVICE_ROLE_KEY env var.
   const authHeader = req.headers.get("Authorization") ?? "";
   if (!authHeader.startsWith("Bearer ")) return error("Yetkisiz", 403);
-  try {
-    // JWT uses base64url: replace - → + and _ → /, then pad to multiple of 4
-    const b64 = authHeader.slice(7).split(".")[1]!
-      .replace(/-/g, "+").replace(/_/g, "/");
-    const padded = b64 + "=".repeat((4 - b64.length % 4) % 4);
-    const payload = JSON.parse(atob(padded));
-    if (payload.role !== "service_role") return error("Yetkisiz", 403);
-  } catch {
-    return error("Yetkisiz", 403);
+  const token = authHeader.slice(7);
+  const svcKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "";
+  if (!svcKey) {
+    console.error("[send-push] SUPABASE_SERVICE_ROLE_KEY env var missing");
+    return error("Sunucu yapılandırma hatası", 500);
   }
+  const enc = new TextEncoder();
+  const tokenBytes = enc.encode(token);
+  const keyBytes   = enc.encode(svcKey);
+  let mismatch = tokenBytes.length !== keyBytes.length ? 1 : 0;
+  const len = Math.min(tokenBytes.length, keyBytes.length);
+  for (let i = 0; i < len; i++) mismatch |= tokenBytes[i] ^ keyBytes[i];
+  if (mismatch !== 0) return error("Yetkisiz", 403);
 
   let body: SendPushRequest;
   try {
