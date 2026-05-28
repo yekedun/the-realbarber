@@ -198,12 +198,14 @@ export default function LandingPage() {
             { label: 'Gizlilik', href: '/gizlilik-politikasi' },
             { label: 'Koşullar', href: '/kullanim-kosullari' },
             { label: 'Çerezler', href: '/cerez-politikasi' },
-            { label: 'İletişim', href: 'mailto:destek@siradaki.com' },
           ].map((l) => (
             <Link key={l.href} href={l.href} style={{ fontSize: 12, color: MUTE, textDecoration: 'none' }}>
               {l.label}
             </Link>
           ))}
+          <a href="mailto:destek@siradaki.com" style={{ fontSize: 12, color: MUTE, textDecoration: 'none' }}>
+            İletişim
+          </a>
         </div>
         <span style={{ fontFamily: MONO, fontSize: 11, color: '#C8C0B4' }}>
           © {new Date().getFullYear()}
