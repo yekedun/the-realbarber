@@ -80,7 +80,7 @@ serve(async (req) => {
   try {
     body = await req.json();
   } catch {
-    return error("Gecersiz JSON");
+    return error("Geçersiz JSON");
   }
 
   const {
@@ -98,10 +98,10 @@ serve(async (req) => {
   }
 
   if (customer_name.trim().length < 2) {
-    return error("Isim en az 2 karakter olmali");
+    return error("İsim en az 2 karakter olmalı");
   }
   if (!isValidPhone(customer_phone.trim())) {
-    return error("Gecersiz musteri telefon numarasi", 400);
+    return error("Geçersiz müşteri telefon numarası", 400);
   }
 
   const slotDate = new Date(starts_at);
@@ -144,7 +144,7 @@ serve(async (req) => {
   if (rpcError) {
     const status = mapRpcErrorStatus(rpcError.code);
     if (status === 500) console.error("create_appointment_atomic failed:", rpcError);
-    return error(rpcError.message ?? "Randevu olusturulamadi", status, {
+    return error(rpcError.message ?? "Randevu oluşturulamadı", status, {
       code: status === 429 ? "RATE_LIMITED" : status === 409 ? "BOOKING_CONFLICT" : "BOOKING_ERROR",
       should_refetch_availability: status === 409,
       ...(status === 429 ? { retry_after: 600 } : {}),

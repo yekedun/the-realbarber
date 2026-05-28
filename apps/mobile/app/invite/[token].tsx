@@ -24,7 +24,7 @@ export default function InviteScreen() {
   async function validateToken() {
     if (!token) {
       setState('error');
-      setMessage('Davet linki gecersiz.');
+      setMessage('Davet linki geçersiz.');
       return;
     }
 
@@ -37,7 +37,7 @@ export default function InviteScreen() {
     if (!res.ok) {
       const data = await res.json().catch(() => ({}));
       setState('error');
-      setMessage(data.error ?? 'Davet linki gecersiz.');
+      setMessage(data.error ?? 'Davet linki geçersiz.');
       return;
     }
 
@@ -56,7 +56,7 @@ export default function InviteScreen() {
     const session = (await supabase.auth.getSession()).data.session;
     if (!session) {
       setState('error');
-      setMessage('Oturum alinamadi, tekrar deneyin.');
+      setMessage('Oturum alınamadı, tekrar deneyin.');
       return;
     }
 
@@ -83,7 +83,7 @@ export default function InviteScreen() {
     return (
       <View style={styles.center}>
         <ActivityIndicator size="large" color={colors.brand[600]} />
-        <Text style={styles.sub}>Davet kontrol ediliyor...</Text>
+        <Text style={styles.sub}>Davet kontrol ediliyor…</Text>
       </View>
     );
   }
@@ -91,8 +91,8 @@ export default function InviteScreen() {
   if (state === 'error') {
     return (
       <View style={styles.center}>
-        <Text style={styles.icon}>!</Text>
-        <Text style={styles.title}>Gecersiz Davet</Text>
+        <Text style={styles.icon}>❌</Text>
+        <Text style={styles.title}>Geçersiz Davet</Text>
         <Text style={styles.sub}>{message}</Text>
       </View>
     );
@@ -102,7 +102,7 @@ export default function InviteScreen() {
     return (
       <View style={styles.center}>
         <ActivityIndicator size="large" color={colors.brand[600]} />
-        <Text style={styles.sub}>Giris yapiliyor...</Text>
+        <Text style={styles.sub}>Giriş yapılıyor…</Text>
       </View>
     );
   }
@@ -110,9 +110,9 @@ export default function InviteScreen() {
   return (
     <View style={styles.center}>
       <View style={styles.mark}><Text style={styles.markLetter}>S</Text></View>
-      <Text style={styles.title}>Berber Olarak Katil</Text>
+      <Text style={styles.title}>Berber Olarak Katıl</Text>
       <Text style={styles.sub}>
-        Siradaki'ye berber olarak eklendiniz. Devam etmek icin Google hesabinizla giris yapin.
+        Sıradaki'ye berber olarak eklendiniz. Devam etmek için Google hesabınızla giriş yapın.
       </Text>
       <Button variant="primary" size="lg" full onPress={handleGoogleSignIn}>
         Google ile Devam Et

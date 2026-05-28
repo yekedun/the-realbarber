@@ -23,7 +23,7 @@ export async function approveShop(shopId: string, adminKey: string) {
   assertAdmin(adminKey);
   const supabase = getAdminClient();
   const { error } = await supabase.from('shops').update({ status: 'active' }).eq('id', shopId);
-  if (error) throw new Error('Onay basarisiz: ' + error.message);
+  if (error) throw new Error('Onay başarısız: ' + error.message);
 
   const { data: shop } = await supabase
     .from('shops')
@@ -45,8 +45,8 @@ export async function approveShop(shopId: string, adminKey: string) {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           to: ownerStaff.push_token,
-          title: 'Basvurunuz onaylandi',
-          body: 'Dukkaniniz aktif hale getirildi. Simdi giris yapabilirsiniz.',
+          title: 'Başvurunuz Onaylandı! 🎉',
+          body: 'Dükkanınız aktif hale getirildi. Şimdi giriş yapabilirsiniz.',
         }),
       }).catch((e) => console.error('[admin] Push notification failed:', e));
     }
@@ -57,7 +57,7 @@ export async function rejectShop(shopId: string, adminKey: string) {
   assertAdmin(adminKey);
   const supabase = getAdminClient();
   const { error } = await supabase.from('shops').update({ status: 'rejected' }).eq('id', shopId);
-  if (error) throw new Error('Red basarisiz: ' + error.message);
+  if (error) throw new Error('Red başarısız: ' + error.message);
 }
 
 export async function getPendingShops(adminKey: string) {
@@ -69,6 +69,6 @@ export async function getPendingShops(adminKey: string) {
     .in('status', ['pending', 'active', 'rejected'])
     .order('created_at', { ascending: false })
     .limit(50);
-  if (error) throw new Error('Shop listesi alinamadi: ' + error.message);
+  if (error) throw new Error('Shop listesi alınamadı: ' + error.message);
   return data ?? [];
 }

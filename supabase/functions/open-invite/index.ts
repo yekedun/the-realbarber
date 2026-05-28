@@ -10,7 +10,7 @@ serve(async (req) => {
   try {
     body = await req.json();
   } catch {
-    return error("Gecersiz JSON");
+    return error("Geçersiz JSON");
   }
 
   const token = body.token?.trim();
@@ -28,10 +28,10 @@ serve(async (req) => {
     return error("Davet kontrol edilemedi", 500);
   }
 
-  if (!inviteRow) return error("Gecersiz token", 404);
-  if (inviteRow.used_at) return error("Token zaten kullanilmis", 409);
+  if (!inviteRow) return error("Geçersiz token", 404);
+  if (inviteRow.used_at) return error("Token zaten kullanılmış", 409);
   if (new Date(inviteRow.expires_at) < new Date()) {
-    return error("Token suresi dolmus", 410);
+    return error("Token süresi dolmuş", 410);
   }
 
   return json({ valid: true });
