@@ -10,16 +10,19 @@
     "./constants": "./src/constants.ts",
     "./types": "./src/types.ts",
     "./use-realtime-invalidation": "./src/use-realtime-invalidation.ts",
-    "./theme": "./src/theme.ts"
+    "./theme": "./src/theme.ts",
+    "./phone-utils": "./src/phone-utils.ts"
   },
   "peerDependencies": {
     "@supabase/supabase-js": ">=2.0.0",
     "react": ">=18.0.0"
   },
   "scripts": {
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run"
   },
   "devDependencies": {
-    "typescript": "^5.4.0"
+    "typescript": "^5.4.0",
+    "vitest": "1"
   }
 }

@@ -113,7 +113,7 @@ function getTzFormatter(timezone: string): Intl.DateTimeFormat {
   return f;
 }
 
-function localTimeToUTC(date: Date, time: string, timezone: string): Date {
+export function localTimeToUTC(date: Date, time: string, timezone: string): Date {
   const [hStr, mStr] = time.split(":");
   const h = Number(hStr);
   const m = Number(mStr);

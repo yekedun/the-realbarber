@@ -3,9 +3,9 @@ export interface BookingFlowState {
   selectedSlot: string | null;
 }
 
-export function nextBookingSuccessState(state: BookingFlowState): BookingFlowState {
+export function nextBookingSuccessState(_state: BookingFlowState): BookingFlowState {
   return {
-    ...state,
     modalOpen: true,
+    selectedSlot: null,
   };
 }
