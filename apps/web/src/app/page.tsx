@@ -6,269 +6,469 @@ export const metadata: Metadata = {
   description: "Instagram'a linkini at. Müşterilerin 7/24 randevusunu kendisi alsın.",
 };
 
-const BG     = '#FFFFFF';
-const SURF   = '#F8FAFC';
-const BORDER = '#E2E8F0';
-const TEXT   = '#0F172A';
-const MUTED  = '#64748B';
-const BRAND  = '#1E3A8A';
-const BRANDD = '#15296B';
-const BRANDL = '#EFF3FB';
+const CSS = `
+  :root { color-scheme: light only; }
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  .lp {
+    font-family: var(--font-sans, -apple-system, 'Helvetica Neue', sans-serif);
+    color: #111;
+    background: #fff;
+    min-height: 100vh;
+    -webkit-font-smoothing: antialiased;
+  }
+  .wrap { max-width: 1100px; margin: 0 auto; padding: 0 24px; }
+
+  /* ── Nav ──────────────────────────── */
+  .lp-nav {
+    border-bottom: 1px solid #e5e5e5;
+    height: 56px;
+    position: sticky;
+    top: 0;
+    z-index: 50;
+    background: rgba(255,255,255,0.92);
+    backdrop-filter: blur(12px);
+  }
+  .lp-nav .wrap { height: 100%; display: flex; align-items: center; justify-content: space-between; }
+  .lp-logo { font-size: 15px; font-weight: 700; letter-spacing: -0.02em; color: #111; text-decoration: none; }
+  .nav-actions { display: flex; gap: 10px; align-items: center; }
+  .nav-link { font-size: 13px; font-weight: 500; color: #888; text-decoration: none; transition: color 0.15s; }
+  .nav-link:hover { color: #111; }
+  .nav-cta {
+    font-size: 13px; font-weight: 600; color: #fff; text-decoration: none;
+    background: #1E3A8A; padding: 7px 16px; border-radius: 7px;
+    transition: background 0.15s;
+  }
+  .nav-cta:hover { background: #15296B; }
+
+  /* ── Hero ─────────────────────────── */
+  .hero {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 60px;
+    align-items: center;
+    padding: 80px 0 88px;
+    border-bottom: 1px solid #e5e5e5;
+  }
+  .hero-eyebrow {
+    font-size: 11px; font-weight: 600; letter-spacing: 0.1em;
+    text-transform: uppercase; color: #888; margin-bottom: 20px;
+    display: flex; align-items: center; gap: 10px;
+  }
+  .hero-eyebrow::before {
+    content: ''; display: block; width: 20px; height: 1px; background: #bbb;
+  }
+  .hero-h1 {
+    font-size: clamp(38px, 5.5vw, 58px); font-weight: 700;
+    letter-spacing: -0.03em; line-height: 1.06; color: #111; margin-bottom: 20px;
+  }
+  .hero-h1 span { color: #1E3A8A; }
+  .hero-sub {
+    font-size: clamp(14px, 1.8vw, 16px); line-height: 1.75; color: #666;
+    margin-bottom: 36px; max-width: 400px;
+  }
+  .hero-btns { display: flex; gap: 10px; flex-wrap: wrap; }
+
+  .btn-p {
+    font-size: 14px; font-weight: 700; color: #fff; text-decoration: none;
+    background: #1E3A8A; padding: 12px 28px; border-radius: 8px;
+    display: inline-block; transition: background 0.15s, transform 0.12s;
+  }
+  .btn-p:hover { background: #15296B; transform: translateY(-1px); }
+  .btn-g {
+    font-size: 14px; font-weight: 500; color: #666; text-decoration: none;
+    padding: 12px 20px; border-radius: 8px; border: 1px solid #e0e0e0;
+    display: inline-block; transition: border-color 0.15s, color 0.15s;
+  }
+  .btn-g:hover { border-color: #1E3A8A; color: #1E3A8A; }
+
+  /* ── Booking mock ─────────────────── */
+  .mock {
+    border: 1.5px solid #e0e0e0; border-radius: 14px;
+    overflow: hidden; box-shadow: 0 12px 48px rgba(0,0,0,0.09);
+    background: #fff;
+  }
+  .mock-bar {
+    background: #f5f5f5; border-bottom: 1px solid #e5e5e5;
+    padding: 10px 14px; display: flex; align-items: center; gap: 10px;
+  }
+  .mock-dots { display: flex; gap: 5px; }
+  .mock-dots span { width: 10px; height: 10px; border-radius: 50%; display: block; }
+  .mock-dots span:nth-child(1) { background: #ff5f57; }
+  .mock-dots span:nth-child(2) { background: #febc2e; }
+  .mock-dots span:nth-child(3) { background: #28c840; }
+  .mock-url {
+    font-family: ui-monospace, 'Cascadia Code', monospace;
+    font-size: 11px; color: #888; background: #ebebeb;
+    padding: 3px 10px; border-radius: 4px; flex: 1;
+  }
+  .mock-url b { color: #111; font-weight: 600; }
+
+  .mock-body { padding: 20px; }
+  .mock-berber-row {
+    display: flex; align-items: center; gap: 12px;
+    margin-bottom: 18px; padding-bottom: 16px; border-bottom: 1px solid #f0f0f0;
+  }
+  .mock-ava {
+    width: 44px; height: 44px; border-radius: 10px;
+    background: #1E3A8A; color: #fff;
+    font-size: 18px; font-weight: 700;
+    display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+  }
+  .mock-name { font-size: 13px; font-weight: 700; color: #111; margin-bottom: 3px; }
+  .mock-meta { font-size: 11px; color: #888; }
+
+  .mock-services { display: flex; flex-direction: column; gap: 6px; margin-bottom: 16px; }
+  .mock-svc {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 9px 12px; border: 1.5px solid #e5e5e5; border-radius: 8px; font-size: 13px;
+  }
+  .mock-svc.sel { border-color: #1E3A8A; background: #EFF3FB; }
+  .mock-svc-n { font-weight: 500; color: #111; }
+  .mock-svc-p { color: #888; font-weight: 500; font-size: 12px; }
+  .mock-svc.sel .mock-svc-p { color: #1E3A8A; }
+
+  .mock-lbl {
+    font-size: 10px; font-weight: 700; letter-spacing: 0.08em;
+    text-transform: uppercase; color: #aaa; margin-bottom: 8px;
+  }
+  .mock-slots {
+    display: grid; grid-template-columns: repeat(4, 1fr);
+    gap: 5px; margin-bottom: 16px;
+  }
+  .mock-slot {
+    font-size: 11px; font-weight: 600; text-align: center;
+    padding: 7px 4px; border-radius: 7px; border: 1.5px solid transparent;
+  }
+  .mock-slot.off  { background: #f5f5f5; color: #ccc; }
+  .mock-slot.on   { background: #fff; color: #111; border-color: #e0e0e0; }
+  .mock-slot.pick { background: #1E3A8A; color: #fff; }
+
+  .mock-cta-btn {
+    width: 100%; background: #1E3A8A; color: #fff; font-size: 13px;
+    font-weight: 700; padding: 11px; border: none; border-radius: 9px;
+    cursor: default; letter-spacing: -0.01em;
+  }
+
+  /* ── Stats ────────────────────────── */
+  .stats-strip { border-bottom: 1px solid #e5e5e5; }
+  .stats-grid {
+    display: grid; grid-template-columns: repeat(3, 1fr); text-align: center;
+  }
+  .stat { padding: 28px 16px; border-right: 1px solid #e5e5e5; }
+  .stat:last-child { border-right: none; }
+  .stat-n {
+    display: block; font-size: clamp(28px, 5vw, 40px); font-weight: 700;
+    letter-spacing: -0.03em; line-height: 1; margin-bottom: 6px; color: #111;
+  }
+  .stat-l { font-size: 12px; color: #888; font-weight: 500; }
+
+  /* ── Sections ─────────────────────── */
+  .sec { padding: 72px 0; border-bottom: 1px solid #e5e5e5; }
+  .sec-hdr { display: flex; align-items: center; gap: 12px; margin-bottom: 32px; }
+  .sec-num {
+    font-family: ui-monospace, 'Cascadia Code', monospace;
+    font-size: 11px; color: #bbb; letter-spacing: 0.08em; flex-shrink: 0;
+  }
+  .sec-rule { flex: 1; height: 1px; background: #e5e5e5; }
+  .sec-title { font-size: clamp(22px, 3.5vw, 30px); font-weight: 700; letter-spacing: -0.025em; color: #111; margin-bottom: 10px; }
+  .sec-lead { font-size: 15px; color: #666; line-height: 1.7; max-width: 480px; }
+
+  /* ── Steps ────────────────────────── */
+  .steps { margin-top: 40px; max-width: 560px; }
+  .step { display: flex; gap: 20px; padding: 22px 0; border-bottom: 1px solid #f0f0f0; }
+  .step:last-child { border-bottom: none; }
+  .step-n {
+    font-family: ui-monospace, 'Cascadia Code', monospace;
+    font-size: 12px; color: #ccc; width: 24px; flex-shrink: 0; padding-top: 1px;
+  }
+  .step-title { font-size: 15px; font-weight: 700; color: #111; margin-bottom: 4px; }
+  .step-desc { font-size: 13px; color: #888; line-height: 1.65; }
+
+  /* ── Features ─────────────────────── */
+  .feat-grid {
+    margin-top: 40px; display: grid; grid-template-columns: repeat(2, 1fr);
+    border: 1px solid #e5e5e5; border-radius: 12px; overflow: hidden;
+  }
+  .feat-item {
+    padding: 24px; border-right: 1px solid #e5e5e5;
+    border-bottom: 1px solid #e5e5e5; transition: background 0.15s;
+  }
+  .feat-item:hover { background: #fafafa; }
+  .feat-item:nth-child(even) { border-right: none; }
+  .feat-item:nth-last-child(-n+2) { border-bottom: none; }
+  .feat-icon { font-size: 20px; margin-bottom: 10px; }
+  .feat-name { font-size: 14px; font-weight: 700; color: #111; margin-bottom: 6px; }
+  .feat-desc { font-size: 13px; color: #888; line-height: 1.65; }
+
+  /* ── CTA ──────────────────────────── */
+  .cta-sec { padding: 88px 0; }
+  .cta-box {
+    border: 1.5px solid #e5e5e5; border-radius: 16px;
+    padding: 56px 40px; text-align: center;
+    max-width: 600px; margin: 0 auto;
+  }
+  .cta-title { font-size: clamp(22px, 4vw, 34px); font-weight: 700; letter-spacing: -0.025em; color: #111; margin-bottom: 12px; }
+  .cta-sub { font-size: 15px; color: #888; line-height: 1.7; margin-bottom: 28px; }
+  .cta-badges { display: flex; align-items: center; justify-content: center; gap: 10px; margin-top: 20px; flex-wrap: wrap; }
+  .cta-badge { font-size: 12px; color: #bbb; }
+  .cta-sep { width: 3px; height: 3px; border-radius: 50%; background: #ddd; display: inline-block; }
+
+  /* ── Footer ───────────────────────── */
+  .lp-foot {
+    border-top: 1px solid #e5e5e5;
+    padding: 32px 0;
+    display: flex; align-items: center; justify-content: space-between;
+    flex-wrap: wrap; gap: 12px;
+  }
+  .foot-brand { font-size: 14px; font-weight: 700; color: #111; }
+  .foot-links { display: flex; gap: 18px; flex-wrap: wrap; }
+  .foot-links a { font-size: 13px; color: #888; text-decoration: none; transition: color 0.15s; }
+  .foot-links a:hover { color: #111; }
+  .foot-copy { font-size: 12px; color: #ccc; width: 100%; }
+
+  /* ── Scroll reveal ────────────────── */
+  [data-rv] { opacity: 0; transform: translateY(14px); transition: opacity 0.5s ease, transform 0.5s ease; }
+  [data-rv].vis { opacity: 1; transform: none; }
+  [data-rv].d1 { transition-delay: 0.08s; }
+  [data-rv].d2 { transition-delay: 0.16s; }
+
+  /* ── Hero load anim ───────────────── */
+  @keyframes fu { from { opacity:0; transform:translateY(16px); } to { opacity:1; transform:none; } }
+  .f0 { animation: fu 0.5s cubic-bezier(0.16,1,0.3,1) both; }
+  .f1 { animation: fu 0.5s 0.1s cubic-bezier(0.16,1,0.3,1) both; }
+  .f2 { animation: fu 0.5s 0.2s cubic-bezier(0.16,1,0.3,1) both; }
+  .f3 { animation: fu 0.5s 0.3s cubic-bezier(0.16,1,0.3,1) both; }
+
+  /* ── Mobile ───────────────────────── */
+  @media (max-width: 800px) {
+    .hero { grid-template-columns: 1fr; gap: 44px; padding: 56px 0; }
+    .hero-sub { max-width: none; }
+    .mock-slots { grid-template-columns: repeat(4, 1fr); }
+  }
+  @media (max-width: 560px) {
+    .stats-grid { grid-template-columns: 1fr 1fr; }
+    .stats-grid .stat:nth-child(2) { border-right: none; }
+    .stats-grid .stat:nth-child(3) { grid-column: 1 / -1; border-top: 1px solid #e5e5e5; border-right: none; }
+    .hero-btns { flex-direction: column; }
+    .hero-btns a { text-align: center; }
+    .feat-grid { grid-template-columns: 1fr; }
+    .feat-item:nth-child(even) { border-right: none; }
+    .feat-item:nth-last-child(-n+2) { border-bottom: 1px solid #e5e5e5; }
+    .feat-item:last-child { border-bottom: none; }
+    .cta-box { padding: 40px 20px; }
+    .lp-foot { flex-direction: column; align-items: flex-start; }
+  }
+`;
 
 const FEATURES = [
-  { icon: '📅', title: 'Online Randevu',   desc: 'Müşterilerin 7/24 randevu alabilir. Dolu saatleri görmez, sadece müsait olanları.' },
-  { icon: '👥', title: 'Ekip Yönetimi',    desc: 'Birden fazla usta varsa herkese ayrı ajanda. Kimin ne zaman boş olduğunu görebilirsin.' },
-  { icon: '💰', title: 'Kazanç Takibi',    desc: 'Aylık ve haftalık raporlar. Komisyon hesaplaması dahil.' },
-  { icon: '🔗', title: 'Kişisel Link',     desc: "Her ustanın kendi randevu linki. Instagram'a koy, müşteri direkt sana gelsin." },
-  { icon: '📱', title: 'Mobil Uygulama',   desc: 'iOS ve Android. Gittiğin her yerden randevularını gör ve yönet.' },
-  { icon: '🚫', title: 'İzin & Tatil',     desc: 'Tatil günlerini ve öğle aralarını tek tıkla kapat.' },
-];
-
-const STEPS = [
-  { n: '01', title: 'Dükkanını tanıt',   desc: 'Adını ve şehrini gir. Randevu linkin hazır.' },
-  { n: '02', title: 'Hizmetlerini ekle', desc: 'Saç kesimi, sakal tıraşı... fiyat ve süreyle birlikte.' },
-  { n: '03', title: 'Linki paylaş',      desc: "Instagram veya WhatsApp'a at. Randevular akmaya başlar." },
+  { icon: '📅', title: 'Online Randevu',  desc: 'Müşterilerin 7/24 randevu alabilir. Dolu saatler görünmez.' },
+  { icon: '👥', title: 'Ekip Yönetimi',   desc: 'Her ustaya ayrı ajanda. Kimin ne zaman boş olduğunu görürsün.' },
+  { icon: '💰', title: 'Kazanç Takibi',   desc: 'Aylık ve haftalık raporlar. Komisyon hesaplaması dahil.' },
+  { icon: '🔗', title: 'Kişisel Link',    desc: "Her ustanın kendi randevu linki. Instagram'a at, gelsin." },
+  { icon: '📱', title: 'Mobil Uygulama',  desc: 'iOS ve Android. Her yerden yönet.' },
+  { icon: '🚫', title: 'İzin & Tatil',    desc: 'Tatil günlerini ve öğle aralarını tek tıkla kapat.' },
 ];
 
 export default function LandingPage() {
   return (
     <>
-      <style>{`
-        :root { color-scheme: light; }
-        *, *::before, *::after { box-sizing: border-box; }
+      <style>{CSS}</style>
 
-        @keyframes fadeUp {
-          from { opacity: 0; transform: translateY(18px); }
-          to   { opacity: 1; transform: translateY(0); }
-        }
-        .fu  { animation: fadeUp 0.55s cubic-bezier(0.16,1,0.3,1) both; }
-        .d1  { animation-delay: 0.08s; }
-        .d2  { animation-delay: 0.18s; }
-        .d3  { animation-delay: 0.28s; }
-        .d4  { animation-delay: 0.38s; }
+      <div className="lp">
 
-        .fc  { transition: border-color 0.15s ease, box-shadow 0.15s ease; }
-        .fc:hover { border-color: ${BRAND} !important; box-shadow: 0 4px 20px rgba(30,58,138,0.1); }
-
-        .btn-p { transition: background 0.15s ease, transform 0.12s ease; }
-        .btn-p:hover { background: ${BRANDD} !important; transform: translateY(-1px); }
-
-        .btn-s { transition: border-color 0.15s ease, color 0.15s ease; }
-        .btn-s:hover { border-color: ${BRAND} !important; color: ${BRAND} !important; }
-
-        @media (max-width: 560px) {
-          .hero-ctas { flex-direction: column !important; }
-          .hero-ctas a { width: 100% !important; text-align: center !important; }
-          .stats-row { grid-template-columns: 1fr 1fr !important; }
-          .stats-row > :last-child { grid-column: 1 / -1; border-right: none !important; border-top: 1px solid ${BORDER}; }
-          .feat-grid { grid-template-columns: 1fr !important; }
-        }
-      `}</style>
-
-      <div style={{ fontFamily: 'var(--font-sans, system-ui, sans-serif)', background: BG, color: TEXT, minHeight: '100vh' }}>
-
-        {/* ── Nav ──────────────────────────────────────────── */}
-        <nav style={{
-          background: 'rgba(255,255,255,0.88)', backdropFilter: 'blur(14px)',
-          borderBottom: `1px solid ${BORDER}`,
-          padding: '0 24px', height: 56,
-          display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-          position: 'sticky', top: 0, zIndex: 50,
-        }}>
-          <span style={{ fontSize: 16, fontWeight: 700, letterSpacing: '-0.02em', color: TEXT }}>
-            Sıradaki
-          </span>
-          <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
-            <Link href="/giris" style={{ fontSize: 13, fontWeight: 600, color: MUTED, textDecoration: 'none' }}>
-              Giriş
-            </Link>
-            <Link href="/kayit" className="btn-p" style={{
-              fontSize: 13, fontWeight: 700, color: '#fff', textDecoration: 'none',
-              background: BRAND, padding: '7px 16px', borderRadius: 8,
-            }}>
-              Ücretsiz Dene
-            </Link>
+        {/* ── Nav ── */}
+        <nav className="lp-nav">
+          <div className="wrap">
+            <Link href="/" className="lp-logo">Sıradaki</Link>
+            <div className="nav-actions">
+              <Link href="/giris" className="nav-link">Giriş</Link>
+              <Link href="/kayit" className="nav-cta">Ücretsiz Dene</Link>
+            </div>
           </div>
         </nav>
 
-        {/* ── Hero ─────────────────────────────────────────── */}
-        <section style={{ padding: '80px 24px 72px', maxWidth: 660, margin: '0 auto', textAlign: 'center' }}>
-          <div className="fu" style={{
-            display: 'inline-flex', alignItems: 'center', gap: 7,
-            fontSize: 11, fontWeight: 700, letterSpacing: '0.12em', textTransform: 'uppercase',
-            color: BRAND, background: BRANDL, padding: '5px 14px', borderRadius: 999, marginBottom: 32,
-          }}>
-            <span style={{ width: 5, height: 5, borderRadius: '50%', background: BRAND, display: 'inline-block', flexShrink: 0 }} />
-            Berber · Kuaför · Barber
-          </div>
+        {/* ── Hero ── */}
+        <div className="wrap">
+          <section className="hero">
 
-          <h1 className="fu d1" style={{
-            fontSize: 'clamp(34px, 8.5vw, 60px)', fontWeight: 700,
-            letterSpacing: '-0.03em', lineHeight: 1.06,
-            color: TEXT, margin: '0 0 20px',
-          }}>
-            Randevun hazır.<br />
-            <span style={{ color: BRAND }}>Sen hazır mısın?</span>
-          </h1>
+            {/* Left */}
+            <div>
+              <p className="hero-eyebrow f0">Berber · Kuaför · Barber</p>
+              <h1 className="hero-h1 f1">
+                Randevun,<br />
+                <span>sana ait.</span>
+              </h1>
+              <p className="hero-sub f2">
+                Instagram&apos;a linkini at. Müşterilerin 7/24 randevusunu kendisi
+                alsın. Ekibini yönet, kazancını takip et.
+              </p>
+              <div className="hero-btns f3">
+                <Link href="/kayit" className="btn-p">Ücretsiz Başla</Link>
+                <a href="#nasil-calisir" className="btn-g">Nasıl çalışır?</a>
+              </div>
+            </div>
 
-          <p className="fu d2" style={{
-            fontSize: 'clamp(15px, 2.2vw, 18px)', lineHeight: 1.7, color: MUTED,
-            margin: '0 auto 40px', maxWidth: 460,
-          }}>
-            Instagram&apos;a linkini at. Müşterilerin 7/24 randevusunu kendisi alsın.
-            Ekibini yönet, kazancını takip et.
-          </p>
-
-          <div className="fu d3 hero-ctas" style={{ display: 'flex', gap: 12, justifyContent: 'center', flexWrap: 'wrap' }}>
-            <Link href="/kayit" className="btn-p" style={{
-              fontSize: 15, fontWeight: 700, color: '#fff', textDecoration: 'none',
-              background: BRAND, padding: '14px 32px', borderRadius: 10,
-            }}>
-              Ücretsiz Başla
-            </Link>
-            <a href="#nasil-calisir" className="btn-s" style={{
-              fontSize: 15, fontWeight: 600, color: MUTED, textDecoration: 'none',
-              padding: '14px 24px', borderRadius: 10, border: `1.5px solid ${BORDER}`,
-            }}>
-              Nasıl çalışır?
-            </a>
-          </div>
-        </section>
-
-        {/* ── Stats ────────────────────────────────────────── */}
-        <div style={{ borderTop: `1px solid ${BORDER}`, borderBottom: `1px solid ${BORDER}`, background: SURF }}>
-          <div style={{ maxWidth: 720, margin: '0 auto', padding: '0 24px' }}>
-            <div className="stats-row" style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)' }}>
-              {[
-                { n: '5 dk',  label: 'Kurulum süresi' },
-                { n: '7/24',  label: 'Randevu alınabilir' },
-                { n: '0 ₺',   label: 'Başlangıç ücreti' },
-              ].map((s, i) => (
-                <div key={s.n} style={{
-                  padding: '32px 16px', textAlign: 'center',
-                  borderRight: i < 2 ? `1px solid ${BORDER}` : 'none',
-                }}>
-                  <div style={{ fontSize: 'clamp(24px, 5vw, 36px)', fontWeight: 700, letterSpacing: '-0.02em', color: TEXT, marginBottom: 6 }}>
-                    {s.n}
+            {/* Right — booking preview */}
+            <div className="f2">
+              <div className="mock">
+                <div className="mock-bar">
+                  <div className="mock-dots">
+                    <span /><span /><span />
                   </div>
-                  <div style={{ fontSize: 13, color: MUTED, fontWeight: 500 }}>{s.label}</div>
+                  <div className="mock-url">
+                    siradaki.com/<b>ahmet</b>
+                  </div>
+                </div>
+                <div className="mock-body">
+                  <div className="mock-berber-row">
+                    <div className="mock-ava">A</div>
+                    <div>
+                      <div className="mock-name">Ahmet Koçoğlu</div>
+                      <div className="mock-meta">Beşiktaş, İstanbul · ⭐ 4.9</div>
+                    </div>
+                  </div>
+                  <div className="mock-services">
+                    <div className="mock-svc">
+                      <span className="mock-svc-n">Saç Kesimi</span>
+                      <span className="mock-svc-p">120 ₺</span>
+                    </div>
+                    <div className="mock-svc sel">
+                      <span className="mock-svc-n">Sakal Tıraşı</span>
+                      <span className="mock-svc-p">60 ₺</span>
+                    </div>
+                  </div>
+                  <p className="mock-lbl">Uygun saatler</p>
+                  <div className="mock-slots">
+                    {[
+                      { t: '10:00', s: 'off' }, { t: '11:00', s: 'on' },
+                      { t: '12:30', s: 'off' }, { t: '14:00', s: 'pick' },
+                      { t: '15:00', s: 'on' },  { t: '16:30', s: 'on' },
+                      { t: '17:00', s: 'on' },  { t: '18:00', s: 'off' },
+                    ].map(sl => (
+                      <div key={sl.t} className={`mock-slot ${sl.s}`}>{sl.t}</div>
+                    ))}
+                  </div>
+                  <button className="mock-cta-btn">Randevu Al →</button>
+                </div>
+              </div>
+            </div>
+
+          </section>
+        </div>
+
+        {/* ── Stats ── */}
+        <div className="stats-strip">
+          <div className="wrap">
+            <div className="stats-grid">
+              {[
+                { n: '5 dk', l: 'Kurulum süresi' },
+                { n: '7/24', l: 'Randevu alınabilir' },
+                { n: '0 ₺',  l: 'Başlangıç ücreti' },
+              ].map(s => (
+                <div key={s.n} className="stat">
+                  <span className="stat-n">{s.n}</span>
+                  <span className="stat-l">{s.l}</span>
                 </div>
               ))}
             </div>
           </div>
         </div>
 
-        {/* ── How it works ─────────────────────────────────── */}
-        <section id="nasil-calisir" style={{ padding: '80px 24px' }}>
-          <div style={{ maxWidth: 520, margin: '0 auto' }}>
-            <div style={{ textAlign: 'center', marginBottom: 48 }}>
-              <p style={{ fontSize: 11, fontWeight: 700, letterSpacing: '0.12em', textTransform: 'uppercase', color: MUTED, margin: '0 0 12px' }}>
-                3 adımda başla
-              </p>
-              <h2 style={{ fontSize: 'clamp(22px, 4vw, 32px)', fontWeight: 700, letterSpacing: '-0.02em', color: TEXT, margin: 0 }}>
-                5 dakikada dükkanını kur
-              </h2>
+        {/* ── How it works ── */}
+        <div className="wrap">
+          <section id="nasil-calisir" className="sec" data-rv>
+            <div className="sec-hdr">
+              <span className="sec-num">01</span>
+              <div className="sec-rule" />
             </div>
-            <div style={{ display: 'flex', flexDirection: 'column' }}>
-              {STEPS.map((s, i) => (
-                <div key={s.n} style={{
-                  display: 'flex', gap: 20, alignItems: 'flex-start',
-                  padding: '24px 0',
-                  borderBottom: i < STEPS.length - 1 ? `1px solid ${BORDER}` : 'none',
-                }}>
-                  <div style={{
-                    flexShrink: 0, width: 40, height: 40, borderRadius: 10,
-                    background: BRANDL, color: BRAND,
-                    fontSize: 12, fontWeight: 700, letterSpacing: '0.04em',
-                    display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  }}>
-                    {s.n}
-                  </div>
-                  <div style={{ paddingTop: 8 }}>
-                    <div style={{ fontSize: 15, fontWeight: 700, color: TEXT, marginBottom: 4 }}>{s.title}</div>
-                    <div style={{ fontSize: 13, color: MUTED, lineHeight: 1.65 }}>{s.desc}</div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        </section>
-
-        {/* ── Features ─────────────────────────────────────── */}
-        <section style={{ background: SURF, borderTop: `1px solid ${BORDER}`, padding: '80px 24px' }}>
-          <div style={{ maxWidth: 900, margin: '0 auto' }}>
-            <div style={{ textAlign: 'center', marginBottom: 48 }}>
-              <p style={{ fontSize: 11, fontWeight: 700, letterSpacing: '0.12em', textTransform: 'uppercase', color: MUTED, margin: '0 0 12px' }}>
-                Özellikler
-              </p>
-              <h2 style={{ fontSize: 'clamp(22px, 4vw, 32px)', fontWeight: 700, letterSpacing: '-0.02em', color: TEXT, margin: 0 }}>
-                İhtiyacın olan her şey
-              </h2>
-            </div>
-            <div className="feat-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: 16 }}>
-              {FEATURES.map(f => (
-                <div key={f.title} className="fc" style={{
-                  background: BG, border: `1.5px solid ${BORDER}`,
-                  borderRadius: 12, padding: '24px 20px',
-                }}>
-                  <div style={{ fontSize: 24, marginBottom: 12 }}>{f.icon}</div>
-                  <h3 style={{ fontSize: 15, fontWeight: 700, color: TEXT, margin: '0 0 8px' }}>{f.title}</h3>
-                  <p style={{ fontSize: 13, lineHeight: 1.65, color: MUTED, margin: 0 }}>{f.desc}</p>
-                </div>
-              ))}
-            </div>
-          </div>
-        </section>
-
-        {/* ── CTA ──────────────────────────────────────────── */}
-        <section style={{ padding: '88px 24px', textAlign: 'center' }}>
-          <div style={{ maxWidth: 480, margin: '0 auto' }}>
-            <h2 style={{ fontSize: 'clamp(24px, 5vw, 40px)', fontWeight: 700, letterSpacing: '-0.025em', color: TEXT, margin: '0 0 14px' }}>
-              Bugün başla, yarın hazırsın.
-            </h2>
-            <p style={{ fontSize: 15, color: MUTED, lineHeight: 1.7, margin: '0 0 36px' }}>
-              Kurulum ücreti yok. Kredi kartı gerekmez.
+            <h2 className="sec-title">5 dakikada dükkanını kur</h2>
+            <p className="sec-lead">
+              Teknik bilgi gerekmez. Adını ve şehrini gir, hizmetlerini ekle, linki paylaş.
             </p>
-            <Link href="/kayit" className="btn-p" style={{
-              display: 'block', fontSize: 16, fontWeight: 700,
-              color: '#fff', textDecoration: 'none',
-              background: BRAND, padding: '16px 32px', borderRadius: 12,
-              maxWidth: 320, margin: '0 auto',
-            }}>
-              Ücretsiz Başla →
-            </Link>
-          </div>
-        </section>
+            <div className="steps">
+              {[
+                { n: '01', title: 'Dükkanını tanıt',   desc: 'Adını ve şehrini gir. Randevu linkin hazır.' },
+                { n: '02', title: 'Hizmetlerini ekle', desc: 'Saç kesimi, sakal tıraşı... fiyat ve süreyle birlikte.' },
+                { n: '03', title: 'Linki paylaş',      desc: "Instagram veya WhatsApp'a at. Randevular akmaya başlar." },
+              ].map(s => (
+                <div key={s.n} className="step">
+                  <span className="step-n">{s.n}</span>
+                  <div>
+                    <div className="step-title">{s.title}</div>
+                    <div className="step-desc">{s.desc}</div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </section>
+        </div>
 
-        {/* ── Footer ───────────────────────────────────────── */}
-        <footer style={{ borderTop: `1px solid ${BORDER}`, padding: '32px 24px', textAlign: 'center' }}>
-          <div style={{ marginBottom: 16 }}>
-            <span style={{ fontSize: 14, fontWeight: 700, color: TEXT }}>Sıradaki</span>
-          </div>
-          <div style={{ display: 'flex', gap: 20, justifyContent: 'center', flexWrap: 'wrap', marginBottom: 16 }}>
-            {[
-              { label: 'Gizlilik Politikası', href: '/gizlilik-politikasi' },
-              { label: 'Kullanım Koşulları',  href: '/kullanim-kosullari' },
-              { label: 'Çerez Politikası',    href: '/cerez-politikasi' },
-              { label: 'İletişim',            href: 'mailto:destek@siradaki.com' },
-            ].map(l =>
-              l.href.startsWith('mailto:') ? (
-                <a key={l.href} href={l.href} style={{ fontSize: 13, color: MUTED, textDecoration: 'none', fontWeight: 500 }}>
-                  {l.label}
-                </a>
-              ) : (
-                <Link key={l.href} href={l.href} style={{ fontSize: 13, color: MUTED, textDecoration: 'none', fontWeight: 500 }}>
-                  {l.label}
-                </Link>
-              )
-            )}
-          </div>
-          <p style={{ fontSize: 12, color: '#94A3B8', margin: 0 }}>
-            © {new Date().getFullYear()} Sıradaki. Tüm hakları saklıdır.
-          </p>
-        </footer>
+        {/* ── Features ── */}
+        <div className="wrap">
+          <section className="sec" data-rv>
+            <div className="sec-hdr">
+              <span className="sec-num">02</span>
+              <div className="sec-rule" />
+            </div>
+            <h2 className="sec-title">İhtiyacın olan her şey</h2>
+            <div className="feat-grid">
+              {FEATURES.map(f => (
+                <div key={f.title} className="feat-item">
+                  <div className="feat-icon">{f.icon}</div>
+                  <div className="feat-name">{f.title}</div>
+                  <div className="feat-desc">{f.desc}</div>
+                </div>
+              ))}
+            </div>
+          </section>
+        </div>
+
+        {/* ── CTA ── */}
+        <div className="wrap">
+          <section className="cta-sec" data-rv>
+            <div className="cta-box">
+              <h2 className="cta-title">Bugün başla, yarın hazırsın.</h2>
+              <p className="cta-sub">Kurulum ücreti yok. Kredi kartı gerekmez.</p>
+              <Link href="/kayit" className="btn-p" style={{ padding: '14px 44px', fontSize: '15px' }}>
+                Ücretsiz Başla →
+              </Link>
+              <div className="cta-badges">
+                <span className="cta-badge">5 dk kurulum</span>
+                <span className="cta-sep" />
+                <span className="cta-badge">Kredi kartı yok</span>
+                <span className="cta-sep" />
+                <span className="cta-badge">İstediğin zaman iptal</span>
+              </div>
+            </div>
+          </section>
+        </div>
+
+        {/* ── Footer ── */}
+        <div className="wrap">
+          <footer className="lp-foot">
+            <span className="foot-brand">Sıradaki</span>
+            <div className="foot-links">
+              <Link href="/gizlilik-politikasi">Gizlilik Politikası</Link>
+              <Link href="/kullanim-kosullari">Kullanım Koşulları</Link>
+              <Link href="/cerez-politikasi">Çerez Politikası</Link>
+              <a href="mailto:destek@siradaki.com">İletişim</a>
+            </div>
+            <p className="foot-copy">© {new Date().getFullYear()} Sıradaki. Tüm hakları saklıdır.</p>
+          </footer>
+        </div>
 
       </div>
+
+      {/* Scroll reveal */}
+      <script dangerouslySetInnerHTML={{ __html: `
+        (function(){
+          var o = new IntersectionObserver(function(es){
+            es.forEach(function(e){ if(e.isIntersecting){ e.target.classList.add('vis'); o.unobserve(e.target); }});
+          }, { threshold: 0.12 });
+          document.querySelectorAll('[data-rv]').forEach(function(el){ o.observe(el); });
+        })();
+      `}} />
     </>
   );
 }
