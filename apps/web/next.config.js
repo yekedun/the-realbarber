@@ -12,11 +12,11 @@ const nextConfig = {
           { key: 'Permissions-Policy', value: 'camera=(), microphone=(), geolocation=()' },
           {
             key: 'Content-Security-Policy',
-            // unsafe-inline required for Tailwind/React inline style objects
+            // unsafe-inline required for Tailwind/React inline style objects AND Next.js bootstrap scripts
             // connect-src includes Supabase Realtime websocket (wss://)
             value: [
               "default-src 'self'",
-              "script-src 'self' 'unsafe-eval'",
+              "script-src 'self' 'unsafe-inline' 'unsafe-eval'",
               "style-src 'self' 'unsafe-inline'",
               "img-src 'self' data: blob: https:",
               "font-src 'self' data:",
