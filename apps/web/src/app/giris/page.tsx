@@ -1,11 +1,11 @@
 'use client';
 
-import { useState } from 'react';
+import { Suspense, useState } from 'react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { createClient } from '@/lib/supabase/browser';
 
-export default function GirisPage() {
+function GirisForm() {
   const router = useRouter();
   const params = useSearchParams();
   const redirect = params.get('redirect') ?? '/dashboard';
@@ -113,5 +113,13 @@ export default function GirisPage() {
         </p>
       </div>
     </div>
+  );
+}
+
+export default function GirisPage() {
+  return (
+    <Suspense>
+      <GirisForm />
+    </Suspense>
   );
 }
