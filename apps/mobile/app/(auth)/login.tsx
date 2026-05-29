@@ -39,6 +39,7 @@ import { supabase, determineUserRole } from '../../lib/supabase';
 import { registerForPushNotifications } from '../../lib/notifications';
 import { configureGoogleSignIn, signInWithGoogle } from '../../lib/google-auth';
 import { routeForRole } from '../../lib/router-guard';
+import { trackEvent } from '../../lib/analytics';
 
 export default function LoginScreen() {
   const [email,    setEmail]    = useState('');
@@ -61,8 +62,13 @@ export default function LoginScreen() {
         email: email.trim(),
         password,
       });
-      if (authError) { setError(authError.message); return; }
+      if (authError) {
+        trackEvent('login_fail', { method: 'email', reason: authError.message });
+        setError(authError.message);
+        return;
+      }
       if (!data.user) return;
+      trackEvent('login_success', { method: 'email' });
       const role = await determineUserRole(data.user.id);
       registerForPushNotifications().catch(() => {});
       router.replace(routeForRole(role) as any);
@@ -76,8 +82,12 @@ export default function LoginScreen() {
     setError(null);
     try {
       const result = await signInWithGoogle();
-      if (result.error) { setError(result.error); return; }
-      // _layout.tsx auth state change'i yakalar, routing oradan yapılır
+      if (result.error) {
+        trackEvent('login_fail', { method: 'google', reason: result.error });
+        setError(result.error);
+        return;
+      }
+      trackEvent('login_success', { method: 'google' });
     } finally {
       setLoading(false);
     }

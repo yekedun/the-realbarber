@@ -53,6 +53,7 @@ import { colors } from '../../lib/theme';
 import { Button } from '../../components/ds/Button';
 import { supabase } from '../../lib/supabase';
 import { DEFAULT_WORKING_HOURS, slugify } from '../../lib/onboarding-utils';
+import { trackEvent } from '../../lib/analytics';
 
 /* ── PasswordStrength ─────────────────────────────────────────── */
 function PasswordStrength({ value }: { value: string }) {
@@ -237,6 +238,7 @@ export default function RegisterScreen() {
         return;
       }
 
+      trackEvent('register_success');
       router.replace('/(owner)/onboarding');
     } finally {
       setLoading(false);
