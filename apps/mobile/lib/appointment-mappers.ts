@@ -28,6 +28,7 @@ export function appointmentRowToAgendaItem(row: AppointmentAgendaRow, now = new 
     type: 'appt' as const,
     id: row.id,
     time: formatTime(start),
+    endTime: formatTime(end),
     dur,
     name: row.customer_name,
     svc: service?.name ?? 'Hizmet',

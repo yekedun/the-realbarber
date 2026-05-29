@@ -6,6 +6,7 @@ type AppointmentState = 'upcoming' | 'active' | 'done';
 
 interface AppointmentCardProps {
   time: string;
+  endTime: string;
   duration: number | string;
   name: string;
   service: string;
@@ -17,6 +18,7 @@ interface AppointmentCardProps {
 
 export function AppointmentCard({
   time,
+  endTime,
   duration,
   name,
   service,
@@ -45,7 +47,7 @@ export function AppointmentCard({
           {time}
         </Text>
         <Text style={[styles.dur, isActive ? styles.durActive : styles.durDefault]}>
-          {duration} DK
+          {endTime}
         </Text>
       </View>
 
@@ -117,8 +119,6 @@ const styles = StyleSheet.create({
   dur: {
     fontSize: 10,
     fontFamily: 'Montserrat-SemiBold',
-    letterSpacing: 1.4,
-    textTransform: 'uppercase',
     marginTop: 5,
   },
   durDefault: { color: colors.slate[500] },

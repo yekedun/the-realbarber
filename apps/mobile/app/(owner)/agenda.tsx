@@ -66,6 +66,7 @@ interface AppItem {
   type: 'appt';
   id: string;
   time: string;
+  endTime: string;
   dur: number;
   name: string;
   svc: string;
@@ -76,6 +77,7 @@ interface BlokItem {
   type: 'blok';
   id: string;
   time: string;
+  endTime: string;
   dur: number;
   label: string;
 }
@@ -159,7 +161,7 @@ export default function AgendaScreen() {
           const start = new Date(b.starts_at);
           const end = new Date(b.ends_at);
           const dur = Math.round((end.getTime() - start.getTime()) / 60000);
-          return { type: 'blok' as const, id: b.id, time: formatTime(start), dur, label: `BLOKE · ${translateReason(b.reason)}` };
+          return { type: 'blok' as const, id: b.id, time: formatTime(start), endTime: formatTime(end), dur, label: `BLOKE · ${translateReason(b.reason)}` };
         }),
       ].sort((a, b) => a.time.localeCompare(b.time));
 
@@ -282,6 +284,7 @@ export default function AgendaScreen() {
                     <BlokCard
                       key={item.id}
                       time={item.time}
+                      endTime={item.endTime}
                       duration={item.dur}
                       label={item.label}
                     />
@@ -289,6 +292,7 @@ export default function AgendaScreen() {
                     <AppointmentCard
                       key={item.id}
                       time={item.time}
+                      endTime={item.endTime}
                       duration={item.dur}
                       name={item.name}
                       service={item.svc}

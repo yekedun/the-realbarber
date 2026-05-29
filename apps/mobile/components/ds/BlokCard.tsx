@@ -4,6 +4,7 @@ import { colors, radius } from '../../lib/theme';
 
 interface BlokCardProps {
   time: string;
+  endTime: string;
   duration: number | string;
   label?: string;
   style?: ViewStyle;
@@ -19,13 +20,13 @@ interface BlokCardProps {
  * Callers who need the stripe can swap `backgroundColor` via the `style` prop
  * with a gradient library (e.g. expo-linear-gradient with repeating tiles).
  */
-export function BlokCard({ time, duration, label = 'BLOKE', style }: BlokCardProps) {
+export function BlokCard({ time, endTime, duration, label = 'BLOKE', style }: BlokCardProps) {
   return (
     <View style={[styles.base, style]}>
       {/* Left: time + duration */}
       <View style={styles.timeCol}>
         <Text style={styles.time}>{time}</Text>
-        <Text style={styles.dur}>{duration} DK</Text>
+        <Text style={styles.dur}>{endTime}</Text>
       </View>
 
       {/* Right: block label, centred vertically */}
@@ -60,8 +61,6 @@ const styles = StyleSheet.create({
   dur: {
     fontSize: 10,
     fontFamily: 'Montserrat-SemiBold',
-    letterSpacing: 1.4,
-    textTransform: 'uppercase',
     color: colors.slate[500],
     marginTop: 5,
   },
