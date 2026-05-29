@@ -12,6 +12,7 @@ export function initAnalytics(
 }
 
 export function trackEvent(event: string, properties?: Record<string, unknown>) {
+  // `as any`: PostHog SDK expects PostHogCustomEventName, not string — structural cast only
   client?.capture(event, properties as any);
 }
 

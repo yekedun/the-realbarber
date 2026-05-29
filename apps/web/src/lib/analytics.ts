@@ -19,5 +19,6 @@ function getClient(): typeof posthog | null {
 }
 
 export function trackWebEvent(event: string, properties?: Record<string, unknown>) {
+  // `as any`: posthog-js capture expects JsonType, not Record<string, unknown> — structural cast only
   getClient()?.capture(event, properties as any);
 }

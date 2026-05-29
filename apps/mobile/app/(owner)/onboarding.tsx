@@ -547,6 +547,12 @@ export default function OnboardingScreen() {
     try { await Share.share({ message: `siradaki.app/${slugify(shopName)}` }); } catch {}
   }
 
+  // Naming convention: onboarding_step_N fires when the user *enters* step N.
+  // onboarding_step_1 → entering step 1 (from welcome)
+  // onboarding_step_2 → entering step 2 (completing step 1)
+  // onboarding_step_3 → entering step 3 (completing step 2)
+  // onboarding_completed → step 3 done (step 4 = done screen)
+
   // Step 1 → 2: update shop name + city
   async function handleNext1() {
     if (shopId) {
