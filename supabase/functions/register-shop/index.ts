@@ -48,7 +48,7 @@ serve(async (req) => {
     .maybeSingle();
   if (existing) return error("Bu hesaba zaten dükkan bağlı", 409);
 
-  let body: { shop_name: string; phone: string };
+  let body: { shop_name: string; phone?: string };
   try {
     body = await req.json();
   } catch {
@@ -57,8 +57,7 @@ serve(async (req) => {
 
   const { shop_name, phone } = body;
   if (!shop_name?.trim()) return error("Dükkan adı zorunlu");
-  if (!phone?.trim()) return error("Telefon zorunlu");
-  if (!isValidPhone(phone.trim())) {
+  if (phone?.trim() && !isValidPhone(phone.trim())) {
     return error("Geçersiz telefon numarası. Lütfen geçerli bir numara girin.", 400);
   }
 
@@ -97,7 +96,7 @@ serve(async (req) => {
     .from("staff")
     .update({
       name: ownerName,
-      phone: phone.trim(),
+      phone: phone?.trim() || null,
       role: "admin",
       is_active: true,
       slug: ownerSlug || null,
@@ -118,7 +117,7 @@ serve(async (req) => {
       shop_id: shop.id,
       user_id: user.id,
       name: ownerName,
-      phone: phone.trim(),
+      phone: phone?.trim() || null,
       role: "admin",
       is_active: true,
       slug: ownerSlug || null,

@@ -52,8 +52,9 @@ import { router } from 'expo-router';
 import { colors } from '../../lib/theme';
 import { Button } from '../../components/ds/Button';
 import { supabase } from '../../lib/supabase';
-import { DEFAULT_WORKING_HOURS, slugify } from '../../lib/onboarding-utils';
 import { trackEvent } from '../../lib/analytics';
+
+const FN_BASE = process.env.EXPO_PUBLIC_SUPABASE_URL + '/functions/v1';
 
 /* ── PasswordStrength ─────────────────────────────────────────── */
 function PasswordStrength({ value }: { value: string }) {
@@ -219,27 +220,27 @@ export default function RegisterScreen() {
         password: pass,
         options: { data: { shop_name: shopName.trim() } },
       });
-      if (signUpError || !authData.user) {
+      if (signUpError || !authData.user || !authData.session) {
         setError(signUpError?.message ?? 'Kayıt başarısız.');
         return;
       }
 
-      // Create shop record
-      const trimmedName = shopName.trim();
-      const { error: shopError } = await supabase.from('shops').insert({
-        owner_user_id: authData.user.id,
-        name:          trimmedName,
-        display_name:  trimmedName,
-        slug:          slugify(trimmedName),
-        working_hours: DEFAULT_WORKING_HOURS,
+      const res = await fetch(`${FN_BASE}/register-shop`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${authData.session.access_token}`,
+        },
+        body: JSON.stringify({ shop_name: shopName.trim() }),
       });
-      if (shopError) {
-        setError('Dükkan oluşturulamadı: ' + shopError.message);
+      if (!res.ok) {
+        const d = await res.json().catch(() => ({}));
+        setError(d.error ?? 'Dükkan oluşturulamadı');
         return;
       }
 
       trackEvent('register_success');
-      router.replace('/(owner)/onboarding');
+      router.replace('/(auth)/pending' as any);
     } finally {
       setLoading(false);
     }
