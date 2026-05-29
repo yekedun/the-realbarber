@@ -4,7 +4,7 @@
 
 import { notFound } from 'next/navigation';
 import type { Metadata } from 'next';
-import { supabase } from '../../lib/supabase';
+import { createClient } from '../../lib/supabase/server';
 import BookingClient from './BookingClient';
 
 interface Props {
@@ -14,6 +14,7 @@ interface Props {
 /* ── Metadata ─────────────────────────────────────────────────── */
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { slug } = await params;
+  const supabase = await createClient();
   const { data: shop } = await supabase
     .from('shops')
     .select('name, display_name, address')
@@ -31,6 +32,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 /* ── Page ─────────────────────────────────────────────────────── */
 export default async function ShopPage({ params }: Props) {
   const { slug } = await params;
+  const supabase = await createClient();
 
   // Shop
   const { data: shop } = await supabase
@@ -74,7 +76,7 @@ export default async function ShopPage({ params }: Props) {
         id:           s.id,
         name:         s.name,
         duration_min: s.duration_min,
-        price:        Math.round(s.price_cents / 100),
+        price:        Math.round((s.price_cents ?? 0) / 100),
       }))}
       staff={sortedStaff.map(s => ({ id: s.id, name: s.name, phone: null }))}
     />

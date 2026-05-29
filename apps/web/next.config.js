@@ -1,6 +1,6 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  transpilePackages: ['@berber/shared'],
+  transpilePackages: ['@berber/shared', '@berber/db'],
   async headers() {
     return [
       {

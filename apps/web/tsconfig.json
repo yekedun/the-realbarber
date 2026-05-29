@@ -26,6 +26,9 @@
       ],
       "@berber/shared": [
         "../../packages/shared/src/index.ts"
+      ],
+      "@berber/db": [
+        "../../packages/db/src/index.ts"
       ]
     },
     "allowJs": true
