@@ -62,7 +62,7 @@ const baseConfig = ({ config }: ConfigContext): ExpoConfig => ({
     [
       '@react-native-google-signin/google-signin',
       {
-        iosUrlScheme: 'com.googleusercontent.apps.PLACEHOLDER_IOS_CLIENT_ID',
+        iosUrlScheme: 'com.googleusercontent.apps.434882013340-odqk93o87gvag3j4u2ldbk5br0m34q0k',
       },
     ],
   ],
