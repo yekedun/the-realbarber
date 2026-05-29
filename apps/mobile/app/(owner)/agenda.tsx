@@ -39,6 +39,7 @@
  */
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { createDebounce } from '../../lib/debounce';
+import { trackEvent } from '../../lib/analytics';
 import {
   View,
   Text,
@@ -395,6 +396,7 @@ export default function AgendaScreen() {
             Alert.alert('Hata', msg);
             return;
           }
+          trackEvent('appointment_created');
           setShowAdd(false);
           loadAgenda();
         }}
