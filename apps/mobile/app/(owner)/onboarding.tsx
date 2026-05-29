@@ -39,6 +39,7 @@ import { colors } from '../../lib/theme';
 import { supabase } from '../../lib/supabase';
 import { buildOnboardingServiceInsert, slugify } from '../../lib/onboarding-utils';
 import { registerForPushNotifications } from '../../lib/notifications';
+import { trackEvent } from '../../lib/analytics';
 
 /* ─── Constants ──────────────────────────────────────────────── */
 
@@ -554,6 +555,7 @@ export default function OnboardingScreen() {
         address: city.trim() || null,
       }).eq('id', shopId);
     }
+    trackEvent('onboarding_step_2');
     setStep(2);
   }
 
@@ -566,6 +568,7 @@ export default function OnboardingScreen() {
       );
       setLoading(false);
     }
+    trackEvent('onboarding_step_3');
     setStep(3);
   }
 
@@ -585,11 +588,12 @@ export default function OnboardingScreen() {
         setLoading(false);
       }
     }
+    trackEvent('onboarding_completed');
     setStep(4);
   }
 
   if (step === 0) {
-    return <StepWelcome onStart={() => setStep(1)} onLogin={handleLogin} />;
+    return <StepWelcome onStart={() => { trackEvent('onboarding_step_1'); setStep(1); }} onLogin={handleLogin} />;
   }
   if (step === 1) {
     return (
