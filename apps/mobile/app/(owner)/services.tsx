@@ -43,6 +43,7 @@ import {
 import { useRouter } from 'expo-router';
 import { colors, radius } from '../../lib/theme';
 import { supabase } from '../../lib/supabase';
+import { trackEvent } from '../../lib/analytics';
 import { serviceFormToDb, serviceRowToView } from '../../lib/service-mappers';
 
 /* ─── Data ──────────────────────────────────────────────────── */
@@ -395,6 +396,7 @@ export default function ServicesScreen() {
       Alert.alert('Hata', `Hizmet kaydedilemedi: ${error.message}`);
       return;
     }
+    trackEvent('service_edited');
     setServices((s) => s.map((sv) => sv.id === editing.id ? { ...sv, ...data } : sv));
     setEditing(null);
   }
@@ -424,6 +426,7 @@ export default function ServicesScreen() {
       return;
     }
     if (inserted) {
+      trackEvent('service_added');
       setServices((s) => [...s, serviceRowToView(inserted as any)]);
     }
     setAdding(false);
