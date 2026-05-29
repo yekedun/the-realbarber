@@ -117,8 +117,7 @@ export function AppointmentDetailSheet({
       `${appt.customerName} için randevuyu iptal etmek istiyor musunuz?`,
       [
         { text: 'Vazgeç', style: 'cancel' },
-        { text: 'Sadece İptal Et', style: 'destructive', onPress: () => doCancel(false) },
-        { text: "WhatsApp'tan Bildir ve İptal Et", onPress: () => doCancel(true) },
+        { text: "WhatsApp'tan Bildir ve İptal Et", style: 'destructive', onPress: () => doCancel(true) },
       ],
     );
   }
