@@ -5,6 +5,7 @@ import { ServiceSelector, type Service } from '../../components/ServiceSelector'
 import { SlotGrid } from '../../components/SlotGrid';
 import { BookingModal } from '../../components/BookingModal';
 import { nextBookingSuccessState } from './booking-flow-state';
+import { trackWebEvent } from '../../lib/analytics';
 
 interface StaffMember { id: string; name: string; phone: string | null; }
 interface Shop { id: string; name: string; address: string | null; slug: string; }
@@ -200,7 +201,7 @@ export default function BookingClient({ shop, services, staff, preselectedStaffI
         >
           <div className="max-w-[480px] mx-auto">
             <button
-              onClick={() => setModalOpen(true)}
+              onClick={() => { trackWebEvent('web_booking_started', { shop_slug: shop.slug, service_id: selService ?? undefined }); setModalOpen(true); }}
               className="w-full h-14 rounded-md bg-brand-600 text-white font-bold text-[15px] tracking-tight cursor-pointer border-0 font-sans hover:bg-brand-700 transition-colors duration-150"
             >
               Randevu Al — {selSlot}
@@ -221,6 +222,7 @@ export default function BookingClient({ shop, services, staff, preselectedStaffI
         serviceId={selService ?? ''}
         startsAt={selISO}
         onSuccess={() => {
+          trackWebEvent('web_booking_completed', { shop_slug: shop.slug, service_id: selService ?? undefined });
           const next = nextBookingSuccessState({ modalOpen, selectedSlot: selSlot });
           setModalOpen(next.modalOpen);
           setSelSlot(next.selectedSlot);
