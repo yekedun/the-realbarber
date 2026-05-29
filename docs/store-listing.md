@@ -70,10 +70,10 @@ berber,randevu,kuaför,saç,tıraş,berber randevu,salon,rezervasyon
 4+
 
 ## Privacy Policy URL
-https://siradaki.com/gizlilik
+https://siradaki.app/gizlilik
 
 ## Support URL
-https://siradaki.com
+https://siradaki.app
 
 ---
 

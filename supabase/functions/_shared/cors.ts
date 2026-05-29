@@ -1,6 +1,6 @@
 const ALLOWED_ORIGINS = [
-  'https://sıradaki.com',
-  'https://www.sıradaki.com',
+  'https://siradaki.app',
+  'https://www.siradaki.app',
   'http://localhost:3000',
   'http://localhost:8081',
 ];
@@ -8,10 +8,6 @@ const ALLOWED_ORIGINS = [
 function getAllowOrigin(req?: Request): string {
   if (!req) return '*';
   const origin = req.headers.get('Origin') ?? '';
-  // Return matched origin exactly, or '*' for unrecognised origins.
-  // Do NOT fall back to ALLOWED_ORIGINS[0]: that value contains the Turkish
-  // dotless-ı (U+0131) which is not a valid HTTP header ByteString and crashes
-  // the Deno runtime: "Argument 2 is not a valid ByteString".
   return ALLOWED_ORIGINS.includes(origin) ? origin : '*';
 }
 

@@ -317,7 +317,7 @@ export default function LandingPage() {
                     <span /><span /><span />
                   </div>
                   <div className="mock-url">
-                    siradaki.com/<b>ahmet</b>
+                    siradaki.app/<b>ahmet</b>
                   </div>
                 </div>
                 <div className="mock-body">
@@ -452,7 +452,7 @@ export default function LandingPage() {
               <Link href="/gizlilik-politikasi">Gizlilik Politikası</Link>
               <Link href="/kullanim-kosullari">Kullanım Koşulları</Link>
               <Link href="/cerez-politikasi">Çerez Politikası</Link>
-              <a href="mailto:destek@siradaki.com">İletişim</a>
+              <a href="mailto:destek@siradaki.app">İletişim</a>
             </div>
             <p className="foot-copy">© {new Date().getFullYear()} Sıradaki. Tüm hakları saklıdır.</p>
           </footer>

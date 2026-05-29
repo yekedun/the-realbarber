@@ -30,7 +30,7 @@ export function buildBarberLink(
   staffSlug: string | null | undefined,
 ): string | null {
   if (!shopSlug || !staffSlug) return null;
-  return `https://sıradaki.com/${shopSlug}/u/${staffSlug}`;
+  return `https://siradaki.app/${shopSlug}/u/${staffSlug}`;
 }
 
 export function buildOnboardingServiceInsert(

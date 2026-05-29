@@ -91,7 +91,7 @@ function ShopRow({ shop, onApprove, onReject, disabled }: {
       <div style={{ flex: 1 }}>
         <div style={{ fontWeight: 600, fontSize: 15 }}>{shop.name}</div>
         <div style={{ fontSize: 13, color: '#64748B', marginTop: 2 }}>
-          sıradaki.com/{shop.slug} · {new Date(shop.created_at).toLocaleString('tr-TR')}
+          siradaki.app/{shop.slug} · {new Date(shop.created_at).toLocaleString('tr-TR')}
         </div>
       </div>
       <span style={{ background: STATUS_COLOR[shop.status] + '22',

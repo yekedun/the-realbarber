@@ -144,7 +144,7 @@ serve(async (req) => {
 
   const resendKey = Deno.env.get("RESEND_API_KEY");
   const adminEmail = Deno.env.get("ADMIN_EMAIL");
-  const fromEmail = Deno.env.get("SYSTEM_FROM_EMAIL") ?? "sistem@sıradaki.com";
+  const fromEmail = Deno.env.get("SYSTEM_FROM_EMAIL") ?? "sistem@siradaki.app";
   if (resendKey && adminEmail) {
     await fetch("https://api.resend.com/emails", {
       method: "POST",
@@ -156,7 +156,7 @@ serve(async (req) => {
         from: fromEmail,
         to: adminEmail,
         subject: `Yeni başvuru: ${escapeHtml(shop_name.trim())}`,
-        html: `<p><b>${escapeHtml(shop_name.trim())}</b> dükkanı onay bekliyor.</p><p>Telefon: ${escapeHtml(phone)}</p><p>Slug: ${escapeHtml(shop.slug)}</p><p><a href="https://sıradaki.com/admin">Admin panelini aç</a></p>`,
+        html: `<p><b>${escapeHtml(shop_name.trim())}</b> dükkanı onay bekliyor.</p><p>Telefon: ${escapeHtml(phone)}</p><p>Slug: ${escapeHtml(shop.slug)}</p><p><a href="https://siradaki.app/admin">Admin panelini aç</a></p>`,
       }),
     }).catch((e) => console.error("[register-shop] Admin email send failed:", e));
   } else if (resendKey && !adminEmail) {

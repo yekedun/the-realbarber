@@ -1,5 +1,5 @@
 // W3 · Berber Kişisel Randevu Sayfası — Server component
-// Route: /[slug]/u/[barberSlug]  →  sıradaki.com/keskin-berber/u/ahmet
+// Route: /[slug]/u/[barberSlug]  →  siradaki.app/keskin-berber/u/ahmet
 // Pre-selects the barber in BookingClient (soft lock — user can change)
 
 import { notFound } from 'next/navigation';

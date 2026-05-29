@@ -92,7 +92,7 @@ export default function NotFound() {
           fontSize: 12, color: 'var(--fg-4)', fontFamily: 'var(--font-mono)',
         }}
       >
-        sıradaki.com · Randevu ve ekip yönetim platformu
+        siradaki.app · Randevu ve ekip yönetim platformu
       </footer>
 
     </div>

@@ -29,7 +29,7 @@
  *  - Fields: Dükkan Adı (hint), Adres, Telefon (hint)
  *  - Hakkında textarea (bio.length/200 karakter)
  *  - "Profil Görünür" toggle ("Müşteriler dükkanı bulabilir" / "Dükkan arama sonuçlarında gizli")
- *  - Rezervasyon Linki info box: "sıradaki.com/keskin-berber"
+ *  - Rezervasyon Linki info box: "siradaki.app/keskin-berber"
  *  - "Kaydet" primary btn
  *  - Success state: mint circle, "Kaydedildi", success text, "Tamam"
  *
@@ -129,7 +129,7 @@ interface ShareLinkBoxProps {
 function ShareLinkBox({ slug }: ShareLinkBoxProps) {
   const [copied, setCopied] = useState(false);
   const copyTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const url = slug ? `https://sıradaki.com/${slug}` : '';
+  const url = slug ? `https://siradaki.app/${slug}` : '';
   const disabled = !slug;
 
   useEffect(() => {
@@ -163,7 +163,7 @@ function ShareLinkBox({ slug }: ShareLinkBoxProps) {
     <View style={styles.slugBox}>
       <Text style={styles.slugLabel}>Rezervasyon Linki</Text>
       <Text style={styles.slugValue} numberOfLines={1} ellipsizeMode="middle">
-        {disabled ? 'sıradaki.com/—' : `sıradaki.com/${slug}`}
+        {disabled ? 'siradaki.app/—' : `siradaki.app/${slug}`}
       </Text>
       <View style={styles.slugBtnRow}>
         <TouchableOpacity
@@ -1015,19 +1015,19 @@ export default function SettingsScreen() {
         {/* Yasal */}
         <View style={styles.legalSection}>
           <TouchableOpacity
-            onPress={() => WebBrowser.openBrowserAsync('https://sıradaki.com/kullanim-kosullari')}
+            onPress={() => WebBrowser.openBrowserAsync('https://siradaki.app/kullanim-kosullari')}
             activeOpacity={0.7}
           >
             <Text style={styles.legalLink}>Kullanım Koşulları</Text>
           </TouchableOpacity>
           <TouchableOpacity
-            onPress={() => WebBrowser.openBrowserAsync('https://sıradaki.com/gizlilik-politikasi')}
+            onPress={() => WebBrowser.openBrowserAsync('https://siradaki.app/gizlilik-politikasi')}
             activeOpacity={0.7}
           >
             <Text style={styles.legalLink}>Gizlilik Politikası</Text>
           </TouchableOpacity>
           <TouchableOpacity
-            onPress={() => WebBrowser.openBrowserAsync('https://sıradaki.com/cerez-politikasi')}
+            onPress={() => WebBrowser.openBrowserAsync('https://siradaki.app/cerez-politikasi')}
             activeOpacity={0.7}
           >
             <Text style={styles.legalLink}>Çerez Politikası</Text>

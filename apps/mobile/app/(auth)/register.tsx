@@ -324,12 +324,12 @@ export default function RegisterScreen() {
           {"Kayıt olarak "}
           <Text
             style={styles.finePrintLink}
-            onPress={() => WebBrowser.openBrowserAsync("https://sıradaki.com/kullanim-kosullari")}
+            onPress={() => WebBrowser.openBrowserAsync("https://siradaki.app/kullanim-kosullari")}
           >{"Kullanım Koşulları"}</Text>
           {"’nı ve "}
           <Text
             style={styles.finePrintLink}
-            onPress={() => WebBrowser.openBrowserAsync("https://sıradaki.com/gizlilik-politikasi")}
+            onPress={() => WebBrowser.openBrowserAsync("https://siradaki.app/gizlilik-politikasi")}
           >{"Gizlilik Politikası"}</Text>
           {"’nı kabul etmiş olursun."}
         </Text>

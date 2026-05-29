@@ -31,7 +31,7 @@ export default function GizlilikPolitikasiPage() {
           <H2>1. Veri Sorumlusu</H2>
           <P>
             Bu Gizlilik Politikası, {DATA_CONTROLLER} (&quot;Sıradaki&quot;, &quot;biz&quot;) tarafından
-            işletilen Sıradaki mobil uygulaması ve web sitesi (sıradaki.com) için geçerlidir.
+            işletilen Sıradaki mobil uygulaması ve web sitesi (siradaki.app) için geçerlidir.
             Kişisel verilerin işlenmesinden sorumlu veri sorumlusu {DATA_CONTROLLER}&apos;dir.
           </P>
 

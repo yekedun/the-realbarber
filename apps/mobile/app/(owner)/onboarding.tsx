@@ -12,7 +12,7 @@
  *  - Step 1 "Dükkanını tanıt": "Adım 1 / 3" counter,
  *      h2 "Dükkanını\ntanıt", subtitle,
  *      shop name field (border turns brand-600 when ≥2 chars), city field,
- *      live slug preview box (brand-100 bg, brand-600 border) showing "sıradaki.com/slug"
+ *      live slug preview box (brand-100 bg, brand-600 border) showing "siradaki.app/slug"
  *  - Step 2 "İlk hizmetini ekle": "Adım 2 / 3",
  *      h2 "İlk hizmetini\nekle", subtitle,
  *      name field + DurPicker 3-col ([15,20,30,45,60,90]) + price field, "Geç" skip
@@ -242,7 +242,7 @@ function Step1({ onNext, shopName, setShopName, city, setCity }: Step1Props) {
         {shopName.trim().length >= 2 && (
           <View style={styles.slugBox}>
             <Text style={styles.slugLabel}>Rezervasyon linkin</Text>
-            <Text style={styles.slugValue}>sıradaki.com/{slug}</Text>
+            <Text style={styles.slugValue}>siradaki.app/{slug}</Text>
           </View>
         )}
       </View>
@@ -442,7 +442,7 @@ function StepDone({ shopName, cityName, svcName, svcDur, svcPrice, onGo, onShare
   const summaryRows = [
     { label: 'Dükkan',      value: `${shopName || 'Keskin Berber'} · ${cityName || 'Beşiktaş'}` },
     { label: 'İlk Hizmet',  value: `${svcName  || 'Saç Kesimi'} · ${svcDur} dk · ${svcPrice || '200'}₺` },
-    { label: 'Rezervasyon', value: `sıradaki.com/${slug || 'dukkanim'}` },
+    { label: 'Rezervasyon', value: `siradaki.app/${slug || 'dukkanim'}` },
   ];
 
   return (
@@ -543,7 +543,7 @@ export default function OnboardingScreen() {
   }
 
   async function handleShare() {
-    try { await Share.share({ message: `sıradaki.com/${slugify(shopName)}` }); } catch {}
+    try { await Share.share({ message: `siradaki.app/${slugify(shopName)}` }); } catch {}
   }
 
   // Step 1 → 2: update shop name + city

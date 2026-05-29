@@ -29,8 +29,8 @@ describe('buildOnboardingServiceInsert', () => {
 });
 
 describe('buildBarberLink', () => {
-  it('returns the full sıradaki.com URL for a barber', () => {
-    expect(buildBarberLink('keskin-berber', 'ahmet')).toBe('https://sıradaki.com/keskin-berber/u/ahmet');
+  it('returns the full siradaki.app URL for a barber', () => {
+    expect(buildBarberLink('keskin-berber', 'ahmet')).toBe('https://siradaki.app/keskin-berber/u/ahmet');
   });
 
   it('returns null when staff slug is missing', () => {
