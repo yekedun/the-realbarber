@@ -228,6 +228,47 @@ export type Database = {
           },
         ]
       }
+      invite_tokens: {
+        Row: {
+          created_at: string
+          created_by: string
+          expires_at: string
+          id: string
+          shop_id: string
+          token: string
+          used_at: string | null
+          used_by: string | null
+        }
+        Insert: {
+          created_at?: string
+          created_by: string
+          expires_at?: string
+          id?: string
+          shop_id: string
+          token?: string
+          used_at?: string | null
+          used_by?: string | null
+        }
+        Update: {
+          created_at?: string
+          created_by?: string
+          expires_at?: string
+          id?: string
+          shop_id?: string
+          token?: string
+          used_at?: string | null
+          used_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "invite_tokens_shop_id_fkey"
+            columns: ["shop_id"]
+            isOneToOne: false
+            referencedRelation: "shops"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       services: {
         Row: {
           created_at: string
@@ -335,6 +376,8 @@ export type Database = {
           id: string
           is_active: boolean
           name: string
+          notification_prefs: Json
+          push_token: string | null
           role: Database["public"]["Enums"]["staff_role"]
           shop_id: string
           slug: string | null
@@ -348,6 +391,8 @@ export type Database = {
           id?: string
           is_active?: boolean
           name: string
+          notification_prefs?: Json
+          push_token?: string | null
           role?: Database["public"]["Enums"]["staff_role"]
           shop_id: string
           slug?: string | null
@@ -361,6 +406,8 @@ export type Database = {
           id?: string
           is_active?: boolean
           name?: string
+          notification_prefs?: Json
+          push_token?: string | null
           role?: Database["public"]["Enums"]["staff_role"]
           shop_id?: string
           slug?: string | null
@@ -512,6 +559,7 @@ export type Database = {
           starts_at: string
         }[]
       }
+      get_server_time: { Args: never; Returns: string }
       get_shop_appointments_revenue: {
         Args: {
           p_from: string
@@ -573,6 +621,7 @@ export type Database = {
         }
         Returns: boolean
       }
+      slugify: { Args: { p_text: string }; Returns: string }
       staff_is_inside_work_window: {
         Args: { p_ends_at: string; p_staff_id: string; p_starts_at: string }
         Returns: boolean
