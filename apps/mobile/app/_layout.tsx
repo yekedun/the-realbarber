@@ -2,15 +2,18 @@ import { Stack, useRouter, useSegments } from 'expo-router';
 import { useFonts } from 'expo-font';
 import * as Notifications from 'expo-notifications';
 import * as SplashScreen from 'expo-splash-screen';
+import { AppState } from 'react-native';
 import { useEffect, useRef, useState } from 'react';
 import { Session } from '@supabase/supabase-js';
 import type { Href } from 'expo-router';
 import { supabase, determineUserRole } from '../lib/supabase';
 import { isPublicAuthRoute, routeForRole, shouldSkipRoleRouting } from '../lib/router-guard';
 import { initSentry, SentryErrorBoundary, setSentryUserFromSession } from '../lib/sentry';
+import { initAnalytics, trackEvent, identifyUser, resetAnalytics } from '../lib/analytics';
 
 SplashScreen.preventAutoHideAsync();
 initSentry();
+initAnalytics();
 
 export default function RootLayout() {
   const [loaded] = useFonts({
@@ -44,10 +47,24 @@ export default function RootLayout() {
     return () => sub.remove();
   }, []);
 
-  // Set Sentry user when auth state changes
+  // Track app lifecycle: foreground/background transitions
+  useEffect(() => {
+    const sub = AppState.addEventListener('change', (state) => {
+      if (state === 'background') trackEvent('app_background');
+      if (state === 'active') trackEvent('app_open');
+    });
+    return () => sub.remove();
+  }, []);
+
+  // Set Sentry user and identify user when auth state changes
   useEffect(() => {
     if (session === undefined) return;
     setSentryUserFromSession(session);
+    if (session) {
+      identifyUser(session.user.id);
+    } else {
+      resetAnalytics();
+    }
   }, [session]);
 
   useEffect(() => {
