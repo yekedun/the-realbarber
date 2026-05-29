@@ -26,12 +26,18 @@ serve(async (req) => {
     console.error("[send-push] SUPABASE_SERVICE_ROLE_KEY env var missing");
     return error("Sunucu yapılandırma hatası", 500);
   }
+  // Pad both buffers to the same length before comparing so an attacker
+  // cannot infer key length from timing differences between branches.
   const enc = new TextEncoder();
-  const tokenBytes = enc.encode(token);
-  const keyBytes   = enc.encode(svcKey);
-  let mismatch = tokenBytes.length !== keyBytes.length ? 1 : 0;
-  const len = Math.min(tokenBytes.length, keyBytes.length);
-  for (let i = 0; i < len; i++) mismatch |= tokenBytes[i] ^ keyBytes[i];
+  const tokenRaw = enc.encode(token);
+  const keyRaw   = enc.encode(svcKey);
+  const maxLen   = Math.max(tokenRaw.length, keyRaw.length);
+  const tokenBytes = new Uint8Array(maxLen);
+  const keyBytes   = new Uint8Array(maxLen);
+  tokenBytes.set(tokenRaw);
+  keyBytes.set(keyRaw);
+  let mismatch = 0;
+  for (let i = 0; i < maxLen; i++) mismatch |= tokenBytes[i] ^ keyBytes[i];
   if (mismatch !== 0) return error("Yetkisiz", 403);
 
   let body: SendPushRequest;
