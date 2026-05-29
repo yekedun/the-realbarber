@@ -29,6 +29,14 @@ import { Sheet } from './ds/Sheet';
 import { colors } from '../lib/theme';
 import { supabase } from '../lib/supabase';
 
+function toWAPhone(phone: string): string {
+  const digits = phone.replace(/\D/g, '');
+  if (digits.startsWith('90') && digits.length === 12) return digits;
+  if (digits.startsWith('0') && digits.length === 11) return '9' + digits.slice(1);
+  if (digits.length === 10) return '90' + digits;
+  return digits;
+}
+
 export interface AppointmentDetail {
   id: string;
   time: string;
@@ -72,29 +80,45 @@ export function AppointmentDetailSheet({
     Linking.openURL(`sms:${appt.customerPhone}`);
   }
 
-  async function handleCancel() {
+  async function doCancel(withWhatsApp: boolean) {
+    setBusy(true);
+    const { error: fnError } = await supabase.functions.invoke(
+      'staff-cancel-appointment',
+      { body: { appointment_id: appt.id } },
+    );
+    setBusy(false);
+    if (fnError) {
+      Alert.alert('Hata', 'Randevu iptal edilemedi. Lütfen tekrar deneyin.');
+      return;
+    }
+    onCancel(appt.id);
+    onClose();
+    if (withWhatsApp && appt.customerPhone) {
+      const phone = toWAPhone(appt.customerPhone);
+      const msg = `Merhaba ${appt.customerName}, ${appt.time} saatindeki ${appt.serviceName} randevunuz iptal edilmiştir. Yeni randevu almak için lütfen iletişime geçin.`;
+      Linking.openURL(`https://wa.me/${phone}?text=${encodeURIComponent(msg)}`).catch(() => {});
+    }
+  }
+
+  function handleCancel() {
+    if (!hasPhone) {
+      Alert.alert(
+        'Randevuyu İptal Et',
+        `${appt.customerName} için randevuyu iptal etmek istiyor musunuz?`,
+        [
+          { text: 'Vazgeç', style: 'cancel' },
+          { text: 'İptal Et', style: 'destructive', onPress: () => doCancel(false) },
+        ],
+      );
+      return;
+    }
     Alert.alert(
       'Randevuyu İptal Et',
       `${appt.customerName} için randevuyu iptal etmek istiyor musunuz?`,
       [
         { text: 'Vazgeç', style: 'cancel' },
-        {
-          text: 'İptal Et', style: 'destructive',
-          onPress: async () => {
-            setBusy(true);
-            const { error: fnError } = await supabase.functions.invoke(
-              'staff-cancel-appointment',
-              { body: { appointment_id: appt.id } },
-            );
-            setBusy(false);
-            if (fnError) {
-              Alert.alert('Hata', 'Randevu iptal edilemedi. Lütfen tekrar deneyin.');
-              return;
-            }
-            onCancel(appt.id);
-            onClose();
-          },
-        },
+        { text: 'Sadece İptal Et', style: 'destructive', onPress: () => doCancel(false) },
+        { text: "WhatsApp'tan Bildir ve İptal Et", onPress: () => doCancel(true) },
       ],
     );
   }
