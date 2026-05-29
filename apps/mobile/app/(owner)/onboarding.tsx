@@ -36,9 +36,10 @@ import {
 } from 'react-native';
 import { router } from 'expo-router';
 import { colors } from '../../lib/theme';
-import { supabase } from '../../lib/supabase';
+import { supabase, determineUserRole } from '../../lib/supabase';
 import { buildOnboardingServiceInsert, slugify } from '../../lib/onboarding-utils';
 import { registerForPushNotifications } from '../../lib/notifications';
+import { routeForRole } from '../../lib/router-guard';
 import { trackEvent } from '../../lib/analytics';
 
 /* ─── Constants ──────────────────────────────────────────────── */
@@ -465,7 +466,7 @@ function StepDone({ shopName, cityName, svcName, svcDur, svcPrice, onGo, onShare
 
       {/* Subtitle */}
       <Text style={styles.doneSubtitle}>
-        Rezervasyon linkin aktif. Müşterilerin online randevu almaya başlayabilir.
+        Kurulum tamamlandı. Başvurun onaylandıktan sonra rezervasyon linkin aktif olacak.
       </Text>
 
       {/* Summary rows */}
@@ -539,8 +540,11 @@ export default function OnboardingScreen() {
     router.replace('/(auth)/login');
   }
 
-  function handleGo() {
-    router.replace('/(owner)');
+  async function handleGo() {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) { router.replace('/(auth)/login' as any); return; }
+    const role = await determineUserRole(user.id);
+    router.replace(routeForRole(role) as any);
   }
 
   async function handleShare() {

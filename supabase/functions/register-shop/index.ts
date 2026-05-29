@@ -43,6 +43,19 @@ serve(async (req) => {
 
   const admin = createAdminClient();
 
+  // Parse body early so shop_name/phone are available in all branches below.
+  let body: { shop_name: string; phone?: string };
+  try {
+    body = await req.json();
+  } catch {
+    return error("Geçersiz JSON");
+  }
+  const { shop_name, phone } = body;
+  if (!shop_name?.trim()) return error("Dükkan adı zorunlu");
+  if (phone?.trim() && !isValidPhone(phone.trim())) {
+    return error("Geçersiz telefon numarası. Lütfen geçerli bir numara girin.", 400);
+  }
+
   const { data: existing } = await admin.from("shops")
     .select("id, status, slug, name").or(`owner_user_id.eq.${user.id},owner_id.eq.${user.id}`)
     .maybeSingle();
@@ -55,14 +68,26 @@ serve(async (req) => {
       .eq("id", existing.id);
     if (updateErr) return error("Yeniden başvuru yapılamadı: " + updateErr.message, 500);
 
-    // Update owner staff record name/phone
-    await admin.from("staff")
-      .update({
-        name: user.user_metadata?.full_name ?? shop_name.trim(),
+    // Upsert owner staff record — update if exists, insert if missing
+    const ownerName = user.user_metadata?.full_name ?? shop_name.trim();
+    const ownerSlug = toSlug(ownerName);
+    const { data: existingStaff } = await admin.from("staff")
+      .select("id").eq("shop_id", existing.id).eq("user_id", user.id).maybeSingle();
+    if (existingStaff) {
+      await admin.from("staff")
+        .update({ name: ownerName, phone: phone?.trim() || null })
+        .eq("id", existingStaff.id);
+    } else {
+      await admin.from("staff").insert({
+        shop_id: existing.id,
+        user_id: user.id,
+        name: ownerName,
         phone: phone?.trim() || null,
-      })
-      .eq("shop_id", existing.id)
-      .eq("user_id", user.id);
+        role: "admin",
+        is_active: true,
+        slug: ownerSlug || null,
+      });
+    }
 
     // Notify admin of re-application
     const adminToken = Deno.env.get("ADMIN_EXPO_PUSH_TOKEN");
@@ -95,19 +120,6 @@ serve(async (req) => {
     }
 
     return json({ shop: { id: existing.id, slug: existing.slug, status: "pending" } }, 201);
-  }
-
-  let body: { shop_name: string; phone?: string };
-  try {
-    body = await req.json();
-  } catch {
-    return error("Geçersiz JSON");
-  }
-
-  const { shop_name, phone } = body;
-  if (!shop_name?.trim()) return error("Dükkan adı zorunlu");
-  if (phone?.trim() && !isValidPhone(phone.trim())) {
-    return error("Geçersiz telefon numarası. Lütfen geçerli bir numara girin.", 400);
   }
 
   const baseSlug = toSlug(shop_name.trim()) || user.id.slice(0, 8);
@@ -204,7 +216,7 @@ serve(async (req) => {
         from: fromEmail,
         to: adminEmail,
         subject: `Yeni başvuru: ${escapeHtml(shop_name.trim())}`,
-        html: `<p><b>${escapeHtml(shop_name.trim())}</b> dükkanı onay bekliyor.</p><p>Telefon: ${escapeHtml(phone)}</p><p>Slug: ${escapeHtml(shop.slug)}</p><p><a href="https://siradaki.app/admin">Admin panelini aç</a></p>`,
+        html: `<p><b>${escapeHtml(shop_name.trim())}</b> dükkanı onay bekliyor.</p><p>Telefon: ${escapeHtml(phone ?? '')}</p><p>Slug: ${escapeHtml(shop.slug)}</p><p><a href="https://siradaki.app/admin">Admin panelini aç</a></p>`,
       }),
     }).catch((e) => console.error("[register-shop] Admin email send failed:", e));
   } else if (resendKey && !adminEmail) {
