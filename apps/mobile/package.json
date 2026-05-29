@@ -40,6 +40,7 @@
     "@berber/shared": "workspace:*",
     "@react-native-async-storage/async-storage": "1.23.1",
     "@react-native-google-signin/google-signin": "^13.3.1",
+    "@sentry/react-native": "^8.13.0",
     "@supabase/supabase-js": "^2.43.0",
     "expo": "~51.0.0",
     "expo-clipboard": "~6.0.3",

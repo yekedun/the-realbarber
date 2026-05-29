@@ -7,8 +7,10 @@ import { Session } from '@supabase/supabase-js';
 import type { Href } from 'expo-router';
 import { supabase, determineUserRole } from '../lib/supabase';
 import { isPublicAuthRoute, routeForRole, shouldSkipRoleRouting } from '../lib/router-guard';
+import { initSentry, SentryErrorBoundary, setSentryUserFromSession } from '../lib/sentry';
 
 SplashScreen.preventAutoHideAsync();
+initSentry();
 
 export default function RootLayout() {
   const [loaded] = useFonts({
@@ -41,6 +43,12 @@ export default function RootLayout() {
 
     return () => sub.remove();
   }, []);
+
+  // Set Sentry user when auth state changes
+  useEffect(() => {
+    if (session === undefined) return;
+    setSentryUserFromSession(session);
+  }, [session]);
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => setSession(session));
@@ -75,5 +83,9 @@ export default function RootLayout() {
   }, [loaded, session, firstSegment]);
 
   if (!loaded || session === undefined) return null;
-  return <Stack screenOptions={{ headerShown: false }} />;
+  return (
+    <SentryErrorBoundary>
+      <Stack screenOptions={{ headerShown: false }} />
+    </SentryErrorBoundary>
+  );
 }
