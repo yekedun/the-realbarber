@@ -20,6 +20,8 @@ const baseConfig = ({ config }: ConfigContext): ExpoConfig => ({
     infoPlist: {
       NSUserNotificationUsageDescription:
         'Yeni randevu ve hatırlatma bildirimleri almak için izin gerekiyor.',
+      NSContactsUsageDescription:
+        'Rehberden müşteri seçerek telefon numarasını otomatik doldurmak için kişilere erişim gerekiyor.',
     },
   },
   android: {

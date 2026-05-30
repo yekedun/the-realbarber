@@ -47,7 +47,9 @@ import {
   SafeAreaView,
   TextInput,
 } from 'react-native';
+import { User } from 'lucide-react-native';
 import { colors } from '../lib/theme';
+import { ContactPickerSheet } from './ContactPickerSheet';
 import {
   getInitialAppointmentServiceId,
   isAppointmentModalSaveEnabled,
@@ -157,6 +159,8 @@ export interface AddAppointmentModalProps {
   workingHours?: AppointmentWorkingHours | null;
   /** Sunucu zamanı (ms). Geçmiş slot filtrelemesinde cihaz saati yerine kullanılır. */
   serverNowMs?: number;
+  /** Son müşteri önerilerini doldurmak için kullanılır. */
+  shopId?: string | null;
 }
 
 /* ── MODAL ──────────────────────────────────────────────────────── */
@@ -169,6 +173,7 @@ export function AddAppointmentModal({
   initialStaffId,
   workingHours,
   serverNowMs,
+  shopId,
 }: AddAppointmentModalProps) {
   const [name,           setName]           = useState('');
   const [phone,          setPhone]          = useState('');
@@ -177,6 +182,7 @@ export function AddAppointmentModal({
   const [dayIdx,         setDayIdx]         = useState(0);              // index 0 = today
   const [slot,           setSlot]           = useState('');
   const [selectedStaffId, setSelectedStaffId] = useState<string | null>(initialStaffId ?? null);
+  const [pickerVisible,  setPickerVisible]  = useState(false);
 
   useEffect(() => {
     if (visible) setSelectedStaffId(initialStaffId ?? null);
@@ -282,15 +288,35 @@ export function AddAppointmentModal({
           {/* ── Telefon ────────────────────────────────────────── */}
           <View style={[styles.fieldWrap, styles.fieldGap]}>
             <Text style={styles.fieldLabel}>Telefon</Text>
-            <TextInput
-              style={styles.textInput}
-              value={phone}
-              onChangeText={setPhone}
-              placeholder="0(5xx) xxx xx xx"
-              placeholderTextColor={colors.slate[300]}
-              keyboardType="phone-pad"
-            />
+            <View style={styles.phoneRow}>
+              <TextInput
+                style={[styles.textInput, styles.phoneInput]}
+                value={phone}
+                onChangeText={setPhone}
+                placeholder="0(5xx) xxx xx xx"
+                placeholderTextColor={colors.slate[300]}
+                keyboardType="phone-pad"
+              />
+              <TouchableOpacity
+                style={styles.contactBtn}
+                onPress={() => setPickerVisible(true)}
+                activeOpacity={0.7}
+                hitSlop={8}
+              >
+                <User size={18} color={colors.brand[600]} />
+              </TouchableOpacity>
+            </View>
           </View>
+
+          <ContactPickerSheet
+            visible={pickerVisible}
+            onClose={() => setPickerVisible(false)}
+            shopId={shopId}
+            onSelect={(contactName, contactPhone) => {
+              setPhone(contactPhone);
+              if (!name.trim()) setName(contactName);
+            }}
+          />
 
           {/* ── Not ────────────────────────────────────────────── */}
           <View style={[styles.fieldWrap, styles.fieldGap]}>
@@ -508,6 +534,25 @@ const styles = StyleSheet.create({
   notesInput: {
     height: 72,
     paddingTop: 10,
+  },
+
+  /* Phone field row: input + contact picker button */
+  phoneRow: {
+    flexDirection: 'row',
+    alignItems: 'stretch',
+    gap: 8,
+  },
+  phoneInput: {
+    flex: 1,
+  },
+  contactBtn: {
+    width: 46,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: colors.slate[200],
+    backgroundColor: colors.slate[0],
+    alignItems: 'center',
+    justifyContent: 'center',
   },
 
   /* ── SectionLabel ────────────────────────────────────────────────

@@ -356,6 +356,7 @@ export default function AgendaScreen() {
         staffList={barberList}
         workingHours={shopWorkingHours}
         serverNowMs={serverNowMs}
+        shopId={shopId}
         onSave={async (data) => {
           if (!shopSlug) {
             Alert.alert('Hata', 'Dükkan bilgisi yüklenmedi. Sayfayı yenileyin.');
