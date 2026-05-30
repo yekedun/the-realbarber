@@ -6,6 +6,8 @@ const workspaceRoot = path.resolve(projectRoot, '../..');
 
 const config = getSentryExpoConfig(projectRoot);
 
+config.resolver.unstable_enablePackageExports = true;
+
 // Watch the entire monorepo so Metro can resolve packages/shared
 config.watchFolders = [workspaceRoot];
 

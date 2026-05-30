@@ -151,3 +151,5 @@ Davetli mobil → POST /accept-invite (authenticated)
 - `Intl.DateTimeFormat` `localTimeToUTC()` içinde DST geçişlerini doğru handle eder; manuel offset hesaplamasıyla değiştirme.
 - `invite-barber`, `shops.status` kolonu DB'de yoksa (eski ortam) 42703 hatasını yakalar ve graceful fallback uygular — bu fallback kodu kaldırma.
 - `accept-invite` idempotent'tir: kullanıcı zaten o dükkan'ın staff'ıysa token tüketilir ve mevcut kayıt döner, yeni kayıt oluşturulmaz.
+
+https://github.com/yekedun/siradaki github linki bu 

@@ -60,7 +60,12 @@ serve(async (req) => {
   // Rejected shop: allow reapplication — update name + reset to pending
   if (existing && existing.status === "rejected") {
     const { error: updateErr } = await admin.from("shops")
-      .update({ name: shop_name.trim(), status: "pending" })
+      .update({
+        name: shop_name.trim(),
+        display_name: shop_name.trim(),
+        phone: phone?.trim() || null,
+        status: "pending",
+      })
       .eq("id", existing.id);
     if (updateErr) return error("Yeniden başvuru yapılamadı: " + updateErr.message, 500);
 
@@ -71,14 +76,13 @@ serve(async (req) => {
       .select("id").eq("shop_id", existing.id).eq("user_id", user.id).maybeSingle();
     if (existingStaff) {
       await admin.from("staff")
-        .update({ name: ownerName, phone: phone?.trim() || null })
+        .update({ name: ownerName })
         .eq("id", existingStaff.id);
     } else {
       await admin.from("staff").insert({
         shop_id: existing.id,
         user_id: user.id,
         name: ownerName,
-        phone: phone?.trim() || null,
         role: "admin",
         is_active: true,
         slug: ownerSlug || null,
@@ -132,6 +136,8 @@ serve(async (req) => {
   for (let attempt = 0; attempt < 5; attempt++) {
     const result = await admin.from("shops").insert({
       name: shop_name.trim(),
+      display_name: shop_name.trim(),
+      phone: phone?.trim() || null,
       slug,
       owner_user_id: user.id,
       status: "pending",
@@ -153,7 +159,6 @@ serve(async (req) => {
     .from("staff")
     .update({
       name: ownerName,
-      phone: phone?.trim() || null,
       role: "admin",
       is_active: true,
       slug: ownerSlug || null,
@@ -174,7 +179,6 @@ serve(async (req) => {
       shop_id: shop.id,
       user_id: user.id,
       name: ownerName,
-      phone: phone?.trim() || null,
       role: "admin",
       is_active: true,
       slug: ownerSlug || null,
