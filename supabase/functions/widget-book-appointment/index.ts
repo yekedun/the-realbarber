@@ -1,6 +1,7 @@
 import { serve } from "https://deno.land/std@0.208.0/http/server.ts";
 import { createAdminClient } from "../_shared/supabase-admin.ts";
 import { corsOptions, error, json, bodyGuard } from "../_shared/cors.ts";
+import { isValidPhone } from "@berber/shared/phone-utils";
 
 const RATE_LIMIT_MAX = 5;
 const RATE_LIMIT_WINDOW_SEC = 600;
@@ -62,12 +63,6 @@ function mapRpcErrorStatus(code?: string): number {
   return 500;
 }
 
-// canonical copy in packages/shared/src/phone-utils.ts — keep in sync
-function isValidPhone(phone: string): boolean {
-  const digits = phone.replace(/[\s\-\(\)]/g, "");
-  return /^(\+90|0)?[5][0-9]{9}$/.test(digits) || /^[0-9]{10,15}$/.test(digits);
-}
-
 serve(async (req) => {
   if (req.method === "OPTIONS") return corsOptions();
   if (req.method !== "POST") return error("Method not allowed", 405);
@@ -117,15 +112,27 @@ serve(async (req) => {
 
   const supabase = createAdminClient();
 
-  // Validate staff_id belongs to this shop (defense against cross-shop booking)
-  if (staff_id) {
-    const { data: shopCheck } = await supabase
-      .from("shops")
-      .select("id")
-      .eq("slug", shop_slug)
-      .maybeSingle();
-    if (!shopCheck) return error("Dükkan bulunamadı", 404);
+  const { data: shopCheck } = await supabase
+    .from("shops")
+    .select("id, status")
+    .eq("slug", shop_slug)
+    .maybeSingle();
 
+  if (!shopCheck || shopCheck.status !== "active") return error("Dukkan bulunamadi", 404);
+
+  const { data: serviceCheck } = await supabase
+    .from("services")
+    .select("id")
+    .eq("id", service_id)
+    .eq("shop_id", shopCheck.id)
+    .eq("is_active", true)
+    .maybeSingle();
+
+  if (!serviceCheck) return error("Hizmet bulunamadi", 404);
+
+  // Validate staff_id belongs to this shop (defense against cross-shop booking).
+  // The any-staff path is bound to shopCheck.id below via p_shop_id.
+  if (staff_id) {
     const { data: staffCheck } = await supabase
       .from("staff")
       .select("id")
@@ -137,8 +144,8 @@ serve(async (req) => {
   }
 
   const { data, error: rpcError } = await supabase.rpc("create_appointment_atomic" as never, {
-    p_shop_slug: shop_slug,
-    p_shop_id: null,
+    p_shop_slug: null,
+    p_shop_id: shopCheck.id,
     p_service_id: service_id,
     p_staff_id: staff_id ?? null,
     p_starts_at: starts_at,

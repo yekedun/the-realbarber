@@ -2,6 +2,7 @@
   "imports": {
     "@berber/shared/slot-utils": "../../packages/shared/src/slot-utils.ts",
     "@berber/shared/types": "../../packages/shared/src/types.ts",
-    "@berber/shared/constants": "../../packages/shared/src/constants.ts"
+    "@berber/shared/constants": "../../packages/shared/src/constants.ts",
+    "@berber/shared/phone-utils": "../../packages/shared/src/phone-utils.ts"
   }
 }

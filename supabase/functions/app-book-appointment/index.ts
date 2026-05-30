@@ -2,6 +2,7 @@ import { serve } from "https://deno.land/std@0.208.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { createAdminClient } from "../_shared/supabase-admin.ts";
 import { corsOptions, error, json, bodyGuard } from "../_shared/cors.ts";
+import { isValidPhone } from "@berber/shared/phone-utils";
 
 async function sendBookingNotifications(
   appointmentId: string,
@@ -100,12 +101,6 @@ function mapRpcErrorStatus(code?: string): number {
   if (code === "22023") return 400;
   if (code === "42501") return 403;
   return 500;
-}
-
-// canonical copy in packages/shared/src/phone-utils.ts — keep in sync
-function isValidPhone(phone: string): boolean {
-  const digits = phone.replace(/[\s\-\(\)]/g, "");
-  return /^(\+90|0)?[5][0-9]{9}$/.test(digits) || /^[0-9]{10,15}$/.test(digits);
 }
 
 serve(async (req) => {
