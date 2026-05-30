@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import {
   ActivityIndicator,
   FlatList,
@@ -47,7 +47,10 @@ export function ContactPickerSheet({ visible, onClose, onSelect, shopId }: Props
       return;
     }
     loadRecentCustomers();
-    loadDeviceContacts();
+    // Only load contacts once — permission + heavy getContactsAsync call.
+    if (contactsStatus === 'idle') {
+      loadDeviceContacts();
+    }
   }, [visible]);
 
   async function loadRecentCustomers() {
@@ -127,23 +130,25 @@ export function ContactPickerSheet({ visible, onClose, onSelect, shopId }: Props
 
   const q = query.toLowerCase().trim();
 
-  function matches(item: ContactItem): boolean {
-    if (!q) return true;
-    return item.name.toLowerCase().includes(q) || item.phone.includes(q);
-  }
+  const entries = useMemo<ListEntry[]>(() => {
+    function matches(item: ContactItem): boolean {
+      if (!q) return true;
+      return item.name.toLowerCase().includes(q) || item.phone.replace(/\D/g, '').includes(q.replace(/\D/g, '')) || item.phone.includes(q);
+    }
+    const filteredRecent = recentCustomers.filter(matches);
+    const filteredContacts = deviceContacts.filter(matches);
 
-  const filteredRecent = recentCustomers.filter(matches);
-  const filteredContacts = deviceContacts.filter(matches);
-
-  const entries: ListEntry[] = [];
-  if (filteredRecent.length > 0) {
-    entries.push({ type: 'header', title: 'Son Müşteriler', key: 'h-recent' });
-    for (const item of filteredRecent) entries.push({ type: 'item', item });
-  }
-  if (filteredContacts.length > 0) {
-    entries.push({ type: 'header', title: 'Rehber', key: 'h-contacts' });
-    for (const item of filteredContacts) entries.push({ type: 'item', item });
-  }
+    const result: ListEntry[] = [];
+    if (filteredRecent.length > 0) {
+      result.push({ type: 'header', title: 'Son Müşteriler', key: 'h-recent' });
+      for (const item of filteredRecent) result.push({ type: 'item', item });
+    }
+    if (filteredContacts.length > 0) {
+      result.push({ type: 'header', title: 'Rehber', key: 'h-contacts' });
+      for (const item of filteredContacts) result.push({ type: 'item', item });
+    }
+    return result;
+  }, [q, recentCustomers, deviceContacts]);
 
   const showSpinner =
     contactsStatus === 'loading' && recentCustomers.length === 0;

@@ -308,16 +308,6 @@ export function AddAppointmentModal({
             </View>
           </View>
 
-          <ContactPickerSheet
-            visible={pickerVisible}
-            onClose={() => setPickerVisible(false)}
-            shopId={shopId}
-            onSelect={(contactName, contactPhone) => {
-              setPhone(contactPhone);
-              if (!name.trim()) setName(contactName);
-            }}
-          />
-
           {/* ── Not ────────────────────────────────────────────── */}
           <View style={[styles.fieldWrap, styles.fieldGap]}>
             <Text style={styles.fieldLabel}>Not (opsiyonel)</Text>
@@ -452,6 +442,16 @@ export function AddAppointmentModal({
           )}
         </ScrollView>
       </SafeAreaView>
+
+      <ContactPickerSheet
+        visible={pickerVisible}
+        onClose={() => setPickerVisible(false)}
+        shopId={shopId}
+        onSelect={(contactName, contactPhone) => {
+          setPhone(contactPhone);
+          if (!name.trim()) setName(contactName);
+        }}
+      />
     </Modal>
   );
 }
