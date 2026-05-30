@@ -20,8 +20,9 @@
       },
       "env": {
         "REACT_NATIVE_ARCHITECTURES": "arm64-v8a",
-        "EXPO_PUBLIC_SUPABASE_URL": "https://hnaxcntnntwvqhremzet.supabase.co",
-        "EXPO_PUBLIC_SUPABASE_ANON_KEY": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhuYXhjbnRubnR3dnFocmVtemV0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg2ODYxNDgsImV4cCI6MjA5NDI2MjE0OH0.y4XLabzDirqd4Ug69G6TxO5_D5nqq7aGAGJMRfFFPR4"
+        "EXPO_PUBLIC_SUPABASE_URL": "https://lkovehtujarfwcvtahoq.supabase.co",
+        "EXPO_PUBLIC_SUPABASE_ANON_KEY": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imxrb3ZlaHR1amFyZndjdnRhaG9xIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk3MjI1MzgsImV4cCI6MjA5NTI5ODUzOH0.1JnG8b3_1J82ze95TRNqlKxrrI11FlOCqlzy7_DjAOo",
+        "EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID": "434882013340-mo12af45h1nebfuppafpndorblv93pge.apps.googleusercontent.com"
       }
     },
     "production": {
@@ -30,8 +31,9 @@
         "buildType": "app-bundle"
       },
       "env": {
-        "EXPO_PUBLIC_SUPABASE_URL": "https://hnaxcntnntwvqhremzet.supabase.co",
-        "EXPO_PUBLIC_SUPABASE_ANON_KEY": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhuYXhjbnRubnR3dnFocmVtemV0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg2ODYxNDgsImV4cCI6MjA5NDI2MjE0OH0.y4XLabzDirqd4Ug69G6TxO5_D5nqq7aGAGJMRfFFPR4"
+        "EXPO_PUBLIC_SUPABASE_URL": "https://lkovehtujarfwcvtahoq.supabase.co",
+        "EXPO_PUBLIC_SUPABASE_ANON_KEY": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imxrb3ZlaHR1amFyZndjdnRhaG9xIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk3MjI1MzgsImV4cCI6MjA5NTI5ODUzOH0.1JnG8b3_1J82ze95TRNqlKxrrI11FlOCqlzy7_DjAOo",
+        "EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID": "434882013340-mo12af45h1nebfuppafpndorblv93pge.apps.googleusercontent.com"
       }
     }
   },
