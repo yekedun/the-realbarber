@@ -46,6 +46,10 @@ docs/audit/gaps.md
 docs/audit/probe-summary.md
 docs/audit/integration-map.md
 
+# Local reference docs — not for repo
+SAYFA-ENVANTERI.md
+SIRADAKI-SYSTEM-OVERVIEW.md
+
 # OS
 .DS_Store
 Thumbs.db
